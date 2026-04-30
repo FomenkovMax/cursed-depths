@@ -1,12 +1,6 @@
 {
   "framework": "nextjs",
-  "buildCommand": "bun run build",
-  "installCommand": "bun install",
-  "devCommand": "bun run dev",
-  "regions": ["hel1"],
-  "env": {
-    "DATABASE_URL": "@database_url",
-    "BOT_TOKEN": "@bot_token",
-    "WEBAPP_URL": "@webapp_url"
-  }
+  "installCommand": "npm install",
+  "buildCommand": "npx prisma generate && next build",
+  "regions": ["hel1"]
 }

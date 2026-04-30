@@ -1,0 +1,101 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Player {
+  id              String   @id @default(cuid())
+  telegramId      String   @unique
+  name            String
+  race            String
+  class           String
+  level           Int      @default(1)
+  xp              Int      @default(0)
+  xpToNext        Int      @default(100)
+  hp              Int      @default(10)
+  maxHp           Int      @default(10)
+  mp              Int      @default(5)
+  maxMp           Int      @default(5)
+  strength        Int      @default(10)
+  dexterity       Int      @default(10)
+  constitution    Int      @default(10)
+  intelligence    Int      @default(10)
+  wisdom          Int      @default(10)
+  charisma        Int      @default(10)
+  gold            Int      @default(0)
+  locationId      String   @default("town")
+  inCombat        Boolean  @default(false)
+  enemyId         String?
+  enemyHp         Int?
+  enemyMaxHp      Int?
+  combatLog       String?  // JSON string
+  lastDailyReward String?  // ISO date string
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  inventory       Inventory[]
+  quests          PlayerQuest[]
+  creation        CharacterCreation?
+}
+
+model Inventory {
+  id         String  @id @default(cuid())
+  playerId   String
+  player     Player  @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  itemId     String
+  name       String
+  type       String  // weapon, armor, accessory, consumable, material, quest
+  rarity     String  // common, uncommon, rare, epic, legendary, artifact, mythic
+  equipped   Boolean @default(false)
+  slot       String? // weapon, head, chest, legs, feet, accessory1, accessory2
+  stats      String? // JSON string with bonuses
+  quantity   Int     @default(1)
+  icon       String? // emoji or image path
+}
+
+model CharacterCreation {
+  id        String  @id @default(cuid())
+  playerId  String  @unique
+  player    Player  @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  step      Int     @default(0) // 0=name, 1=race, 2=class, 3=confirm
+  name      String?
+  race      String?
+  class     String?
+}
+
+model PlayerQuest {
+  id          String   @id @default(cuid())
+  playerId    String
+  player      Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  questId     String
+  type        String   // daily, kill, explore, craft
+  title       String
+  description String
+  target      Int      // e.g. kill 5 goblins
+  progress    Int      @default(0)
+  completed   Boolean  @default(false)
+  claimed     Boolean  @default(false)
+  reward      String   // JSON: {xp, gold, items}
+  expiresAt   DateTime?
+  createdAt   DateTime @default(now())
+}
+
+model Enemy {
+  id          String  @id @default(cuid())
+  nameRu      String
+  nameEn      String
+  hp          Int
+  ac          Int
+  attack      Int
+  damage      String  // e.g. "1d6+2"
+  xp          Int
+  gold        Int
+  lootTable   String? // JSON array of {itemId, chance}
+  locationId  String
+  isBoss      Boolean @default(false)
+  icon        String? // emoji
+}

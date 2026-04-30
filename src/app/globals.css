@@ -1,0 +1,141 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: #0f0a1a;
+  --color-foreground: #e8e0f0;
+  --color-card: #1a1025;
+  --color-card-foreground: #e8e0f0;
+  --color-popover: #1a1025;
+  --color-popover-foreground: #e8e0f0;
+  --color-primary: #8b5cf6;
+  --color-primary-foreground: #ffffff;
+  --color-secondary: #2d1f3d;
+  --color-secondary-foreground: #e8e0f0;
+  --color-muted: #2d1f3d;
+  --color-muted-foreground: #9885b0;
+  --color-accent: #6d28d9;
+  --color-accent-foreground: #ffffff;
+  --color-destructive: #ef4444;
+  --color-destructive-foreground: #ffffff;
+  --color-border: #3d2a52;
+  --color-input: #3d2a52;
+  --color-ring: #8b5cf6;
+  --radius-sm: 0.25rem;
+  --radius-md: 0.375rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.75rem;
+
+  --color-gold: #fbbf24;
+  --color-xp: #60a5fa;
+  --color-hp: #ef4444;
+  --color-mp: #3b82f6;
+  --color-common: #9ca3af;
+  --color-uncommon: #22c55e;
+  --color-rare: #3b82f6;
+  --color-epic: #a855f7;
+  --color-legendary: #f59e0b;
+  --color-mythic: #ec4899;
+}
+
+body {
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+  font-family: system-ui, -apple-system, sans-serif;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Telegram MiniApp specific */
+:root {
+  --tg-theme-bg-color: #0f0a1a;
+  --tg-theme-text-color: #e8e0f0;
+  --tg-theme-hint-color: #9885b0;
+  --tg-theme-button-color: #8b5cf6;
+  --tg-theme-button-text-color: #ffffff;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 4px;
+}
+::-webkit-scrollbar-track {
+  background: #1a1025;
+}
+::-webkit-scrollbar-thumb {
+  background: #3d2a52;
+  border-radius: 2px;
+}
+
+/* Combat shake animation */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
+
+.animate-shake {
+  animation: shake 0.3s ease-in-out;
+}
+
+/* Glow effect */
+@keyframes glow {
+  0%, 100% { box-shadow: 0 0 5px rgba(139, 92, 246, 0.5); }
+  50% { box-shadow: 0 0 20px rgba(139, 92, 246, 0.8); }
+}
+
+.animate-glow {
+  animation: glow 2s ease-in-out infinite;
+}
+
+/* Level up flash */
+@keyframes levelUp {
+  0% { opacity: 0; transform: scale(0.5); }
+  50% { opacity: 1; transform: scale(1.2); }
+  100% { opacity: 0; transform: scale(1); }
+}
+
+.animate-level-up {
+  animation: levelUp 1.5s ease-out forwards;
+}
+
+/* Floating damage */
+@keyframes floatUp {
+  0% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(-30px); }
+}
+
+.animate-float-up {
+  animation: floatUp 1s ease-out forwards;
+}
+
+/* Pulse border for equipped items */
+@keyframes pulse-border {
+  0%, 100% { border-color: rgba(139, 92, 246, 0.5); }
+  50% { border-color: rgba(139, 92, 246, 1); }
+}
+
+.animate-pulse-border {
+  animation: pulse-border 2s ease-in-out infinite;
+}
+
+/* Fade in */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}

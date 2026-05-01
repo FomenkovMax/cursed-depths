@@ -17,7 +17,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true });
     }
 
-    const WEBAPP_URL = process.env.WEBAPP_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : '');
+    // WEBAPP_URL should point to the working URL of the game
+    // Before custom domain DNS propagates, use Vercel subdomain
+    // After DNS works, set WEBAPP_URL=https://cursed-depths.ru on Vercel
+    const WEBAPP_URL = process.env.WEBAPP_URL || 'https://cursed-depths.vercel.app';
 
     if (text === '/start' || text === '/play') {
       const keyboard = {

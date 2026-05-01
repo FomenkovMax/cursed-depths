@@ -6,22 +6,22 @@ const globalForPrisma = globalThis as unknown as {
 };
 
 function createPrismaClient() {
-  // TURSO_URL is the actual Turso connection URL (libsql://)
-  // DATABASE_URL must be a valid SQLite file: URL for Prisma schema validation
-  const tursoUrl = process.env.TURSO_URL;
   const databaseUrl = process.env.DATABASE_URL || 'file:./db/custom.db';
 
-  // If Turso URL is configured, use the LibSQL adapter
-  if (tursoUrl) {
+  // If using Turso (libsql:// URL), use the LibSQL adapter
+  if (databaseUrl.startsWith('libsql://') || databaseUrl.startsWith('https://')) {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { createClient } = require('@libsql/client');
     const libsql = createClient({
-      url: tursoUrl,
+      url: databaseUrl,
       authToken: process.env.DATABASE_AUTH_TOKEN || '',
     });
     const adapter = new PrismaLibSql(libsql);
+    // When using adapter, override datasourceUrl to a valid SQLite file: URL
+    // so Prisma schema validation passes. The adapter handles the real Turso connection.
     return new PrismaClient({
       adapter,
+      datasourceUrl: 'file:./db/custom.db',
     });
   }
 

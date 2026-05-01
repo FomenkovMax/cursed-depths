@@ -132,17 +132,20 @@ export default function CursedDepths() {
   const [charRace, setCharRace] = useState('');
   const [charClass, setCharClass] = useState('');
 
-  // Telegram ID (ref to avoid setState-in-effect lint issues)
+  // Telegram ID & initData (refs to avoid setState-in-effect lint issues)
   const telegramIdRef = useRef('');
+  const initDataRef = useRef('');
   const floatIdRef = useRef(0);
   const initDone = useRef(false);
 
   // ===== LOAD PLAYER =====
   const loadPlayer = useCallback(async (tgId: string) => {
     try {
-      const data = await fetch('/api/player', {
-        headers: { 'x-telegram-id': tgId },
-      }).then(r => r.json());
+      const headers: Record<string, string> = { 'x-telegram-id': tgId };
+      if (initDataRef.current) {
+        headers['X-Telegram-Init-Data'] = initDataRef.current;
+      }
+      const data = await fetch('/api/player', { headers }).then(r => r.json());
 
       if (data.exists && data.player) {
         setPlayer(data.player);
@@ -171,9 +174,14 @@ export default function CursedDepths() {
     let resolvedId = 'test_dev_123';
 
     if (typeof window !== 'undefined' && (window as unknown as { Telegram?: unknown }).Telegram) {
-      const tg = (window as unknown as { Telegram: { WebApp: { ready: () => void; expand: () => void; initDataUnsafe?: { user?: { id: number } } } } }).Telegram.WebApp;
+      const tg = (window as unknown as { Telegram: { WebApp: { ready: () => void; expand: () => void; initData?: string; initDataUnsafe?: { user?: { id: number } } } } }).Telegram.WebApp;
       tg.ready();
       tg.expand();
+
+      // Store the raw initData for HMAC validation on the backend
+      if (tg.initData) {
+        initDataRef.current = tg.initData;
+      }
 
       const user = tg.initDataUnsafe?.user;
       if (user) {
@@ -197,6 +205,10 @@ export default function CursedDepths() {
       'Content-Type': 'application/json',
       'x-telegram-id': telegramIdRef.current,
     };
+    // Send validated initData for proper server-side authentication
+    if (initDataRef.current) {
+      headers['X-Telegram-Init-Data'] = initDataRef.current;
+    }
     const res = await fetch(url, {
       method,
       headers,
@@ -218,9 +230,11 @@ export default function CursedDepths() {
   const refreshPlayer = useCallback(async () => {
     if (!telegramIdRef.current) return;
     try {
-      const data = await fetch('/api/player', {
-        headers: { 'x-telegram-id': telegramIdRef.current },
-      }).then(r => r.json());
+      const headers: Record<string, string> = { 'x-telegram-id': telegramIdRef.current };
+      if (initDataRef.current) {
+        headers['X-Telegram-Init-Data'] = initDataRef.current;
+      }
+      const data = await fetch('/api/player', { headers }).then(r => r.json());
       if (data.player) {
         setPlayer(data.player);
       }

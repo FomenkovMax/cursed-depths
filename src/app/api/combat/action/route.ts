@@ -2,10 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { ENEMIES, ITEMS } from '@/lib/game-data';
 import { rollD20, rollDice, getModifier, rollLoot, isCriticalHit } from '@/lib/dice';
+import { validateTelegramRequest } from '@/lib/auth';
 
 export async function POST(req: NextRequest) {
-  const telegramId = req.headers.get('x-telegram-id');
-  if (!telegramId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const auth = validateTelegramRequest(req);
+  if (!auth) {
+    return NextResponse.json({ error: 'Неверная авторизация' }, { status: 401 });
+  }
+  const telegramId = auth.telegramId;
 
   const body = await req.json();
   const { action } = body; // 'attack', 'spell', 'flee', 'use_item'

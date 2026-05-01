@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { validateTelegramRequest } from '@/lib/auth';
 
 export async function GET(req: NextRequest) {
-  const telegramId = req.headers.get('x-telegram-id');
-  if (!telegramId) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const auth = validateTelegramRequest(req);
+  if (!auth) {
+    return NextResponse.json({ error: 'Неверная авторизация' }, { status: 401 });
   }
+  const telegramId = auth.telegramId;
 
   const player = await db.player.findUnique({
     where: { telegramId },

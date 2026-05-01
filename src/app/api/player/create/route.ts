@@ -1,13 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { RACES, CLASSES } from '@/lib/game-data';
+import { validateTelegramRequest } from '@/lib/auth';
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
-    const { telegramId, name, race, className } = body;
+    const auth = validateTelegramRequest(req);
+    if (!auth) {
+      return NextResponse.json({ error: 'Неверная авторизация' }, { status: 401 });
+    }
+    const telegramId = auth.telegramId;
 
-    if (!telegramId || !name || !race || !className) {
+    const body = await req.json();
+    const { name, race, className } = body;
+
+    if (!name || !race || !className) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 

@@ -1,6 +1,5 @@
 {
   "framework": "nextjs",
   "installCommand": "npm install",
-  "buildCommand": "npx prisma generate && next build",
-  "regions": ["hel1"]
+  "buildCommand": "npx prisma generate && next build"
 }

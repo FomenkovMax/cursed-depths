@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { PrismaLibSql } from '@prisma/adapter-libsql';
+import { createClient } from '@libsql/client';
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
@@ -7,33 +8,29 @@ const globalForPrisma = globalThis as unknown as {
 
 function createPrismaClient() {
   const databaseUrl = process.env.DATABASE_URL || 'file:./db/custom.db';
-  // TURSO_URL takes priority — it's the actual libsql:// connection URL
   const tursoUrl = process.env.TURSO_URL;
+  const authToken = process.env.DATABASE_AUTH_TOKEN || '';
 
-  // If Turso URL is configured, use the LibSQL adapter for remote DB
+  // If TURSO_URL is set, connect to Turso via LibSQL adapter
   if (tursoUrl) {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { createClient } = require('@libsql/client');
     const libsql = createClient({
       url: tursoUrl,
-      authToken: process.env.DATABASE_AUTH_TOKEN || '',
+      authToken,
     });
     const adapter = new PrismaLibSql(libsql);
-    // Override datasourceUrl to satisfy Prisma schema validation
-    // The adapter handles the real Turso connection
+    // Provide a valid SQLite file: URL for Prisma schema validation
+    // The adapter handles the actual Turso connection
     return new PrismaClient({
       adapter,
-      datasourceUrl: databaseUrl,
+      datasourceUrl: 'file:./db/custom.db',
     });
   }
 
-  // Also support DATABASE_URL being a libsql:// URL directly (legacy)
+  // If DATABASE_URL is a libsql:// URL, use it directly (legacy support)
   if (databaseUrl.startsWith('libsql://') || databaseUrl.startsWith('https://')) {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { createClient } = require('@libsql/client');
     const libsql = createClient({
       url: databaseUrl,
-      authToken: process.env.DATABASE_AUTH_TOKEN || '',
+      authToken,
     });
     const adapter = new PrismaLibSql(libsql);
     return new PrismaClient({

@@ -1,6 +1,5 @@
 import { PrismaClient } from '@prisma/client';
 import { PrismaLibSql } from '@prisma/adapter-libsql';
-import { createClient } from '@libsql/client';
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
@@ -14,14 +13,11 @@ function createPrismaClient() {
   // If TURSO_URL is set, connect to Turso via LibSQL adapter
   // This is the production path on Vercel
   if (tursoUrl) {
-    console.log('[DB] Connecting to Turso:', tursoUrl.substring(0, 30) + '...');
-    const libsql = createClient({
+    console.log('[DB] Using Turso adapter, URL:', tursoUrl.substring(0, 40) + '...');
+    const adapter = new PrismaLibSql({
       url: tursoUrl,
       authToken,
     });
-    const adapter = new PrismaLibSql(libsql);
-    // With adapter, Prisma delegates ALL queries to the adapter
-    // We must NOT pass datasourceUrl - the adapter replaces the connection entirely
     return new PrismaClient({
       adapter,
     });
@@ -29,19 +25,18 @@ function createPrismaClient() {
 
   // If DATABASE_URL is a libsql:// URL (legacy support), use LibSQL adapter
   if (databaseUrl.startsWith('libsql://') || databaseUrl.startsWith('https://')) {
-    console.log('[DB] Connecting to Turso via DATABASE_URL:', databaseUrl.substring(0, 30) + '...');
-    const libsql = createClient({
+    console.log('[DB] Using DATABASE_URL as Turso, URL:', databaseUrl.substring(0, 40) + '...');
+    const adapter = new PrismaLibSql({
       url: databaseUrl,
       authToken,
     });
-    const adapter = new PrismaLibSql(libsql);
     return new PrismaClient({
       adapter,
     });
   }
 
   // Local SQLite - use standard Prisma client
-  console.log('[DB] Connecting to local SQLite:', databaseUrl);
+  console.log('[DB] Using local SQLite:', databaseUrl);
   return new PrismaClient();
 }
 

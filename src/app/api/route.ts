@@ -8,6 +8,8 @@ export async function GET() {
     env: {
       hasDatabaseUrl: !!process.env.DATABASE_URL,
       databaseUrlPrefix: process.env.DATABASE_URL?.substring(0, 20) || 'NOT SET',
+      hasTursoUrl: !!process.env.TURSO_URL,
+      tursoUrlPrefix: process.env.TURSO_URL?.substring(0, 20) || 'NOT SET',
       hasDatabaseAuthToken: !!process.env.DATABASE_AUTH_TOKEN,
       nodeEnv: process.env.NODE_ENV,
     }
@@ -26,7 +28,6 @@ export async function GET() {
     diagnostics.database = {
       connected: false,
       error: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack?.substring(0, 500) : undefined,
     };
   }
 

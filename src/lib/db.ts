@@ -17,7 +17,12 @@ function createPrismaClient() {
       authToken: process.env.DATABASE_AUTH_TOKEN || '',
     });
     const adapter = new PrismaLibSql(libsql);
-    return new PrismaClient({ adapter });
+    // Override datasource URL to a dummy SQLite file for Prisma schema validation
+    // The adapter handles the actual connection to Turso
+    return new PrismaClient({
+      adapter,
+      datasourceUrl: 'file:./db/custom.db',
+    });
   }
 
   // Local SQLite - use standard Prisma client

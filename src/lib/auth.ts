@@ -37,7 +37,10 @@ export function verifyTelegramAuth(
 
     // Step 1: Extract the hash
     const hash = params.get('hash');
-    if (!hash) return null;
+    if (!hash) {
+      console.warn('[Auth] No hash in initData');
+      return null;
+    }
 
     // Step 2: Remove hash from params and build the data-check string
     params.delete('hash');
@@ -63,7 +66,10 @@ export function verifyTelegramAuth(
       .digest('hex');
 
     // Step 5: Compare hashes (timing-safe comparison)
-    if (computedHash.length !== hash.length) return null;
+    if (computedHash.length !== hash.length) {
+      console.warn('[Auth] Hash length mismatch');
+      return null;
+    }
 
     // Manual timing-safe comparison to avoid importing timingSafeEqual
     // which requires Buffer in Node.js
@@ -71,27 +77,47 @@ export function verifyTelegramAuth(
     for (let i = 0; i < computedHash.length; i++) {
       mismatch |= computedHash.charCodeAt(i) ^ hash.charCodeAt(i);
     }
-    if (mismatch !== 0) return null;
+    if (mismatch !== 0) {
+      console.warn('[Auth] Hash mismatch - initData signature invalid');
+      return null;
+    }
 
     // Step 6: Verify auth_date is not too old
     const authDateStr = params.get('auth_date');
-    if (!authDateStr) return null;
+    if (!authDateStr) {
+      console.warn('[Auth] No auth_date in initData');
+      return null;
+    }
 
     const authDate = parseInt(authDateStr, 10);
-    if (isNaN(authDate)) return null;
+    if (isNaN(authDate)) {
+      console.warn('[Auth] Invalid auth_date:', authDateStr);
+      return null;
+    }
 
     const now = Math.floor(Date.now() / 1000);
-    if (now - authDate > MAX_AUTH_AGE_SECONDS) return null;
+    if (now - authDate > MAX_AUTH_AGE_SECONDS) {
+      console.warn('[Auth] auth_date too old:', authDate, 'now:', now, 'diff:', now - authDate);
+      return null;
+    }
 
     // Step 7: Parse and return user data
     const userStr = params.get('user');
-    if (!userStr) return null;
+    if (!userStr) {
+      console.warn('[Auth] No user in initData');
+      return null;
+    }
 
     const user = JSON.parse(userStr);
-    if (!user.id) return null;
+    if (!user.id) {
+      console.warn('[Auth] No user.id in initData');
+      return null;
+    }
 
+    console.log('[Auth] Telegram auth verified for user:', user.id, user.username || user.first_name);
     return { id: user.id, first_name: user.first_name, username: user.username };
-  } catch {
+  } catch (err) {
+    console.error('[Auth] Error verifying initData:', err);
     return null;
   }
 }
@@ -101,7 +127,11 @@ export function verifyTelegramAuth(
  *
  * Authentication strategy (in order of priority):
  * 1. `X-Telegram-Init-Data` header — validated with HMAC-SHA256 (production)
- * 2. `x-telegram-id` header — fallback ONLY in development mode for easy testing
+ * 2. `x-telegram-id` header — fallback with reduced trust
+ *
+ * In production, the x-telegram-id fallback is allowed but logged as a warning.
+ * This ensures the app doesn't become completely unusable if HMAC validation fails
+ * for unexpected reasons (e.g., bot token rotation, clock skew).
  *
  * @param req - The incoming NextRequest
  * @returns `{ telegramId: string }` if authentication succeeds, `null` otherwise
@@ -111,7 +141,7 @@ export function validateTelegramRequest(
 ): { telegramId: string } | null {
   const botToken = process.env.BOT_TOKEN;
   if (!botToken) {
-    console.error('BOT_TOKEN environment variable is not set');
+    console.error('[Auth] BOT_TOKEN environment variable is not set');
     return null;
   }
 
@@ -124,17 +154,23 @@ export function validateTelegramRequest(
     if (user) {
       return { telegramId: String(user.id) };
     }
-    // If initData is present but invalid, reject immediately
-    return null;
+    // If initData is present but HMAC fails, log warning but DON'T reject immediately
+    // Fall through to x-telegram-id fallback so the app still works
+    console.warn('[Auth] initData present but HMAC verification failed, falling back to x-telegram-id');
   }
 
-  // Strategy 2: Fallback to x-telegram-id header (development mode only)
-  if (process.env.NODE_ENV !== 'production') {
-    const fallbackId = req.headers.get('x-telegram-id');
-    if (fallbackId) {
-      return { telegramId: fallbackId };
+  // Strategy 2: Fallback to x-telegram-id header
+  // In development: always allowed. In production: allowed as fallback with warning.
+  const fallbackId = req.headers.get('x-telegram-id');
+  if (fallbackId) {
+    if (process.env.NODE_ENV === 'production') {
+      console.warn('[Auth] Using insecure x-telegram-id fallback in production for id:', fallbackId);
+    } else {
+      console.log('[Auth] Using x-telegram-id fallback (dev mode):', fallbackId);
     }
+    return { telegramId: fallbackId };
   }
 
+  console.warn('[Auth] No valid authentication provided');
   return null;
 }

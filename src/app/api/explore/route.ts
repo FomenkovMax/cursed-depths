@@ -4,6 +4,7 @@ import { ENEMIES, LOCATIONS, ITEMS } from '@/lib/game-data';
 import { rollDice, rollLoot } from '@/lib/dice';
 import { validateTelegramRequest } from '@/lib/auth';
 import { getCached, setCached, CACHE_TTL } from '@/lib/cache';
+import { addItemToInventory } from '@/lib/inventory-utils';
 
 export async function POST(req: NextRequest) {
   const auth = validateTelegramRequest(req);
@@ -83,17 +84,15 @@ export async function POST(req: NextRequest) {
       const item = commonItems[Math.floor(Math.random() * commonItems.length)];
       foundItems.push(item.id);
 
-      await db.inventory.create({
-        data: {
-          playerId: player.id,
-          itemId: item.id,
-          name: item.nameRu,
-          type: item.type,
-          rarity: item.rarity,
-          stats: JSON.stringify(item.stats),
-          icon: item.icon,
-          quantity: 1,
-        },
+      await addItemToInventory({
+        playerId: player.id,
+        itemId: item.id,
+        name: item.nameRu,
+        type: item.type,
+        rarity: item.rarity,
+        stats: JSON.stringify(item.stats),
+        icon: item.icon,
+        quantity: 1,
       });
     }
 

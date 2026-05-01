@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { ITEMS } from '@/lib/game-data';
 import { validateTelegramRequest } from '@/lib/auth';
+import { addItemToInventory } from '@/lib/inventory-utils';
 
 export async function POST(req: NextRequest) {
   const auth = validateTelegramRequest(req);
@@ -37,22 +38,20 @@ export async function POST(req: NextRequest) {
 
     await db.player.update({ where: { telegramId }, data: updateData });
 
-    // Give item rewards
+    // Give item rewards (stack consumables/materials)
     if (reward.items) {
       for (const rewardItemId of reward.items) {
         const itemData = ITEMS.find(i => i.id === rewardItemId);
         if (itemData) {
-          await db.inventory.create({
-            data: {
-              playerId: player.id,
-              itemId: itemData.id,
-              name: itemData.nameRu,
-              type: itemData.type,
-              rarity: itemData.rarity,
-              stats: JSON.stringify(itemData.stats),
-              icon: itemData.icon,
-              quantity: 1,
-            },
+          await addItemToInventory({
+            playerId: player.id,
+            itemId: itemData.id,
+            name: itemData.nameRu,
+            type: itemData.type,
+            rarity: itemData.rarity,
+            stats: JSON.stringify(itemData.stats),
+            icon: itemData.icon,
+            quantity: 1,
           });
         }
       }

@@ -4,6 +4,7 @@ import { ENEMIES, ITEMS } from '@/lib/game-data';
 import { rollD20, rollDice, getModifier, rollLoot, isCriticalHit } from '@/lib/dice';
 import { validateTelegramRequest } from '@/lib/auth';
 import { getCached, setCached, CACHE_TTL } from '@/lib/cache';
+import { addItemToInventory } from '@/lib/inventory-utils';
 
 export async function POST(req: NextRequest) {
   const auth = validateTelegramRequest(req);
@@ -123,21 +124,19 @@ export async function POST(req: NextRequest) {
       droppedItems.push(...rollLoot(enemyTemplate.lootTable));
       combatLog.push({ text: `${enemyTemplate.nameRu} повержен! +${xpGained} XP, +${goldGained} золота`, turn: currentTurn + 1 });
 
-      // Add loot to inventory
+      // Add loot to inventory (stack consumables/materials)
       for (const lootItemId of droppedItems) {
         const itemData = ITEMS.find(i => i.id === lootItemId);
         if (itemData) {
-          await db.inventory.create({
-            data: {
-              playerId: player.id,
-              itemId: itemData.id,
-              name: itemData.nameRu,
-              type: itemData.type,
-              rarity: itemData.rarity,
-              stats: JSON.stringify(itemData.stats),
-              icon: itemData.icon,
-              quantity: 1,
-            },
+          await addItemToInventory({
+            playerId: player.id,
+            itemId: itemData.id,
+            name: itemData.nameRu,
+            type: itemData.type,
+            rarity: itemData.rarity,
+            stats: JSON.stringify(itemData.stats),
+            icon: itemData.icon,
+            quantity: 1,
           });
           combatLog.push({ text: `Найдено: ${itemData.nameRu}!`, turn: currentTurn + 1 });
         }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { rollDice } from '@/lib/dice';
 import { validateTelegramRequest } from '@/lib/auth';
+import { addItemToInventory } from '@/lib/inventory-utils';
 
 export async function POST(req: NextRequest) {
   const auth = validateTelegramRequest(req);
@@ -31,18 +32,16 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // Give a health potion
-    await db.inventory.create({
-      data: {
-        playerId: player.id,
-        itemId: 'health_potion',
-        name: 'Зелье здоровья',
-        type: 'consumable',
-        rarity: 'common',
-        stats: '{"healHp":15}',
-        icon: '🧪',
-        quantity: 1,
-      },
+    // Give a health potion (stacks with existing)
+    await addItemToInventory({
+      playerId: player.id,
+      itemId: 'health_potion',
+      name: 'Зелье здоровья',
+      type: 'consumable',
+      rarity: 'common',
+      stats: '{"healHp":15}',
+      icon: '🧪',
+      quantity: 1,
     });
 
     return NextResponse.json({

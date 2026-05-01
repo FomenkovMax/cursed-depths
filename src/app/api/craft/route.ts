@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { CRAFTING_RECIPES, ITEMS } from '@/lib/game-data';
 import { validateTelegramRequest } from '@/lib/auth';
+import { addItemToInventory } from '@/lib/inventory-utils';
 
 export async function POST(req: NextRequest) {
   const auth = validateTelegramRequest(req);
@@ -50,17 +51,16 @@ export async function POST(req: NextRequest) {
     const resultItem = ITEMS.find(i => i.id === recipe.result.itemId);
     if (!resultItem) return NextResponse.json({ error: 'Результат крафта не найден' }, { status: 500 });
 
-    await db.inventory.create({
-      data: {
-        playerId: player.id,
-        itemId: resultItem.id,
-        name: resultItem.nameRu,
-        type: resultItem.type,
-        rarity: resultItem.rarity,
-        stats: JSON.stringify(resultItem.stats),
-        icon: resultItem.icon,
-        quantity: recipe.result.quantity,
-      },
+    // Add result item (stacks with existing if stackable)
+    await addItemToInventory({
+      playerId: player.id,
+      itemId: resultItem.id,
+      name: resultItem.nameRu,
+      type: resultItem.type,
+      rarity: resultItem.rarity,
+      stats: JSON.stringify(resultItem.stats),
+      icon: resultItem.icon,
+      quantity: recipe.result.quantity,
     });
 
     return NextResponse.json({

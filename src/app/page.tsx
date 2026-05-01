@@ -145,7 +145,24 @@ export default function CursedDepths() {
       if (initDataRef.current) {
         headers['X-Telegram-Init-Data'] = initDataRef.current;
       }
-      const data = await fetch('/api/player', { headers }).then(r => r.json());
+      const res = await fetch('/api/player', { headers });
+      const data = await res.json();
+
+      // If auth failed (401), show error instead of silently going to creation
+      if (res.status === 401) {
+        console.error('[LoadPlayer] Auth failed:', data.error);
+        setMessage({ text: 'Ошибка авторизации. Откройте приложение из Telegram.', type: 'error' });
+        setScreen('creation');
+        return;
+      }
+
+      // If server error, show error message
+      if (!res.ok) {
+        console.error('[LoadPlayer] Server error:', res.status, data.error);
+        setMessage({ text: data.error || 'Ошибка загрузки данных', type: 'error' });
+        setScreen('creation');
+        return;
+      }
 
       if (data.exists && data.player) {
         setPlayer(data.player);
@@ -160,8 +177,9 @@ export default function CursedDepths() {
       } else {
         setScreen('creation');
       }
-    } catch {
-      setMessage({ text: 'Ошибка загрузки данных', type: 'error' });
+    } catch (err) {
+      console.error('[LoadPlayer] Network error:', err);
+      setMessage({ text: 'Ошибка загрузки данных. Проверьте интернет-соединение.', type: 'error' });
       setScreen('creation');
     }
   }, []);
@@ -214,7 +232,12 @@ export default function CursedDepths() {
       headers,
       body: body ? JSON.stringify(body) : undefined,
     });
-    return res.json();
+    const data = await res.json();
+    // If response is not OK, add status info to the error
+    if (!res.ok && !data.error) {
+      data.error = `Ошибка сервера (${res.status})`;
+    }
+    return data;
   }, []);
 
   // ===== FLOATING DAMAGE HELPER =====
@@ -251,21 +274,26 @@ export default function CursedDepths() {
     }
     setLoading(true);
     try {
+      console.log('[CreatePlayer] Creating character:', { name: charName.trim(), race: charRace, class: charClass, telegramId: telegramIdRef.current });
       const data = await apiCall('/api/player/create', 'POST', {
         telegramId: telegramIdRef.current,
         name: charName.trim(),
         race: charRace,
         className: charClass,
       });
+      console.log('[CreatePlayer] Response:', data);
       if (data.success && data.player) {
         setPlayer(data.player);
         setScreen('game');
         setMessage({ text: 'Персонаж создан! Добро пожаловать в Проклятые Глубины!', type: 'success' });
       } else {
-        setMessage({ text: data.error || 'Ошибка создания персонажа', type: 'error' });
+        const errorMsg = data.error || 'Ошибка создания персонажа';
+        console.error('[CreatePlayer] Error:', errorMsg);
+        setMessage({ text: errorMsg, type: 'error' });
       }
-    } catch {
-      setMessage({ text: 'Ошибка сервера', type: 'error' });
+    } catch (err) {
+      console.error('[CreatePlayer] Exception:', err);
+      setMessage({ text: 'Ошибка сервера. Проверьте интернет-соединение.', type: 'error' });
     }
     setLoading(false);
   };
@@ -529,6 +557,20 @@ export default function CursedDepths() {
           <h1 className="text-2xl font-bold text-primary">Cursed Depths</h1>
           <p className="text-muted-foreground text-sm mt-1">Проклятые Глубины</p>
         </div>
+
+        {/* Message toast in creation screen */}
+        {message && (
+          <div
+            className={`mb-4 p-3 rounded-lg text-sm text-center animate-fade-in cursor-pointer ${
+              message.type === 'success' ? 'bg-green-500/20 text-green-400 border border-green-500/30' :
+              message.type === 'error' ? 'bg-red-500/20 text-red-400 border border-red-500/30' :
+              'bg-primary/20 text-primary border border-primary/30'
+            }`}
+            onClick={() => setMessage(null)}
+          >
+            {message.text}
+          </div>
+        )}
 
         {/* Step indicator */}
         <div className="flex items-center justify-center gap-2 mb-6">

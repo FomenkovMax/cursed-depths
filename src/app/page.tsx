@@ -566,7 +566,7 @@ export default function CursedDepths() {
             {creationStep === 1 && (
               <div className="animate-fade-in">
                 <h2 className="text-lg font-bold mb-3 text-center">Выберите расу</h2>
-                <ScrollArea className="h-[60vh]">
+                <ScrollArea className="h-[45vh]">
                   <div className="grid gap-2 pr-2">
                     {RACES.map(race => (
                       <button
@@ -603,7 +603,7 @@ export default function CursedDepths() {
             {creationStep === 2 && (
               <div className="animate-fade-in">
                 <h2 className="text-lg font-bold mb-3 text-center">Выберите класс</h2>
-                <ScrollArea className="h-[60vh]">
+                <ScrollArea className="h-[45vh]">
                   <div className="grid gap-2 pr-2">
                     {CLASSES.map(cls => (
                       <button
@@ -686,8 +686,8 @@ export default function CursedDepths() {
           </CardContent>
         </Card>
 
-        {/* Navigation buttons */}
-        <div className="flex gap-2 mt-4 pb-4">
+        {/* Navigation buttons - sticky at bottom */}
+        <div className="sticky bottom-0 bg-background/95 backdrop-blur-sm py-3 px-4 flex gap-2 border-t border-border mt-auto">
           {creationStep > 0 && (
             <Button
               variant="outline"

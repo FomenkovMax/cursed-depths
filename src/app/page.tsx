@@ -514,6 +514,10 @@ export default function CursedDepths() {
     try { return JSON.parse(statsStr); } catch { return {}; }
   };
 
+  // ===== SAFE ACCESSORS =====
+  const playerInventory = player?.inventory || [];
+  const playerQuests = player?.quests || [];
+
   // ===== HELPER: Can daily be claimed =====
   const canClaimDaily = () => {
     if (!player?.lastDailyReward) return true;
@@ -525,7 +529,7 @@ export default function CursedDepths() {
   const hasMaterials = (recipe: typeof CRAFTING_RECIPES[0]) => {
     if (!player) return false;
     for (const mat of recipe.materials) {
-      const invItem = player.inventory.find(i => i.itemId === mat.itemId);
+      const invItem = playerInventory.find(i => i.itemId === mat.itemId);
       if (!invItem || invItem.quantity < mat.quantity) return false;
     }
     return true;
@@ -974,11 +978,11 @@ export default function CursedDepths() {
                 <CardTitle className="text-sm">Экипировка</CardTitle>
               </CardHeader>
               <CardContent className="px-4 pb-3">
-                {player?.inventory.filter(i => i.equipped).length === 0 ? (
+                {playerInventory.filter(i => i.equipped).length === 0 ? (
                   <p className="text-xs text-muted-foreground text-center">Ничего не экипировано</p>
                 ) : (
                   <div className="space-y-2">
-                    {player?.inventory.filter(i => i.equipped).map(item => {
+                    {playerInventory.filter(i => i.equipped).map(item => {
                       const stats = parseStats(item.stats);
                       return (
                         <div
@@ -1128,12 +1132,12 @@ export default function CursedDepths() {
                       </Button>
 
                       {/* Use item in combat */}
-                      {player.inventory.filter(i => i.type === 'consumable').length > 0 && (
+                      {playerInventory.filter(i => i.type === 'consumable').length > 0 && (
                         <div className="col-span-2">
                           <p className="text-xs text-muted-foreground mb-1">Использовать предмет:</p>
                           <ScrollArea className="max-h-24">
                             <div className="flex gap-1 flex-wrap">
-                              {player.inventory.filter(i => i.type === 'consumable').map(item => {
+                              {playerInventory.filter(i => i.type === 'consumable').map(item => {
                                 const stats = parseStats(item.stats);
                                 return (
                                   <Button
@@ -1242,11 +1246,11 @@ export default function CursedDepths() {
                 <CardTitle className="text-sm">Экипировано</CardTitle>
               </CardHeader>
               <CardContent className="px-4 pb-3">
-                {player?.inventory.filter(i => i.equipped).length === 0 ? (
+                {playerInventory.filter(i => i.equipped).length === 0 ? (
                   <p className="text-xs text-muted-foreground text-center py-2">Ничего не экипировано</p>
                 ) : (
                   <div className="space-y-2">
-                    {player?.inventory.filter(i => i.equipped).map(item => {
+                    {playerInventory.filter(i => i.equipped).map(item => {
                       const stats = parseStats(item.stats);
                       return (
                         <div
@@ -1289,16 +1293,16 @@ export default function CursedDepths() {
             <Card className="border-border">
               <CardHeader className="pb-2 pt-3 px-4">
                 <CardTitle className="text-sm">
-                  Инвентарь ({player?.inventory.filter(i => !i.equipped).length || 0} предметов)
+                  Инвентарь ({playerInventory.filter(i => !i.equipped).length || 0} предметов)
                 </CardTitle>
               </CardHeader>
               <CardContent className="px-4 pb-3">
-                {player?.inventory.filter(i => !i.equipped).length === 0 ? (
+                {playerInventory.filter(i => !i.equipped).length === 0 ? (
                   <p className="text-xs text-muted-foreground text-center py-2">Инвентарь пуст</p>
                 ) : (
                   <ScrollArea className="max-h-96">
                     <div className="space-y-2 pr-2">
-                      {player?.inventory.filter(i => !i.equipped).map(item => {
+                      {playerInventory.filter(i => !i.equipped).map(item => {
                         const stats = parseStats(item.stats);
                         const canEquip = ['weapon', 'armor', 'accessory'].includes(item.type);
                         const canUse = item.type === 'consumable';
@@ -1368,7 +1372,7 @@ export default function CursedDepths() {
               <p className="text-xs text-muted-foreground">Выполняйте задания для наград</p>
             </div>
 
-            {player?.quests.length === 0 ? (
+            {playerQuests.length === 0 ? (
               <Card className="border-border">
                 <CardContent className="p-6 text-center">
                   <div className="text-3xl mb-2">📜</div>
@@ -1379,7 +1383,7 @@ export default function CursedDepths() {
             ) : (
               <ScrollArea className="max-h-[70vh]">
                 <div className="space-y-2 pr-2">
-                  {player?.quests.map(quest => {
+                  {playerQuests.map(quest => {
                     const reward = parseStats(quest.reward);
                     const progressPercent = Math.min(100, (quest.progress / quest.target) * 100);
                     return (
@@ -1463,11 +1467,11 @@ export default function CursedDepths() {
                 <CardTitle className="text-sm">Ваши материалы</CardTitle>
               </CardHeader>
               <CardContent className="px-4 pb-3">
-                {player?.inventory.filter(i => i.type === 'material').length === 0 ? (
+                {playerInventory.filter(i => i.type === 'material').length === 0 ? (
                   <p className="text-xs text-muted-foreground text-center">Нет материалов</p>
                 ) : (
                   <div className="flex gap-2 flex-wrap">
-                    {player?.inventory.filter(i => i.type === 'material').map(item => (
+                    {playerInventory.filter(i => i.type === 'material').map(item => (
                       <div key={item.id} className="flex items-center gap-1 bg-secondary/30 rounded px-2 py-1">
                         <span className="text-sm">{item.icon}</span>
                         <span className="text-xs" style={{ color: RARITY_COLORS[item.rarity] }}>
@@ -1500,7 +1504,7 @@ export default function CursedDepths() {
                             <div className="flex gap-1 mt-1 flex-wrap">
                               {recipe.materials.map(mat => {
                                 const matItem = ITEMS.find(i => i.id === mat.itemId);
-                                const invItem = player?.inventory.find(i => i.itemId === mat.itemId);
+                                const invItem = playerInventory.find(i => i.itemId === mat.itemId);
                                 const hasEnough = (invItem?.quantity || 0) >= mat.quantity;
                                 return (
                                   <Badge

@@ -58,6 +58,7 @@ export async function POST(req: NextRequest) {
         mp: maxMp,
         maxMp,
       },
+      include: { inventory: true, quests: true },
     });
 
     // Give starting items
@@ -69,7 +70,13 @@ export async function POST(req: NextRequest) {
       ],
     });
 
-    return NextResponse.json({ success: true, player });
+    // Re-fetch player with inventory and quests included
+    const fullPlayer = await db.player.findUnique({
+      where: { id: player.id },
+      include: { inventory: true, quests: true },
+    });
+
+    return NextResponse.json({ success: true, player: fullPlayer });
   } catch (error) {
     console.error('[API] Route error:', error);
     if (error instanceof Error && error.message?.includes('connection')) {

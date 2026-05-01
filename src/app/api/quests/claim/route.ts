@@ -10,54 +10,62 @@ export async function POST(req: NextRequest) {
   }
   const telegramId = auth.telegramId;
 
-  const { questId } = await req.json();
+  try {
+    const { questId } = await req.json();
 
-  const quest = await db.playerQuest.findFirst({
-    where: { id: questId, player: { telegramId } },
-  });
+    const quest = await db.playerQuest.findFirst({
+      where: { id: questId, player: { telegramId } },
+    });
 
-  if (!quest) return NextResponse.json({ error: 'Quest not found' }, { status: 404 });
-  if (!quest.completed) return NextResponse.json({ error: 'Quest not completed' }, { status: 400 });
-  if (quest.claimed) return NextResponse.json({ error: 'Already claimed' }, { status: 400 });
+    if (!quest) return NextResponse.json({ error: 'Квест не найден' }, { status: 404 });
+    if (!quest.completed) return NextResponse.json({ error: 'Квест не выполнен' }, { status: 400 });
+    if (quest.claimed) return NextResponse.json({ error: 'Награда уже получена' }, { status: 400 });
 
-  const reward = JSON.parse(quest.reward);
+    const reward = JSON.parse(quest.reward);
 
-  const player = await db.player.findUnique({
-    where: { telegramId },
-  });
+    const player = await db.player.findUnique({
+      where: { telegramId },
+    });
 
-  if (!player) return NextResponse.json({ error: 'Player not found' }, { status: 404 });
+    if (!player) return NextResponse.json({ error: 'Персонаж не найден' }, { status: 404 });
 
-  // Give rewards
-  const updateData: Record<string, unknown> = {
-    xp: { increment: reward.xp || 0 },
-    gold: { increment: reward.gold || 0 },
-  };
+    // Give rewards
+    const updateData: Record<string, unknown> = {
+      xp: { increment: reward.xp || 0 },
+      gold: { increment: reward.gold || 0 },
+    };
 
-  await db.player.update({ where: { telegramId }, data: updateData });
+    await db.player.update({ where: { telegramId }, data: updateData });
 
-  // Give item rewards
-  if (reward.items) {
-    for (const rewardItemId of reward.items) {
-      const itemData = ITEMS.find(i => i.id === rewardItemId);
-      if (itemData) {
-        await db.inventory.create({
-          data: {
-            playerId: player.id,
-            itemId: itemData.id,
-            name: itemData.nameRu,
-            type: itemData.type,
-            rarity: itemData.rarity,
-            stats: JSON.stringify(itemData.stats),
-            icon: itemData.icon,
-            quantity: 1,
-          },
-        });
+    // Give item rewards
+    if (reward.items) {
+      for (const rewardItemId of reward.items) {
+        const itemData = ITEMS.find(i => i.id === rewardItemId);
+        if (itemData) {
+          await db.inventory.create({
+            data: {
+              playerId: player.id,
+              itemId: itemData.id,
+              name: itemData.nameRu,
+              type: itemData.type,
+              rarity: itemData.rarity,
+              stats: JSON.stringify(itemData.stats),
+              icon: itemData.icon,
+              quantity: 1,
+            },
+          });
+        }
       }
     }
+
+    await db.playerQuest.update({ where: { id: questId }, data: { claimed: true } });
+
+    return NextResponse.json({ message: 'Награда получена!', reward });
+  } catch (error) {
+    console.error('[API] Route error:', error);
+    if (error instanceof Error && error.message?.includes('connection')) {
+      return NextResponse.json({ error: 'Ошибка подключения к базе данных. Попробуйте позже.' }, { status: 503 });
+    }
+    return NextResponse.json({ error: 'Произошла внутренняя ошибка. Попробуйте позже.' }, { status: 500 });
   }
-
-  await db.playerQuest.update({ where: { id: questId }, data: { claimed: true } });
-
-  return NextResponse.json({ message: 'Награда получена!', reward });
 }

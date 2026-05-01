@@ -9,12 +9,20 @@ export async function GET(req: NextRequest) {
   }
   const telegramId = auth.telegramId;
 
-  const player = await db.player.findUnique({
-    where: { telegramId },
-    include: { inventory: true },
-  });
+  try {
+    const player = await db.player.findUnique({
+      where: { telegramId },
+      include: { inventory: true },
+    });
 
-  if (!player) return NextResponse.json({ error: 'Player not found' }, { status: 404 });
+    if (!player) return NextResponse.json({ error: 'Персонаж не найден' }, { status: 404 });
 
-  return NextResponse.json({ inventory: player.inventory });
+    return NextResponse.json({ inventory: player.inventory });
+  } catch (error) {
+    console.error('[API] Route error:', error);
+    if (error instanceof Error && error.message?.includes('connection')) {
+      return NextResponse.json({ error: 'Ошибка подключения к базе данных. Попробуйте позже.' }, { status: 503 });
+    }
+    return NextResponse.json({ error: 'Произошла внутренняя ошибка. Попробуйте позже.' }, { status: 500 });
+  }
 }

@@ -40,6 +40,10 @@ model Player {
   inventory       Inventory[]
   quests          PlayerQuest[]
   creation        CharacterCreation?
+
+  @@index([telegramId])
+  @@index([locationId])
+  @@index([level])
 }
 
 model Inventory {
@@ -55,6 +59,9 @@ model Inventory {
   stats      String? // JSON string with bonuses
   quantity   Int     @default(1)
   icon       String? // emoji or image path
+
+  @@index([playerId])
+  @@index([itemId])
 }
 
 model CharacterCreation {
@@ -82,6 +89,9 @@ model PlayerQuest {
   reward      String   // JSON: {xp, gold, items}
   expiresAt   DateTime?
   createdAt   DateTime @default(now())
+
+  @@index([playerId])
+  @@index([completed])
 }
 
 model Enemy {
@@ -98,4 +108,6 @@ model Enemy {
   locationId  String
   isBoss      Boolean @default(false)
   icon        String? // emoji
+
+  @@index([locationId])
 }

@@ -15,20 +15,20 @@ export async function POST(req: NextRequest) {
     const { name, race, className } = body;
 
     if (!name || !race || !className) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+      return NextResponse.json({ error: 'Укажите все обязательные поля' }, { status: 400 });
     }
 
     // Check if player already exists
     const existing = await db.player.findUnique({ where: { telegramId } });
     if (existing) {
-      return NextResponse.json({ error: 'Player already exists' }, { status: 400 });
+      return NextResponse.json({ error: 'Персонаж уже существует' }, { status: 400 });
     }
 
     const raceData = RACES.find(r => r.id === race);
     const classData = CLASSES.find(c => c.id === className);
 
     if (!raceData || !classData) {
-      return NextResponse.json({ error: 'Invalid race or class' }, { status: 400 });
+      return NextResponse.json({ error: 'Неверная раса или класс' }, { status: 400 });
     }
 
     const strength = 10 + (raceData.bonuses.strength || 0);
@@ -71,7 +71,10 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true, player });
   } catch (error) {
-    console.error('Create player error:', error);
-    return NextResponse.json({ error: 'Failed to create player' }, { status: 500 });
+    console.error('[API] Route error:', error);
+    if (error instanceof Error && error.message?.includes('connection')) {
+      return NextResponse.json({ error: 'Ошибка подключения к базе данных. Попробуйте позже.' }, { status: 503 });
+    }
+    return NextResponse.json({ error: 'Произошла внутренняя ошибка. Попробуйте позже.' }, { status: 500 });
   }
 }

@@ -4,10 +4,13 @@ const BOT_TOKEN = process.env.BOT_TOKEN;
 const WEBHOOK_SECRET = process.env.TELEGRAM_WEBHOOK_SECRET;
 
 export async function POST(req: NextRequest) {
-  // Verify webhook secret token
-  const secretHeader = req.headers.get('X-Telegram-Bot-Api-Secret-Token');
-  if (!WEBHOOK_SECRET || secretHeader !== WEBHOOK_SECRET) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  // Verify webhook secret token (only if secret is configured AND set in webhook)
+  // Telegram sends X-Telegram-Bot-Api-Secret-Token only when secret_token was passed to setWebhook
+  if (WEBHOOK_SECRET) {
+    const secretHeader = req.headers.get('X-Telegram-Bot-Api-Secret-Token');
+    if (secretHeader && secretHeader !== WEBHOOK_SECRET) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
   }
 
   if (!BOT_TOKEN) {

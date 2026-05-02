@@ -79,6 +79,15 @@ interface CombatLogEntry {
 type GameScreen = 'loading' | 'creation' | 'game';
 type GameTab = 'overview' | 'combat' | 'map' | 'inventory' | 'quests' | 'craft';
 
+// Telegram WebApp SDK types
+type TelegramWebApp = {
+  ready: () => void;
+  expand: () => void;
+  initData?: string;
+  initDataUnsafe?: { user?: { id: number; first_name?: string; username?: string } };
+};
+type TelegramGlobal = { Telegram?: { WebApp?: TelegramWebApp } };
+
 // ===== STAT NAMES RU =====
 const STAT_NAMES_RU: Record<string, string> = {
   strength: 'Сила',
@@ -185,14 +194,15 @@ export default function CursedDepths() {
   }, []);
 
   // ===== TELEGRAM WEBAPP INIT =====
-  useEffect(() => {
+  const initTelegram = useCallback(() => {
     if (initDone.current) return;
     initDone.current = true;
 
     let resolvedId = '';
+    const win = typeof window !== 'undefined' ? (window as unknown as TelegramGlobal) : null;
 
-    if (typeof window !== 'undefined' && (window as unknown as { Telegram?: unknown }).Telegram) {
-      const tg = (window as unknown as { Telegram: { WebApp: { ready: () => void; expand: () => void; initData?: string; initDataUnsafe?: { user?: { id: number } } } } }).Telegram.WebApp;
+    if (win?.Telegram?.WebApp) {
+      const tg = win.Telegram.WebApp;
       tg.ready();
       tg.expand();
 
@@ -217,13 +227,12 @@ export default function CursedDepths() {
       }
 
       // Fallback: try initDataUnsafe if direct parsing failed
-      if (!resolvedId) {
-        const user = tg.initDataUnsafe?.user;
-        if (user) {
-          resolvedId = String(user.id);
-          console.log('[Init] Got user ID from initDataUnsafe:', resolvedId);
-        }
+      if (!resolvedId && tg.initDataUnsafe?.user) {
+        resolvedId = String(tg.initDataUnsafe.user.id);
+        console.log('[Init] Got user ID from initDataUnsafe:', resolvedId);
       }
+    } else {
+      console.warn('[Init] window.Telegram.WebApp not available yet');
     }
 
     // In development mode, allow a test fallback
@@ -247,8 +256,39 @@ export default function CursedDepths() {
       loadPlayer(resolvedId);
     }, 0);
 
-    return () => clearTimeout(timer);
+    return timer;
   }, [loadPlayer]);
+
+  useEffect(() => {
+    // Try immediately — if SDK script loaded before our code
+    const result = initTelegram();
+    if (initDone.current) {
+      // SDK was available, we're done
+      return () => { if (result) clearTimeout(result); };
+    }
+
+    // SDK not loaded yet — wait for it with a polling approach
+    console.log('[Init] Waiting for Telegram WebApp SDK to load...');
+    let attempts = 0;
+    const maxAttempts = 50; // 5 seconds max (50 * 100ms)
+    const pollInterval = setInterval(() => {
+      attempts++;
+      const win = typeof window !== 'undefined' ? (window as unknown as { Telegram?: { WebApp?: unknown } }) : null;
+      if (win?.Telegram?.WebApp) {
+        clearInterval(pollInterval);
+        initTelegram();
+      } else if (attempts >= maxAttempts) {
+        clearInterval(pollInterval);
+        console.error('[Init] Telegram WebApp SDK not found after 5 seconds');
+        // Show creation screen with error
+        initDone.current = true;
+        setScreen('creation');
+        setMessage({ text: 'Не удалось загрузить Telegram SDK. Перезагрузите приложение через бота.', type: 'error' });
+      }
+    }, 100);
+
+    return () => clearInterval(pollInterval);
+  }, [initTelegram]);
 
   // ===== API HELPER =====
   const apiCall = useCallback(async (url: string, method = 'GET', body?: unknown) => {

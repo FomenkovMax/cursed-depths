@@ -34,33 +34,36 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Remove materials
-    for (const mat of recipe.materials) {
-      const inventoryItem = player.inventory.find(i => i.itemId === mat.itemId)!;
-      if (inventoryItem.quantity > mat.quantity) {
-        await db.inventory.update({
-          where: { id: inventoryItem.id },
-          data: { quantity: { decrement: mat.quantity } },
-        });
-      } else {
-        await db.inventory.delete({ where: { id: inventoryItem.id } });
-      }
-    }
-
     // Add result item
     const resultItem = ITEMS.find(i => i.id === recipe.result.itemId);
     if (!resultItem) return NextResponse.json({ error: 'Результат крафта не найден' }, { status: 500 });
 
-    // Add result item (stacks with existing if stackable)
-    await addItemToInventory({
-      playerId: player.id,
-      itemId: resultItem.id,
-      name: resultItem.nameRu,
-      type: resultItem.type,
-      rarity: resultItem.rarity,
-      stats: JSON.stringify(resultItem.stats),
-      icon: resultItem.icon,
-      quantity: recipe.result.quantity,
+    // Wrap material removal + item creation in a transaction
+    await db.$transaction(async (tx) => {
+      // Remove materials
+      for (const mat of recipe.materials) {
+        const inventoryItem = player.inventory.find(i => i.itemId === mat.itemId)!;
+        if (inventoryItem.quantity > mat.quantity) {
+          await tx.inventory.update({
+            where: { id: inventoryItem.id },
+            data: { quantity: { decrement: mat.quantity } },
+          });
+        } else {
+          await tx.inventory.delete({ where: { id: inventoryItem.id } });
+        }
+      }
+
+      // Add result item (stacks with existing if stackable)
+      await addItemToInventory({
+        playerId: player.id,
+        itemId: resultItem.id,
+        name: resultItem.nameRu,
+        type: resultItem.type,
+        rarity: resultItem.rarity,
+        stats: JSON.stringify(resultItem.stats),
+        icon: resultItem.icon,
+        quantity: recipe.result.quantity,
+      }, tx);
     });
 
     return NextResponse.json({

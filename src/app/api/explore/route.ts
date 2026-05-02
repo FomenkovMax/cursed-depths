@@ -80,25 +80,29 @@ export async function POST(req: NextRequest) {
 
     // Random item drop
     const commonItems = ITEMS.filter(i => i.rarity === 'common' && i.type !== 'quest');
-    if (commonItems.length > 0 && Math.random() < 0.3) {
-      const item = commonItems[Math.floor(Math.random() * commonItems.length)];
-      foundItems.push(item.id);
 
-      await addItemToInventory({
-        playerId: player.id,
-        itemId: item.id,
-        name: item.nameRu,
-        type: item.type,
-        rarity: item.rarity,
-        stats: JSON.stringify(item.stats),
-        icon: item.icon,
-        quantity: 1,
+    // Wrap gold addition + item addition in a transaction
+    const updated = await db.$transaction(async (tx) => {
+      if (commonItems.length > 0 && Math.random() < 0.3) {
+        const item = commonItems[Math.floor(Math.random() * commonItems.length)];
+        foundItems.push(item.id);
+
+        await addItemToInventory({
+          playerId: player.id,
+          itemId: item.id,
+          name: item.nameRu,
+          type: item.type,
+          rarity: item.rarity,
+          stats: JSON.stringify(item.stats),
+          icon: item.icon,
+          quantity: 1,
+        }, tx);
+      }
+
+      return tx.player.update({
+        where: { telegramId },
+        data: { gold: { increment: goldFound } },
       });
-    }
-
-    const updated = await db.player.update({
-      where: { telegramId },
-      data: { gold: { increment: goldFound } },
     });
 
     return NextResponse.json({

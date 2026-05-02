@@ -36,11 +36,14 @@ export async function POST(req: NextRequest) {
     // Unequip any item in same slot
     const slot = item.type === 'weapon' ? 'weapon' : item.type === 'armor' ? 'chest' : 'accessory1';
     const currentEquipped = player.inventory.find(i => i.equipped && i.slot === slot);
-    if (currentEquipped) {
-      await db.inventory.update({ where: { id: currentEquipped.id }, data: { equipped: false, slot: null } });
-    }
 
-    await db.inventory.update({ where: { id: inventoryId }, data: { equipped: true, slot } });
+    // Wrap unequip old + equip new in a transaction
+    await db.$transaction(async (tx) => {
+      if (currentEquipped) {
+        await tx.inventory.update({ where: { id: currentEquipped.id }, data: { equipped: false, slot: null } });
+      }
+      await tx.inventory.update({ where: { id: inventoryId }, data: { equipped: true, slot } });
+    });
     return NextResponse.json({ message: `${item.name} экипирован`, equipped: true });
   } catch (error) {
     console.error('[API] Route error:', error);

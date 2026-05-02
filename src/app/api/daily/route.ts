@@ -23,25 +23,30 @@ export async function POST(req: NextRequest) {
     const goldReward = rollDice('2d6') * player.level;
     const xpReward = 10 * player.level;
 
-    const updated = await db.player.update({
-      where: { telegramId },
-      data: {
-        gold: { increment: goldReward },
-        xp: { increment: xpReward },
-        lastDailyReward: today,
-      },
-    });
+    // Wrap gold/XP giving + potion giving in a transaction
+    const updated = await db.$transaction(async (tx) => {
+      const result = await tx.player.update({
+        where: { telegramId },
+        data: {
+          gold: { increment: goldReward },
+          xp: { increment: xpReward },
+          lastDailyReward: today,
+        },
+      });
 
-    // Give a health potion (stacks with existing)
-    await addItemToInventory({
-      playerId: player.id,
-      itemId: 'health_potion',
-      name: 'Зелье здоровья',
-      type: 'consumable',
-      rarity: 'common',
-      stats: '{"healHp":15}',
-      icon: '🧪',
-      quantity: 1,
+      // Give a health potion (stacks with existing)
+      await addItemToInventory({
+        playerId: player.id,
+        itemId: 'health_potion',
+        name: 'Зелье здоровья',
+        type: 'consumable',
+        rarity: 'common',
+        stats: '{"healHp":15}',
+        icon: '🧪',
+        quantity: 1,
+      }, tx);
+
+      return result;
     });
 
     return NextResponse.json({

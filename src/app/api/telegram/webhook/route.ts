@@ -1,8 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 const BOT_TOKEN = process.env.BOT_TOKEN;
+const WEBHOOK_SECRET = process.env.TELEGRAM_WEBHOOK_SECRET;
 
 export async function POST(req: NextRequest) {
+  // Verify webhook secret token
+  const secretHeader = req.headers.get('X-Telegram-Bot-Api-Secret-Token');
+  if (!WEBHOOK_SECRET || secretHeader !== WEBHOOK_SECRET) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   if (!BOT_TOKEN) {
     return NextResponse.json({ error: 'BOT_TOKEN not set' }, { status: 500 });
   }
@@ -61,6 +68,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true });
   } catch (error) {
     console.error('Webhook error:', error);
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

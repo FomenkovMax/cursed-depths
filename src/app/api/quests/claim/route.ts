@@ -30,34 +30,38 @@ export async function POST(req: NextRequest) {
 
     if (!player) return NextResponse.json({ error: 'Персонаж не найден' }, { status: 404 });
 
-    // Give rewards
-    const updateData: Record<string, unknown> = {
-      xp: { increment: reward.xp || 0 },
-      gold: { increment: reward.gold || 0 },
-    };
+    // Wrap reward giving + item additions + quest claiming in a transaction
+    await db.$transaction(async (tx) => {
+      // Give gold/XP rewards
+      const updateData: Record<string, unknown> = {
+        xp: { increment: reward.xp || 0 },
+        gold: { increment: reward.gold || 0 },
+      };
 
-    await db.player.update({ where: { telegramId }, data: updateData });
+      await tx.player.update({ where: { telegramId }, data: updateData });
 
-    // Give item rewards (stack consumables/materials)
-    if (reward.items) {
-      for (const rewardItemId of reward.items) {
-        const itemData = ITEMS.find(i => i.id === rewardItemId);
-        if (itemData) {
-          await addItemToInventory({
-            playerId: player.id,
-            itemId: itemData.id,
-            name: itemData.nameRu,
-            type: itemData.type,
-            rarity: itemData.rarity,
-            stats: JSON.stringify(itemData.stats),
-            icon: itemData.icon,
-            quantity: 1,
-          });
+      // Give item rewards (stack consumables/materials)
+      if (reward.items) {
+        for (const rewardItemId of reward.items) {
+          const itemData = ITEMS.find(i => i.id === rewardItemId);
+          if (itemData) {
+            await addItemToInventory({
+              playerId: player.id,
+              itemId: itemData.id,
+              name: itemData.nameRu,
+              type: itemData.type,
+              rarity: itemData.rarity,
+              stats: JSON.stringify(itemData.stats),
+              icon: itemData.icon,
+              quantity: 1,
+            }, tx);
+          }
         }
       }
-    }
 
-    await db.playerQuest.update({ where: { id: questId }, data: { claimed: true } });
+      // Mark quest as claimed
+      await tx.playerQuest.update({ where: { id: questId }, data: { claimed: true } });
+    });
 
     return NextResponse.json({ message: 'Награда получена!', reward });
   } catch (error) {

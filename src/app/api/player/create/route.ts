@@ -41,42 +41,45 @@ export async function POST(req: NextRequest) {
     const maxHp = classData.baseHp + Math.floor((constitution - 10) / 2);
     const maxMp = classData.baseMp + Math.floor((intelligence - 10) / 2);
 
-    const player = await db.player.create({
-      data: {
-        telegramId,
-        name,
-        race,
-        class: className,
-        strength,
-        dexterity,
-        constitution,
-        intelligence,
-        wisdom,
-        charisma,
-        hp: maxHp,
-        maxHp,
-        mp: maxMp,
-        maxMp,
-      },
-      include: { inventory: true, quests: true },
+    // Wrap player creation + starting inventory in a transaction
+    const player = await db.$transaction(async (tx) => {
+      const created = await tx.player.create({
+        data: {
+          telegramId,
+          name,
+          race,
+          class: className,
+          strength,
+          dexterity,
+          constitution,
+          intelligence,
+          wisdom,
+          charisma,
+          hp: maxHp,
+          maxHp,
+          mp: maxMp,
+          maxMp,
+        },
+        include: { inventory: true, quests: true },
+      });
+
+      // Give starting items
+      await tx.inventory.createMany({
+        data: [
+          { playerId: created.id, itemId: 'rusty_sword', name: 'Ржавый меч', type: 'weapon', rarity: 'common', equipped: true, slot: 'weapon', stats: '{"attack":2}', icon: '🗡️' },
+          { playerId: created.id, itemId: 'leather_armor', name: 'Кожаная броня', type: 'armor', rarity: 'common', equipped: true, slot: 'chest', stats: '{"defense":2}', icon: '🦺' },
+          { playerId: created.id, itemId: 'health_potion', name: 'Зелье здоровья', type: 'consumable', rarity: 'common', stats: '{"healHp":15}', icon: '🧪', quantity: 3 },
+        ],
+      });
+
+      // Re-fetch player with inventory and quests included
+      return tx.player.findUnique({
+        where: { id: created.id },
+        include: { inventory: true, quests: true },
+      });
     });
 
-    // Give starting items
-    await db.inventory.createMany({
-      data: [
-        { playerId: player.id, itemId: 'rusty_sword', name: 'Ржавый меч', type: 'weapon', rarity: 'common', equipped: true, slot: 'weapon', stats: '{"attack":2}', icon: '🗡️' },
-        { playerId: player.id, itemId: 'leather_armor', name: 'Кожаная броня', type: 'armor', rarity: 'common', equipped: true, slot: 'chest', stats: '{"defense":2}', icon: '🦺' },
-        { playerId: player.id, itemId: 'health_potion', name: 'Зелье здоровья', type: 'consumable', rarity: 'common', stats: '{"healHp":15}', icon: '🧪', quantity: 3 },
-      ],
-    });
-
-    // Re-fetch player with inventory and quests included
-    const fullPlayer = await db.player.findUnique({
-      where: { id: player.id },
-      include: { inventory: true, quests: true },
-    });
-
-    return NextResponse.json({ success: true, player: fullPlayer });
+    return NextResponse.json({ success: true, player });
   } catch (error) {
     console.error('[API] Route error:', error);
     if (error instanceof Error && error.message?.includes('connection')) {

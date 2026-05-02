@@ -34,16 +34,19 @@ export async function POST(req: NextRequest) {
       updateData.mp = Math.min(player.maxMp, player.mp + stats.healMp);
     }
 
-    if (Object.keys(updateData).length > 0) {
-      await db.player.update({ where: { telegramId }, data: updateData });
-    }
+    // Wrap HP/MP restoration + item consumption in a transaction
+    await db.$transaction(async (tx) => {
+      if (Object.keys(updateData).length > 0) {
+        await tx.player.update({ where: { telegramId }, data: updateData });
+      }
 
-    // Remove or reduce item
-    if (item.quantity > 1) {
-      await db.inventory.update({ where: { id: inventoryId }, data: { quantity: { decrement: 1 } } });
-    } else {
-      await db.inventory.delete({ where: { id: inventoryId } });
-    }
+      // Remove or reduce item
+      if (item.quantity > 1) {
+        await tx.inventory.update({ where: { id: inventoryId }, data: { quantity: { decrement: 1 } } });
+      } else {
+        await tx.inventory.delete({ where: { id: inventoryId } });
+      }
+    });
 
     return NextResponse.json({ message: `Вы использовали ${item.name}`, effect: stats });
   } catch (error) {

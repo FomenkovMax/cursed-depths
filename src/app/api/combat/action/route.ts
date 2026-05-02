@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { ENEMIES, ITEMS } from '@/lib/game-data';
+import { ABILITIES, ENEMIES, ITEMS } from '@/lib/game-data';
 import { rollD20, rollDice, getModifier, rollLoot, isCriticalHit } from '@/lib/dice';
 import { validateTelegramRequest } from '@/lib/auth';
 import { getCached, setCached, CACHE_TTL } from '@/lib/cache';
@@ -55,6 +55,10 @@ export async function POST(req: NextRequest) {
     let goldGained = 0;
     const droppedItems: string[] = [];
 
+    // Track deferred DB operations for transaction
+    let itemToConsume: { id: string; delete: boolean } | null = null;
+    const lootItems: { itemData: typeof ITEMS[0]; quantity: number }[] = [];
+
     // Player action
     if (action === 'flee') {
       const fleeRoll = rollD20() + getModifier(player.dexterity);
@@ -107,15 +111,11 @@ export async function POST(req: NextRequest) {
           combatLog.push({ text: `Вы использовали ${item.name}. Урон: ${stats.damage}`, turn: currentTurn });
         }
 
-        if (item.quantity > 1) {
-          await db.inventory.update({ where: { id: item.id }, data: { quantity: { decrement: 1 } } });
-        } else {
-          await db.inventory.delete({ where: { id: item.id } });
-        }
+        // Defer item consumption for transaction
+        itemToConsume = { id: item.id, delete: item.quantity <= 1 };
       }
     } else if (action === 'ability') {
       const abilityId = body.abilityId;
-      const { ABILITIES } = await import('@/lib/game-data');
       const ability = ABILITIES.find(a => a.id === abilityId);
 
       if (!ability) {
@@ -166,20 +166,11 @@ export async function POST(req: NextRequest) {
       droppedItems.push(...rollLoot(enemyTemplate.lootTable));
       combatLog.push({ text: `${enemyTemplate.nameRu} повержен! +${xpGained} XP, +${goldGained} золота`, turn: currentTurn + 1 });
 
-      // Add loot to inventory (stack consumables/materials)
+      // Collect loot items for deferred addition in transaction
       for (const lootItemId of droppedItems) {
         const itemData = ITEMS.find(i => i.id === lootItemId);
         if (itemData) {
-          await addItemToInventory({
-            playerId: player.id,
-            itemId: itemData.id,
-            name: itemData.nameRu,
-            type: itemData.type,
-            rarity: itemData.rarity,
-            stats: JSON.stringify(itemData.stats),
-            icon: itemData.icon,
-            quantity: 1,
-          });
+          lootItems.push({ itemData, quantity: 1 });
           combatLog.push({ text: `Найдено: ${itemData.nameRu}!`, turn: currentTurn + 1 });
         }
       }
@@ -252,10 +243,37 @@ export async function POST(req: NextRequest) {
       updateData.enemyHp = enemyHp;
     }
 
-    const updatedPlayer = await db.player.update({
-      where: { telegramId },
-      data: updateData,
-      include: { inventory: true },
+    // Wrap all DB writes in a transaction
+    const updatedPlayer = await db.$transaction(async (tx) => {
+      // Consume used item (if any)
+      if (itemToConsume) {
+        if (itemToConsume.delete) {
+          await tx.inventory.delete({ where: { id: itemToConsume.id } });
+        } else {
+          await tx.inventory.update({ where: { id: itemToConsume.id }, data: { quantity: { decrement: 1 } } });
+        }
+      }
+
+      // Add loot items to inventory
+      for (const loot of lootItems) {
+        await addItemToInventory({
+          playerId: player.id,
+          itemId: loot.itemData.id,
+          name: loot.itemData.nameRu,
+          type: loot.itemData.type,
+          rarity: loot.itemData.rarity,
+          stats: JSON.stringify(loot.itemData.stats),
+          icon: loot.itemData.icon,
+          quantity: loot.quantity,
+        }, tx);
+      }
+
+      // Update player state
+      return tx.player.update({
+        where: { telegramId },
+        data: updateData,
+        include: { inventory: true },
+      });
     });
 
     return NextResponse.json({

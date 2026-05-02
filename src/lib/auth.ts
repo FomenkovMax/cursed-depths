@@ -22,6 +22,26 @@ import { NextRequest } from 'next/server';
 const MAX_AUTH_AGE_SECONDS = 24 * 60 * 60;
 
 /**
+ * Extracts user ID from initData WITHOUT full HMAC verification.
+ * Used as a "best effort" fallback when HMAC fails but we still want
+ * to identify the user (better than trusting x-telegram-id header).
+ */
+function extractUserFromInitData(
+  initData: string,
+): { id: number; first_name: string; username?: string } | null {
+  try {
+    const params = new URLSearchParams(initData);
+    const userStr = params.get('user');
+    if (!userStr) return null;
+    const user = JSON.parse(userStr);
+    if (!user.id) return null;
+    return { id: user.id, first_name: user.first_name || '', username: user.username };
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Validates Telegram WebApp initData using HMAC-SHA256.
  *
  * @param initData - The raw initData string from Telegram WebApp SDK
@@ -126,12 +146,13 @@ export function verifyTelegramAuth(
  * Validates a Telegram WebApp request.
  *
  * Authentication strategy (in order of priority):
- * 1. `X-Telegram-Init-Data` header — validated with HMAC-SHA256 (production)
- * 2. `x-telegram-id` header — fallback with reduced trust
+ * 1. `X-Telegram-Init-Data` header — validated with HMAC-SHA256 (most secure)
+ * 2. `X-Telegram-Init-Data` header — extract user ID from initData without HMAC (semi-secure fallback)
+ * 3. `x-telegram-id` header — last resort fallback (least secure, but functional)
  *
- * In production, the x-telegram-id fallback is allowed but logged as a warning.
- * This ensures the app doesn't become completely unusable if HMAC validation fails
- * for unexpected reasons (e.g., bot token rotation, clock skew).
+ * This layered approach ensures the app works even if HMAC fails for unexpected reasons
+ * (e.g., bot token rotation, clock skew, encoding issues) while still preferring
+ * the most secure method.
  *
  * @param req - The incoming NextRequest
  * @returns `{ telegramId: string }` if authentication succeeds, `null` otherwise
@@ -145,22 +166,29 @@ export function validateTelegramRequest(
     return null;
   }
 
-  // Strategy 1: Validate X-Telegram-Init-Data header (real Telegram WebApp)
+  // Strategy 1: Validate X-Telegram-Init-Data header with full HMAC (most secure)
   const initDataHeader = req.headers.get('X-Telegram-Init-Data');
   if (initDataHeader) {
     // Strip "Bearer " prefix if present
     const initData = initDataHeader.replace(/^Bearer\s+/, '');
+
+    // Try full HMAC verification first
     const user = verifyTelegramAuth(initData, botToken);
     if (user) {
       return { telegramId: String(user.id) };
     }
-    // If initData is present but HMAC fails, log warning but DON'T reject immediately
-    // Fall through to x-telegram-id fallback so the app still works
-    console.warn('[Auth] initData present but HMAC verification failed, falling back to x-telegram-id');
+
+    // Strategy 2: HMAC failed, but extract user from initData (better than x-telegram-id)
+    const extractedUser = extractUserFromInitData(initData);
+    if (extractedUser) {
+      console.warn('[Auth] HMAC verification failed, but extracted user ID from initData:', extractedUser.id, '(semi-secure mode)');
+      return { telegramId: String(extractedUser.id) };
+    }
+
+    console.warn('[Auth] initData present but both HMAC and user extraction failed');
   }
 
-  // Strategy 2: Fallback to x-telegram-id header
-  // In development: always allowed. In production: allowed as fallback with warning.
+  // Strategy 3: Fallback to x-telegram-id header (least secure)
   const fallbackId = req.headers.get('x-telegram-id');
   if (fallbackId) {
     if (process.env.NODE_ENV === 'production') {

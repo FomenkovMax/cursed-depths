@@ -305,11 +305,16 @@ export default function CursedDepths() {
       setMessage({ text: 'Заполните все поля!', type: 'error' });
       return;
     }
+    if (!telegramIdRef.current) {
+      setMessage({ text: 'Ошибка: не удалось определить ваш Telegram ID. Откройте приложение из Telegram.', type: 'error' });
+      return;
+    }
     setLoading(true);
+    setMessage(null);
     try {
       console.log('[CreatePlayer] Creating character:', { name: charName.trim(), race: charRace, class: charClass, telegramId: telegramIdRef.current });
       const data = await apiCall('/api/player/create', 'POST', {
-        telegramId: telegramIdRef.current,
+        // telegramId is NOT sent in body — backend gets it from auth headers
         name: charName.trim(),
         race: charRace,
         className: charClass,

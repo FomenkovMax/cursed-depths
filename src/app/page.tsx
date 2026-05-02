@@ -189,7 +189,7 @@ export default function CursedDepths() {
     if (initDone.current) return;
     initDone.current = true;
 
-    let resolvedId = 'test_dev_123';
+    let resolvedId = '';
 
     if (typeof window !== 'undefined' && (window as unknown as { Telegram?: unknown }).Telegram) {
       const tg = (window as unknown as { Telegram: { WebApp: { ready: () => void; expand: () => void; initData?: string; initDataUnsafe?: { user?: { id: number } } } } }).Telegram.WebApp;
@@ -199,15 +199,48 @@ export default function CursedDepths() {
       // Store the raw initData for HMAC validation on the backend
       if (tg.initData) {
         initDataRef.current = tg.initData;
+
+        // Parse user ID directly from initData (most reliable method)
+        try {
+          const params = new URLSearchParams(tg.initData);
+          const userStr = params.get('user');
+          if (userStr) {
+            const userObj = JSON.parse(userStr);
+            if (userObj.id) {
+              resolvedId = String(userObj.id);
+              console.log('[Init] Parsed user ID from initData:', resolvedId);
+            }
+          }
+        } catch (e) {
+          console.warn('[Init] Failed to parse user from initData:', e);
+        }
       }
 
-      const user = tg.initDataUnsafe?.user;
-      if (user) {
-        resolvedId = String(user.id);
+      // Fallback: try initDataUnsafe if direct parsing failed
+      if (!resolvedId) {
+        const user = tg.initDataUnsafe?.user;
+        if (user) {
+          resolvedId = String(user.id);
+          console.log('[Init] Got user ID from initDataUnsafe:', resolvedId);
+        }
       }
     }
 
+    // In development mode, allow a test fallback
+    if (!resolvedId && process.env.NODE_ENV === 'development') {
+      resolvedId = 'test_dev_123';
+      console.log('[Init] Dev mode: using test_dev_123');
+    }
+
+    console.log('[Init] Final resolved telegram ID:', resolvedId || '(empty - not in Telegram)');
     telegramIdRef.current = resolvedId;
+
+    // If no Telegram ID resolved, show error instead of loading
+    if (!resolvedId) {
+      setScreen('creation');
+      setMessage({ text: 'Приложение должно быть открыто из Telegram. Закройте и откройте через бота.', type: 'error' });
+      return;
+    }
 
     // Defer player loading to avoid synchronous setState in effect
     const timer = setTimeout(() => {

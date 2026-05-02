@@ -24,10 +24,16 @@ export async function GET(req: NextRequest) {
 
   try {
     // Set webhook
+    const webhookPayload: Record<string, string> = { url: `${WEBAPP_URL}/api/telegram/webhook` };
+    // Pass secret_token so Telegram sends it in X-Telegram-Bot-Api-Secret-Token header
+    const webhookSecret = process.env.TELEGRAM_WEBHOOK_SECRET;
+    if (webhookSecret) {
+      webhookPayload.secret_token = webhookSecret;
+    }
     const webhookRes = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/setWebhook`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ url: `${WEBAPP_URL}/api/telegram/webhook` }),
+      body: JSON.stringify(webhookPayload),
     });
     results.webhook = await webhookRes.json();
   } catch (e) { results.webhook = { error: String(e) }; }

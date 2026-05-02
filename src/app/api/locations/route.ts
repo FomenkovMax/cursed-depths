@@ -14,6 +14,9 @@ export async function GET() {
     return NextResponse.json({ locations });
   } catch (error) {
     console.error('[API] Route error:', error);
+    if (error instanceof Error && error.message?.includes('connection')) {
+      return NextResponse.json({ error: 'Ошибка подключения к базе данных. Попробуйте позже.' }, { status: 503 });
+    }
     return NextResponse.json({ error: 'Произошла внутренняя ошибка. Попробуйте позже.' }, { status: 500 });
   }
 }

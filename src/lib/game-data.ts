@@ -440,6 +440,55 @@ export const QUEST_TEMPLATES: QuestTemplate[] = [
   { id: 'kill_boss_3', type: 'kill', titleRu: 'Свергнуть Короля', titleEn: 'Dethrone the King', descriptionRu: 'Победите Проклятого Короля.', descriptionEn: 'Defeat the Cursed King.', target: 1, reward: { xp: 1000, gold: 500, items: ['crown_fragment'] } },
 ];
 
+// ===== ABILITIES =====
+export interface Ability {
+  id: string;
+  nameRu: string;
+  nameEn: string;
+  descriptionRu: string;
+  descriptionEn: string;
+  classId: string;       // which class can use this
+  mpCost: number;        // MP cost to use
+  hpCost: number;        // HP cost (0 for most)
+  level: number;         // minimum level required
+  type: 'damage' | 'heal' | 'buff';  // ability type
+  damage?: string;       // dice formula for damage (e.g. "3d6")
+  heal?: string;         // dice formula for healing
+  scalingStat: string;   // which stat adds bonus (e.g. "intelligence")
+  icon: string;
+}
+
+export const ABILITIES: Ability[] = [
+  // Warrior
+  { id: 'power_strike', nameRu: 'Мощный удар', nameEn: 'Power Strike', descriptionRu: 'Сильный удар, наносящий двойной урон.', descriptionEn: 'A powerful strike dealing double damage.', classId: 'warrior', mpCost: 0, hpCost: 5, level: 1, type: 'damage', damage: '2d8', scalingStat: 'strength', icon: '💥' },
+  { id: 'shield_bash', nameRu: 'Удар щитом', nameEn: 'Shield Bash', descriptionRu: 'Оглушает врага, пропуская его ход.', descriptionEn: 'Stuns the enemy, skipping their turn.', classId: 'warrior', mpCost: 3, hpCost: 0, level: 3, type: 'damage', damage: '1d6', scalingStat: 'strength', icon: '🛡️' },
+  { id: 'berserker_rage', nameRu: 'Берсерк', nameEn: 'Berserker Rage', descriptionRu: 'Жертвует HP для массивного урона.', descriptionEn: 'Sacrifices HP for massive damage.', classId: 'warrior', mpCost: 0, hpCost: 10, level: 5, type: 'damage', damage: '3d10', scalingStat: 'strength', icon: '😤' },
+
+  // Mage
+  { id: 'fireball', nameRu: 'Огненный шар', nameEn: 'Fireball', descriptionRu: 'Взрыв огня, наносящий 3d6 урона.', descriptionEn: 'Blast of fire dealing 3d6 damage.', classId: 'mage', mpCost: 5, hpCost: 0, level: 1, type: 'damage', damage: '3d6', scalingStat: 'intelligence', icon: '🔥' },
+  { id: 'ice_storm', nameRu: 'Ледяная буря', nameEn: 'Ice Storm', descriptionRu: 'Замораживающая буря. 2d8 урона.', descriptionEn: 'Freezing storm. 2d8 damage.', classId: 'mage', mpCost: 7, hpCost: 0, level: 3, type: 'damage', damage: '2d8', scalingStat: 'intelligence', icon: '❄️' },
+  { id: 'arcane_blast', nameRu: 'Арканный взрыв', nameEn: 'Arcane Blast', descriptionRu: 'Чистая магическая энергия. 4d6 урона.', descriptionEn: 'Pure magical energy. 4d6 damage.', classId: 'mage', mpCost: 10, hpCost: 0, level: 5, type: 'damage', damage: '4d6', scalingStat: 'intelligence', icon: '💜' },
+
+  // Rogue
+  { id: 'sneak_attack', nameRu: 'Скрытая атака', nameEn: 'Sneak Attack', descriptionRu: 'Атака из тени с авто-критом.', descriptionEn: 'Strike from shadows with auto-crit.', classId: 'rogue', mpCost: 3, hpCost: 0, level: 1, type: 'damage', damage: '2d6', scalingStat: 'dexterity', icon: '🗡️' },
+  { id: 'poison_blade', nameRu: 'Отравленный клинок', nameEn: 'Poison Blade', descriptionRu: 'Наносит урон ядом. 1d8 + 1d4.', descriptionEn: 'Poisoned strike. 1d8 + 1d4.', classId: 'rogue', mpCost: 4, hpCost: 0, level: 3, type: 'damage', damage: '1d8+1d4', scalingStat: 'dexterity', icon: '☠️' },
+  { id: 'shadow_strike', nameRu: 'Теневой удар', nameEn: 'Shadow Strike', descriptionRu: 'Молниеносная атака. 3d8 урона.', descriptionEn: 'Lightning strike. 3d8 damage.', classId: 'rogue', mpCost: 6, hpCost: 0, level: 5, type: 'damage', damage: '3d8', scalingStat: 'dexterity', icon: '🌑' },
+
+  // Cleric
+  { id: 'heal', nameRu: 'Исцеление', nameEn: 'Heal', descriptionRu: 'Восстанавливает HP.', descriptionEn: 'Restores HP.', classId: 'cleric', mpCost: 4, hpCost: 0, level: 1, type: 'heal', heal: '2d8', scalingStat: 'wisdom', icon: '✨' },
+  { id: 'smite', nameRu: 'Кара', nameEn: 'Smite', descriptionRu: 'Божественный удар. 2d8 урона нежити.', descriptionEn: 'Divine strike. 2d8 damage to undead.', classId: 'cleric', mpCost: 5, hpCost: 0, level: 1, type: 'damage', damage: '2d8', scalingStat: 'wisdom', icon: '⚡' },
+  { id: 'divine_shield', nameRu: 'Божественный щит', nameEn: 'Divine Shield', descriptionRu: 'Исцеление + урон. 1d6 исцеления, 1d6 урона.', descriptionEn: 'Heal + damage. 1d6 heal, 1d6 damage.', classId: 'cleric', mpCost: 7, hpCost: 0, level: 4, type: 'heal', heal: '1d6', damage: '1d6', scalingStat: 'wisdom', icon: '🛡️' },
+
+  // Ranger
+  { id: 'aimed_shot', nameRu: 'Прицельный выстрел', nameEn: 'Aimed Shot', descriptionRu: 'Точный выстрел с бонусом. 2d8 урона.', descriptionEn: 'Precise shot with bonus. 2d8 damage.', classId: 'ranger', mpCost: 3, hpCost: 0, level: 1, type: 'damage', damage: '2d8', scalingStat: 'dexterity', icon: '🎯' },
+  { id: 'volley', nameRu: 'Залп стрел', nameEn: 'Arrow Volley', descriptionRu: 'Дождь стрел. 2d6 урона.', descriptionEn: 'Rain of arrows. 2d6 damage.', classId: 'ranger', mpCost: 5, hpCost: 0, level: 3, type: 'damage', damage: '2d6', scalingStat: 'dexterity', icon: '🏹' },
+  { id: 'natures_wrath', nameRu: 'Гнев природы', nameEn: "Nature's Wrath", descriptionRu: 'Сила природы обрушивается на врага. 3d8 урона.', descriptionEn: "Nature's fury unleashed. 3d8 damage.", classId: 'ranger', mpCost: 8, hpCost: 0, level: 5, type: 'damage', damage: '3d8', scalingStat: 'wisdom', icon: '🌿' },
+];
+
+export function getAbilitiesForClass(classId: string, level: number): Ability[] {
+  return ABILITIES.filter(a => a.classId === classId && a.level <= level);
+}
+
 // ===== RARITY COLORS =====
 export const RARITY_COLORS: Record<string, string> = {
   common: '#9ca3af',

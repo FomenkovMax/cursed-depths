@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { action } = body; // 'attack', 'spell', 'flee', 'use_item'
+    const { action } = body; // 'attack', 'spell', 'flee', 'use_item', 'ability'
     const itemId = body.itemId;
 
     const player = await db.player.findUnique({
@@ -111,6 +111,48 @@ export async function POST(req: NextRequest) {
           await db.inventory.update({ where: { id: item.id }, data: { quantity: { decrement: 1 } } });
         } else {
           await db.inventory.delete({ where: { id: item.id } });
+        }
+      }
+    } else if (action === 'ability') {
+      const abilityId = body.abilityId;
+      const { ABILITIES } = await import('@/lib/game-data');
+      const ability = ABILITIES.find(a => a.id === abilityId);
+
+      if (!ability) {
+        combatLog.push({ text: 'Способность не найдена!', turn: currentTurn });
+      } else if (ability.classId !== player.class) {
+        combatLog.push({ text: 'Эта способность не для вашего класса!', turn: currentTurn });
+      } else if (ability.level > player.level) {
+        combatLog.push({ text: `Нужен уровень ${ability.level}!`, turn: currentTurn });
+      } else if (playerMp < ability.mpCost) {
+        combatLog.push({ text: `Нужно ${ability.mpCost} MP!`, turn: currentTurn });
+      } else if (playerHp <= ability.hpCost) {
+        combatLog.push({ text: `Нужно ${ability.hpCost} HP! Вы слишком слабы.`, turn: currentTurn });
+      } else {
+        // Pay costs
+        playerMp -= ability.mpCost;
+        playerHp -= ability.hpCost;
+
+        const statBonus = getModifier(player[ability.scalingStat as keyof typeof player] as number);
+
+        // Handle damage abilities
+        if (ability.damage) {
+          const abilityDamage = rollDice(ability.damage) + statBonus;
+          enemyHp = Math.max(0, enemyHp - abilityDamage);
+          combatLog.push({
+            text: `${ability.icon} ${ability.nameRu}! Урон: ${abilityDamage}${ability.hpCost > 0 ? ` (цена: ${ability.hpCost} HP)` : ''}${ability.mpCost > 0 ? ` (${ability.mpCost} MP)` : ''}`,
+            turn: currentTurn,
+          });
+        }
+
+        // Handle heal abilities
+        if (ability.heal) {
+          const healAmount = rollDice(ability.heal) + statBonus;
+          playerHp = Math.min(player.maxHp, playerHp + healAmount);
+          combatLog.push({
+            text: `${ability.icon} ${ability.nameRu}! Восстановлено ${healAmount} HP`,
+            turn: currentTurn,
+          });
         }
       }
     }

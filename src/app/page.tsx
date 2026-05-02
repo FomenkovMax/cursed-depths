@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { RACES, CLASSES, LOCATIONS, ENEMIES, ITEMS, CRAFTING_RECIPES, RARITY_COLORS, RARITY_NAMES_RU } from '@/lib/game-data';
+import { RACES, CLASSES, LOCATIONS, ENEMIES, ITEMS, CRAFTING_RECIPES, RARITY_COLORS, RARITY_NAMES_RU, ABILITIES } from '@/lib/game-data';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -405,7 +405,7 @@ export default function CursedDepths() {
   };
 
   // ===== COMBAT ACTION =====
-  const handleCombatAction = async (action: string, itemId?: string) => {
+  const handleCombatAction = async (action: string, itemId?: string, abilityId?: string) => {
     if (!player || !player.inCombat) return;
     setLoading(true);
     setShaking(true);
@@ -413,6 +413,7 @@ export default function CursedDepths() {
     try {
       const body: Record<string, string> = { action };
       if (itemId) body.itemId = itemId;
+      if (abilityId) body.abilityId = abilityId;
       const data = await apiCall('/api/combat/action', 'POST', body);
 
       if (data.combatLog) {
@@ -572,6 +573,12 @@ export default function CursedDepths() {
       setMessage({ text: 'Ошибка получения награды', type: 'error' });
     }
     setLoading(false);
+  };
+
+  // ===== HELPER: Get available abilities for player =====
+  const getAvailableAbilities = () => {
+    if (!player) return [];
+    return ABILITIES.filter(a => a.classId === player.class && a.level <= player.level);
   };
 
   // ===== HELPER: Get current location info =====
@@ -1232,6 +1239,37 @@ export default function CursedDepths() {
                               })}
                             </div>
                           </ScrollArea>
+                        </div>
+                      )}
+
+                      {/* Class Abilities */}
+                      {getAvailableAbilities().length > 0 && (
+                        <div className="col-span-2 mt-2">
+                          <p className="text-xs text-muted-foreground mb-1.5">Способности:</p>
+                          <div className="grid grid-cols-2 gap-1.5">
+                            {getAvailableAbilities().map(ability => {
+                              const canUse = !loading && player.inCombat &&
+                                player.mp >= ability.mpCost && player.hp > ability.hpCost;
+                              return (
+                                <Button
+                                  key={ability.id}
+                                  variant="outline"
+                                  className={`h-auto py-2 px-2 border-border text-xs ${!canUse ? 'opacity-50' : ''}`}
+                                  disabled={!canUse}
+                                  onClick={() => handleCombatAction('ability', undefined, ability.id)}
+                                >
+                                  <div className="text-left">
+                                    <div className="font-medium">{ability.icon} {ability.nameRu}</div>
+                                    <div className="text-[10px] text-muted-foreground">
+                                      {ability.mpCost > 0 && `${ability.mpCost} MP`}
+                                      {ability.hpCost > 0 && ` ${ability.hpCost} HP`}
+                                      {ability.mpCost === 0 && ability.hpCost === 0 && 'Бесплатно'}
+                                    </div>
+                                  </div>
+                                </Button>
+                              );
+                            })}
+                          </div>
                         </div>
                       )}
                     </div>

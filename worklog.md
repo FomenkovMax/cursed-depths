@@ -37,3 +37,23 @@ Stage Summary:
 - Fixed: character creation button (auth was blocking API calls due to missing initData)
 - Fixed: auto-migration of test_dev_123 player to owner's real Telegram ID
 - Three-tier auth: HMAC verified → initData parsed (no HMAC) → x-telegram-id header fallback
+
+---
+Task ID: 6
+Agent: main
+Task: Create PDF reference document for races, classes, and abilities based on Cursed Depths lore
+
+Work Log:
+- Designed 6 races based on user's lore: Humans (Aelarion/Velarion), Elves (Sionael/Aylet+Thornak), Dwarves (Torin/Thornak+Velarion), Orcs (Grumgar/Thornak+Kessara), Dragonborn (Ignira/Velarion+Kessara), Undead (Morvena/Kessara)
+- Designed 2 Paths: Path of Ash (+1 WIS, fire resist, regen) and Path of Blight (+1 INT, dark resist, vampirism)
+- Designed 8 classes tied to the world's gods: Guardian of Velarion, Guide of Aylet, Arbiter of Thornak, Reflection of Kessara, Depth Hunter, Spark Smith, Fate Weaver, Void Reaper
+- Designed 41 abilities: 4 per class (32) + 3 per path (6) + 6 racial passives
+- Generated HTML document with dark theme matching game aesthetics
+- Converted to PDF via Playwright (html2pdf-next.js) — emoji rendered correctly
+- Added metadata via pdf.py meta.brand
+
+Stage Summary:
+- PDF: /home/z/my-project/download/cursed_depths_races_abilities.pdf (7 pages, 745 KB)
+- HTML source: /home/z/my-project/download/cursed_depths_races_abilities.html
+- All content in Russian, matching user's language
+- Dark theme with orange (Ash) and purple (Blight) accent colors

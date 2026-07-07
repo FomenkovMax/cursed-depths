@@ -3,6 +3,7 @@ import { db } from '@/lib/db';
 import { rollDice } from '@/lib/dice';
 import { validateTelegramRequest } from '@/lib/auth';
 import { addItemToInventory } from '@/lib/inventory-utils';
+import { issueDailyQuests } from '@/lib/quests';
 
 export async function POST(req: NextRequest) {
   const auth = validateTelegramRequest(req);
@@ -23,8 +24,11 @@ export async function POST(req: NextRequest) {
     const goldReward = rollDice('2d6') * player.level;
     const xpReward = 10 * player.level;
 
-    // Wrap gold/XP giving + potion giving in a transaction
+    // Wrap gold/XP giving + potion giving + quest reset in a transaction
     const updated = await db.$transaction(async (tx) => {
+      // Свежий набор ежедневных квестов на новый день (до итогового запроса с include: quests)
+      await issueDailyQuests(tx, player.id, player.level);
+
       const result = await tx.player.update({
         where: { telegramId },
         data: {
@@ -32,7 +36,7 @@ export async function POST(req: NextRequest) {
           xp: { increment: xpReward },
           lastDailyReward: today,
         },
-        include: { inventory: true, race: true, class: { include: { abilities: true } } },
+        include: { inventory: true, quests: true, race: true, class: { include: { abilities: true } } },
       });
 
       // Give a health potion (stacks with existing)

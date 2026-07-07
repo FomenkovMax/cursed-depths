@@ -42,6 +42,12 @@ import {
   onVictoryHealPercent,
   deathSaveHealPercent,
   hasRootImmune,
+  onDefendDefenseBonus,
+  hasFirstAttackCrit,
+  onBlockHealPercent,
+  onBlockCounterPercent,
+  healChanceCleanseCurseChance,
+  enemyHealCapPercent,
 } from '@/lib/passive-runtime';
 import { computeEquipmentBonuses } from '@/lib/equipment-stats';
 import { incrementQuestProgress } from '@/lib/quests';
@@ -138,7 +144,8 @@ export async function POST(req: NextRequest) {
     function applyPassiveOffenseBonuses(): { mult: number; messages: string[] } {
       bossState.playerAttackCount += 1;
       const critN = critEveryNHits(playerPassives);
-      const isCrit = critN !== null && bossState.playerAttackCount % critN === 0;
+      const firstAttackCrit = bossState.playerAttackCount === 1 && hasFirstAttackCrit(playerPassives);
+      const isCrit = firstAttackCrit || (critN !== null && bossState.playerAttackCount % critN === 0);
       let intervalBonus = 0;
       for (const iv of turnIntervalEmpowered(playerPassives)) {
         if (bossState.playerAttackCount % iv.everyTurns === 0) intervalBonus += iv.damageMultBonus;
@@ -148,6 +155,15 @@ export async function POST(req: NextRequest) {
       if (intervalBonus > 0) messages.push('Способность усилена нарастающей мощью!');
       const mult = (isCrit ? PASSIVE_CRIT_MULTIPLIER : 1) * (1 + intervalBonus);
       return { mult, messages };
+    }
+
+    /** Шанс снять стак проклятия (лечение-с-проклятием боссов) при собственном лечении — fiery-sermon. */
+    function tryCleanseCurseOnHeal(): string | null {
+      const chance = healChanceCleanseCurseChance(playerPassives);
+      if (chance <= 0 || bossState.curseStacks <= 0) return null;
+      if (Math.random() >= chance) return null;
+      bossState.curseStacks -= 1;
+      return 'Пламенная проповедь снимает стак проклятия!';
     }
 
     // Защита босса (форма/берсерк/почти-неуязвимость) временно меняет его эффективный AC
@@ -218,6 +234,8 @@ export async function POST(req: NextRequest) {
           const healAmount = Math.round(stats.healHp * (1 + totalHealingBonus));
           playerHp = Math.min(effectiveMaxHp, playerHp + healAmount);
           combatLog.push({ text: `Вы использовали ${item.name}. Восстановлено ${healAmount} HP.`, turn: currentTurn });
+          const cleanseMsg = tryCleanseCurseOnHeal();
+          if (cleanseMsg) combatLog.push({ text: cleanseMsg, turn: currentTurn });
         } else if (stats.damage) {
           const itemDamage = Math.round(stats.damage * curseMult);
           const { hpDamage, messages } = applyDamageToBoss(enemyTemplate.mechanics, bossState, itemDamage);
@@ -260,9 +278,11 @@ export async function POST(req: NextRequest) {
             if (resist < 1) messages.push('Враг адаптировался к этому типу урона!');
             for (const m of [...offenseMsgs, ...messages]) combatLog.push({ text: m, turn: currentTurn });
           }
+          let cleanseMsg: string | null = null;
           if (resolution.heal > 0) {
             resolution.heal = Math.round(resolution.heal * (1 + totalHealingBonus));
             playerHp = Math.min(effectiveMaxHp, playerHp + resolution.heal);
+            cleanseMsg = tryCleanseCurseOnHeal();
           }
           if (resolution.shield > 0) {
             bossState.playerShieldHp += resolution.shield;
@@ -282,6 +302,7 @@ export async function POST(req: NextRequest) {
           if (resolution.enemyDamageReduction > 0) parts.push(`Враг ослаблен на ${Math.round(resolution.enemyDamageReduction * 100)}% на ${resolution.effectTurns} х.`);
           if (resolution.playerDamageBonus > 0) parts.push(`Ваш урон усилен на ${Math.round(resolution.playerDamageBonus * 100)}% на ${resolution.effectTurns} х.`);
           combatLog.push({ text: parts.join(' '), turn: currentTurn });
+          if (cleanseMsg) combatLog.push({ text: cleanseMsg, turn: currentTurn });
         }
       }
     }
@@ -351,9 +372,13 @@ export async function POST(req: NextRequest) {
     // Enemy attacks back if not dead and not fled
     if (!combatOver && !playerFled) {
       const armorBonus = equipBonuses.defense;
-      // Дебафф от способностей игрока (многоходовой, см. combat-effects.ts) + пороговые/безусловные пассивки защиты.
+      const isDefending = action === 'defend' && !actionNegated;
+      // Дебафф от способностей игрока (многоходовой, см. combat-effects.ts) + пороговые/безусловные пассивки защиты
+      // + бонус брони, пока игрок в защитной стойке (last-bastion и аналоги).
       const enemyDamageReduction = Math.min(0.9, activeEffectBonus(bossState, 'enemy_damage_debuff'));
-      const passiveIncomingReduction = Math.min(0.9, thresholdBonus.incomingReductionPercent + thresholdBonus.defenseMultBonus + uncondBonus.defenseMultBonus);
+      const passiveIncomingReduction = Math.min(0.9,
+        thresholdBonus.incomingReductionPercent + thresholdBonus.defenseMultBonus + uncondBonus.defenseMultBonus
+        + (isDefending ? onDefendDefenseBonus(playerPassives) : 0));
       const totalReduction = Math.min(0.9, enemyDamageReduction + passiveIncomingReduction);
       const rawDamage = rollDice(enemyTemplate.damage) * (1 - totalReduction);
       const baseEnemyDamage = Math.max(1, Math.round(mitigateDamage(rawDamage, effectiveVitality) - armorBonus));
@@ -361,6 +386,9 @@ export async function POST(req: NextRequest) {
       const turnResult = resolveBossTurn(enemyTemplate.mechanics, bossState, enemyHp, enemyMaxHp, baseEnemyDamage, effectiveMaxHp);
 
       if (turnResult.bossHeal > 0) {
+        // Предел самоисцеления врага (depth-silence и аналоги) — врагов, кроме босса, не лечат вообще.
+        const healCap = enemyHealCapPercent(playerPassives);
+        if (healCap !== null) turnResult.bossHeal = Math.round(turnResult.bossHeal * healCap);
         enemyHp = Math.min(enemyMaxHp, enemyHp + turnResult.bossHeal);
       }
 
@@ -369,7 +397,7 @@ export async function POST(req: NextRequest) {
         combatLog.push({ text: `${enemyTemplate.nameRu} исцеляет вас на ${turnResult.healToPlayer} ХП!`, turn: currentTurn + 1 });
       } else {
         let incomingDamage = turnResult.damageToPlayer;
-        if (action === 'defend' && !actionNegated) {
+        if (isDefending) {
           incomingDamage = Math.round(incomingDamage * 0.5);
         }
 
@@ -417,6 +445,26 @@ export async function POST(req: NextRequest) {
                 const healAmount = Math.round(effectiveMaxHp * heal.healPercent);
                 playerHp = Math.min(effectiveMaxHp, playerHp + healAmount);
                 combatLog.push({ text: `Рунная броня восстанавливает вам ${healAmount} ХП!`, turn: currentTurn + 1 });
+              }
+            }
+
+            // "При блокировании удара" — реальной механики блока нет, ближайший аналог — защитная стойка (tornak-foundation, bone-spike).
+            if (isDefending) {
+              const blockHealPercent = onBlockHealPercent(playerPassives);
+              if (blockHealPercent > 0) {
+                const healAmount = Math.round(effectiveMaxHp * blockHealPercent);
+                playerHp = Math.min(effectiveMaxHp, playerHp + healAmount);
+                combatLog.push({ text: `Блокирование восстанавливает вам ${healAmount} ХП!`, turn: currentTurn + 1 });
+              }
+              const blockCounterPercent = onBlockCounterPercent(playerPassives);
+              if (blockCounterPercent > 0) {
+                const counterDmg = Math.round(incomingDamage * blockCounterPercent);
+                if (counterDmg > 0) {
+                  const { hpDamage: counterHpDmg, messages } = applyDamageToBoss(enemyTemplate.mechanics, bossState, counterDmg);
+                  enemyHp = Math.max(0, enemyHp - counterHpDmg);
+                  combatLog.push({ text: `Шипы наносят ${counterHpDmg} урона в ответ на блокированный удар!`, turn: currentTurn + 1 });
+                  for (const m of messages) combatLog.push({ text: m, turn: currentTurn + 1 });
+                }
               }
             }
           }

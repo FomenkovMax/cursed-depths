@@ -5,24 +5,37 @@
  *
  * До этого модуля пассивки хранились в БД и отдавались через /api/abilities,
  * но НИКАК не влияли на бой — combat/action/route.ts их вообще не читал.
- * Из 53 пассивок в игре этот парсер уверенно распознаёт и реализует ровно 30,
- * укладывающихся в составные примитивы ниже. Сознательно НЕ распознаются
- * (регекспы просто не сработают, эффект останется декоративным):
- * - Все "союзники"/"группа"-ориентированные пассивки (eternal-vow,
- *   forest-whisper, sacred-aura, flame-of-veralion, the-frenzied,
- *   last-bastion, the-leader) — в игре нет группового/пати-режима.
+ * Из 53 пассивок в игре этот парсер уверенно распознаёт и реализует 39,
+ * укладывающихся в составные примитивы ниже.
+ *
+ * Часть "союзники"/"группа"-пассивок (eternal-vow, sacred-aura, the-leader,
+ * last-bastion) сознательно трактуется как бонус САМОМУ игроку — в игре нет
+ * группового/пати-режима, а буквальный смысл "эффект применяется к нулю
+ * целей" оставлял бы их decorative навсегда. В оригинальном дизайне процент
+ * указан НА ОДНОГО получателя ауры, так что self-применение не завышает
+ * силу пассивки относительно замысла — просто сужает круг получателей до
+ * одного (самого носителя, что для боевых аур и так обычно подразумевается).
+ * "При защите союзника" (last-bastion) и "из маскировки" (ranger-night-hunter,
+ * см. ниже) — аналогично: ближайшая реальная замена — собственное действие
+ * "защита" и первая атака в бою соответственно.
+ *
+ * Сознательно НЕ распознаются (регекспы просто не сработают, эффект
+ * останется декоративным):
+ * - Пассивки, требующие партии из нескольких РАЗНЫХ участников по смыслу
+ *   (forest-whisper — "вне боя... группе", flame-of-veralion — завязана на
+ *   ДРУГОГО союзника с конкретным баффом, the-frenzied — "союзники-орки",
+ *   т.е. буквально не сам носитель).
  * - Пассивки, завязанные на несуществующие механики: стойки (moon-shadow,
- *   стойка Тени), маскировка/стелс (ranger-night-hunter), блок
- *   (tornak-foundation, bone-spike), перезарядка способностей
- *   (final-severance), призывы-союзники (grave-bond, ashen-harvest),
- *   снятие баффов с врага, которых у врагов не бывает (empty-space,
- *   empty-shadow, godslayer-hunter), цепочка от другой способности
- *   (eternal-guardian), мана от "урона проклятием" как отдельного типа
- *   урона (shadow-of-the-deep), эскалация силы яда по ходам
- *   (plague-amplification), лечение по триггеру довольно редкого события
- *   (fiery-sermon, depth-silence — сложное взаимодействие с
- *   самоисцелением босса), урон конкретно огнём как отдельный от прочих
- *   тип урона, который нигде в движке не отслеживается (dragon-blood).
+ *   стойка Тени — в отличие от ranger-night-hunter здесь нет естественной
+ *   замены "первым действием", т.к. эффект специфично про невидимость),
+ *   перезарядка способностей (final-severance), призывы-союзники
+ *   (grave-bond, ashen-harvest), снятие баффов с врага, которых у врагов
+ *   не бывает (empty-space, empty-shadow, godslayer-hunter), цепочка от
+ *   другой способности (eternal-guardian), мана от "урона проклятием" как
+ *   отдельного типа урона (shadow-of-the-deep), эскалация силы яда по
+ *   ходам (plague-amplification), урон конкретно огнём как отдельный от
+ *   прочих тип урона, который нигде в движке не отслеживается
+ *   (dragon-blood).
  */
 
 export type PassiveEffect =
@@ -45,7 +58,14 @@ export type PassiveEffect =
   | { kind: 'root_immune' }
   | { kind: 'enemy_debuff_stack_drain'; minStacks: number; percentMaxHpPerTurn: number }
   | { kind: 'damage_vs_reduced_defense_enemy'; damageMultBonus: number }
-  | { kind: 'damage_vs_shielded_enemy'; damageMultBonus: number };
+  | { kind: 'damage_vs_shielded_enemy'; damageMultBonus: number }
+  | { kind: 'unconditional_healing_buff'; healingBonusPercent: number }
+  | { kind: 'on_defend_bonus_defense'; defenseMultBonus: number }
+  | { kind: 'first_attack_guaranteed_crit' }
+  | { kind: 'on_block_heal'; healPercent: number }
+  | { kind: 'on_block_counter_percent_absorbed'; percent: number }
+  | { kind: 'heal_chance_cleanse_curse'; chancePercent: number }
+  | { kind: 'enemy_heal_cap'; capPercent: number };
 
 const PCT = '(\\d+)\\s*%';
 
@@ -57,7 +77,38 @@ function pct(match: RegExpMatchArray | null, group = 1): number {
 export function parsePassiveEffect(description: string): PassiveEffect | null {
   const d = description;
 
-  // Групповые/пати-эффекты — механики группы в игре нет, намеренно не парсим.
+  // "Пока ХП выше N%, союзники получают +X% брони" — трактуем как бонус самому носителю (см. заголовок файла).
+  {
+    const m = d.match(/пока хп выше (\d+)\s*%[^.]*союзники[^.]*получают\s*\+(\d+)\s*%\s*(брон|защит)/i);
+    if (m) {
+      return {
+        kind: 'hp_threshold', below: false, thresholdPercent: parseInt(m[1], 10),
+        damageMultBonus: 0, incomingReductionPercent: 0, healingBonusPercent: 0,
+        defenseMultBonus: parseInt(m[2], 10) / 100, regenPercent: 0,
+      };
+    }
+  }
+
+  // "Союзники получают +X% к исцелению" — самому носителю, безусловно.
+  {
+    const m = d.match(/союзники[^.]*получают\s*\+(\d+)\s*%\s*к исцелению/i);
+    if (m) return { kind: 'unconditional_healing_buff', healingBonusPercent: parseInt(m[1], 10) / 100 };
+  }
+
+  // "Союзники получают +X% к урону" — самому носителю, но только безусловные ауры,
+  // не триггерные с длительностью (те требуют другого союзника-получателя по смыслу, напр. the-frenzied).
+  if (!/убийств/i.test(d) && !/на \d+\s*ход/i.test(d)) {
+    const m = d.match(/союзники[^.]*получают\s*\+(\d+)\s*%\s*к урону/i);
+    if (m) return { kind: 'unconditional_damage_buff', damageMultBonus: parseInt(m[1], 10) / 100 };
+  }
+
+  // "При защите союзника собственная броня +X%" — ближайшая реальная замена: собственное действие "защита".
+  {
+    const m = d.match(/при защите[^.]*собственная брон[а-яё]*\s*\+(\d+)\s*%/i);
+    if (m) return { kind: 'on_defend_bonus_defense', defenseMultBonus: parseInt(m[1], 10) / 100 };
+  }
+
+  // Остальные "союзники"/"группа"-эффекты требуют другого участника по смыслу — не парсим.
   if (/союзник|в группе|группе\b|группы\b/i.test(d)) return null;
 
   // Постоянный тройной бонус (Клятва): урон/защита/исцеление одновременно.
@@ -212,6 +263,38 @@ export function parsePassiveEffect(description: string): PassiveEffect | null {
   {
     const m = d.match(new RegExp(`враги с (\\d+)\\+?\\s*дебафф[а-яё]*.*?теря[а-яё]+\\s*${PCT}.*?ход`, 'i'));
     if (m) return { kind: 'enemy_debuff_stack_drain', minStacks: parseInt(m[1], 10), percentMaxHpPerTurn: pct(m, 2) };
+  }
+
+  // "Из маскировки первая атака всегда критическая" — маскировки как состояния нет, но у каждого
+  // боя есть естественный аналог: самая первая атака игрока в этом бою.
+  if (/маскировк[а-яё]*[^.]*первая атака[^.]*всегда крит/i.test(d)) {
+    return { kind: 'first_attack_guaranteed_crit' };
+  }
+
+  // "При блокировании удара восстанавливает N% ХП" — блок как отдельная механика отсутствует,
+  // но действие "защита" уже реально снижает входящий урон, так что это его естественный аналог.
+  {
+    const m = d.match(new RegExp(`при блокировани[а-яё]*[^.]*восстанавлива[а-яё]+\\s*${PCT}`, 'i'));
+    if (m) return { kind: 'on_block_heal', healPercent: pct(m) };
+  }
+
+  // "При блокировании удара атакующий получает урон равный N% от поглощённого" — тот же аналог "защиты".
+  {
+    const m = d.match(new RegExp(`при блокировани[а-яё]*[^.]*атакующий получает урон[^.]*?${PCT}`, 'i'));
+    if (m) return { kind: 'on_block_counter_percent_absorbed', percent: pct(m) };
+  }
+
+  // "Каждое исцеление имеет шанс N% снять дебафф с цели" — единственный реально отслеживаемый
+  // "дебафф на игроке" в движке — стаки проклятия от лечения-с-проклятием боссов (curseStacks).
+  {
+    const m = d.match(new RegExp(`каждое исцелени[а-яё]*[^.]*шанс\\s*${PCT}[^.]*снять[^.]*дебафф`, 'i'));
+    if (m) return { kind: 'heal_chance_cleanse_curse', chancePercent: pct(m) };
+  }
+
+  // "Враги не могут получать исцеление выше N% от базового значения" — ограничивает самоисцеление босса.
+  {
+    const m = d.match(new RegExp(`не могут получать исцелени[а-яё]*\\s*выше\\s*${PCT}`, 'i'));
+    if (m) return { kind: 'enemy_heal_cap', capPercent: pct(m) };
   }
 
   return null;

@@ -1,4 +1,5 @@
 import { PlayerData } from '@/lib/game-types';
+import { computeEquipmentBonuses } from '@/lib/equipment-stats';
 
 interface GameHeaderProps {
   player: PlayerData | null;
@@ -7,8 +8,11 @@ interface GameHeaderProps {
 }
 
 export function GameHeader({ player, locationIcon, locationName }: GameHeaderProps) {
-  const hpPercent = player ? Math.max(0, (player.hp / player.maxHp) * 100) : 0;
-  const mpPercent = player ? Math.max(0, (player.mp / player.maxMp) * 100) : 0;
+  const gearBonuses = computeEquipmentBonuses(player?.inventory || []);
+  const effectiveMaxHp = (player?.maxHp || 0) + gearBonuses.hp;
+  const effectiveMaxMp = (player?.maxMp || 0) + gearBonuses.mp;
+  const hpPercent = player ? Math.max(0, (player.hp / effectiveMaxHp) * 100) : 0;
+  const mpPercent = player ? Math.max(0, (player.mp / effectiveMaxMp) * 100) : 0;
   const xpPercent = player ? Math.max(0, (player.xp / player.xpToNext) * 100) : 0;
 
   return (
@@ -47,7 +51,7 @@ export function GameHeader({ player, locationIcon, locationName }: GameHeaderPro
               }}
             />
           </div>
-          <span className="text-[10px] text-muted-foreground w-14 text-right">{player?.hp}/{player?.maxHp}</span>
+          <span className="text-[10px] text-muted-foreground w-14 text-right">{player?.hp}/{effectiveMaxHp}</span>
         </div>
         <div className="flex items-center gap-2">
           <span className="text-[10px] w-6 text-mp font-bold">MP</span>
@@ -57,7 +61,7 @@ export function GameHeader({ player, locationIcon, locationName }: GameHeaderPro
               style={{ width: `${mpPercent}%` }}
             />
           </div>
-          <span className="text-[10px] text-muted-foreground w-14 text-right">{player?.mp}/{player?.maxMp}</span>
+          <span className="text-[10px] text-muted-foreground w-14 text-right">{player?.mp}/{effectiveMaxMp}</span>
         </div>
         <div className="flex items-center gap-2">
           <span className="text-[10px] w-6 text-xp font-bold">XP</span>

@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { LOCATIONS, RARITY_COLORS } from '@/lib/game-data';
 import { PlayerData, STAT_SHORT_RU, SLOT_RU, ITEM_TYPE_RU, parseStats } from '@/lib/game-types';
+import { computeEquipmentBonuses } from '@/lib/equipment-stats';
 
 interface OverviewTabProps {
   player: PlayerData | null;
@@ -31,6 +32,7 @@ export function OverviewTab({
   onAllocateStat,
 }: OverviewTabProps) {
   const playerInventory = player?.inventory || [];
+  const gearBonuses = computeEquipmentBonuses(playerInventory);
 
   return (
     <TabsContent value="overview" className="flex-1 overflow-y-auto p-4 space-y-4 m-0">
@@ -103,10 +105,16 @@ export function OverviewTab({
         </CardHeader>
         <CardContent className="px-4 pb-3">
           <div className="grid grid-cols-3 gap-2">
-            {(['strength', 'dexterity', 'vitality', 'intellect', 'willpower', 'instinct'] as const).map(stat => (
+            {(['strength', 'dexterity', 'vitality', 'intellect', 'willpower', 'instinct'] as const).map(stat => {
+              const base = player?.[stat] || 0;
+              const bonus = gearBonuses[stat];
+              return (
               <div key={stat} className="bg-secondary/50 rounded-lg p-2 text-center">
                 <div className="text-[10px] text-muted-foreground">{STAT_SHORT_RU[stat]}</div>
-                <div className="font-bold text-sm">{player?.[stat] || 0}</div>
+                <div className="font-bold text-sm">
+                  {base + bonus}
+                  {bonus > 0 && <span className="text-[10px] text-uncommon font-normal"> (+{bonus})</span>}
+                </div>
                 {!!player?.statPoints && (
                   <Button
                     size="sm"
@@ -119,7 +127,8 @@ export function OverviewTab({
                   </Button>
                 )}
               </div>
-            ))}
+              );
+            })}
           </div>
         </CardContent>
       </Card>

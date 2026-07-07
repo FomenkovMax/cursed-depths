@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { validateTelegramRequest } from '@/lib/auth';
+import { computeEquipmentBonuses } from '@/lib/equipment-stats';
 
 export async function POST(req: NextRequest) {
   const auth = validateTelegramRequest(req);
@@ -29,13 +30,47 @@ export async function POST(req: NextRequest) {
 
     // Toggle equip
     if (item.equipped) {
-      await db.inventory.update({ where: { id: inventoryId }, data: { equipped: false, slot: null } });
+      const newInventoryState = player.inventory.map(i => i.id === inventoryId ? { ...i, equipped: false } : i);
+      const clamp = clampHpMpTo(player, newInventoryState);
+
+      await db.$transaction(async (tx) => {
+        await tx.inventory.update({ where: { id: inventoryId }, data: { equipped: false, slot: null } });
+        if (clamp) await tx.player.update({ where: { id: player.id }, data: clamp });
+      });
       return NextResponse.json({ message: `${item.name} снят`, equipped: false });
     }
 
-    // Unequip any item in same slot
-    const slot = item.type === 'weapon' ? 'weapon' : item.type === 'armor' ? 'chest' : 'accessory1';
-    const currentEquipped = player.inventory.find(i => i.equipped && i.slot === slot);
+    // Оружие и броня — по одному слоту. У аксессуаров два слота (accessory1/accessory2):
+    // занимаем свободный, а если оба заняты — заменяем accessory1 (прежнее поведение).
+    let slot: string;
+    let currentEquipped: typeof player.inventory[number] | undefined;
+    if (item.type === 'weapon') {
+      slot = 'weapon';
+      currentEquipped = player.inventory.find(i => i.equipped && i.slot === slot);
+    } else if (item.type === 'armor') {
+      slot = 'chest';
+      currentEquipped = player.inventory.find(i => i.equipped && i.slot === slot);
+    } else {
+      const accessory1Taken = player.inventory.find(i => i.equipped && i.slot === 'accessory1');
+      const accessory2Taken = player.inventory.find(i => i.equipped && i.slot === 'accessory2');
+      if (!accessory1Taken) {
+        slot = 'accessory1';
+        currentEquipped = undefined;
+      } else if (!accessory2Taken) {
+        slot = 'accessory2';
+        currentEquipped = undefined;
+      } else {
+        slot = 'accessory1';
+        currentEquipped = accessory1Taken;
+      }
+    }
+
+    const newInventoryState = player.inventory.map(i => {
+      if (i.id === inventoryId) return { ...i, equipped: true };
+      if (currentEquipped && i.id === currentEquipped.id) return { ...i, equipped: false };
+      return i;
+    });
+    const clamp = clampHpMpTo(player, newInventoryState);
 
     // Wrap unequip old + equip new in a transaction
     await db.$transaction(async (tx) => {
@@ -43,6 +78,7 @@ export async function POST(req: NextRequest) {
         await tx.inventory.update({ where: { id: currentEquipped.id }, data: { equipped: false, slot: null } });
       }
       await tx.inventory.update({ where: { id: inventoryId }, data: { equipped: true, slot } });
+      if (clamp) await tx.player.update({ where: { id: player.id }, data: clamp });
     });
     return NextResponse.json({ message: `${item.name} экипирован`, equipped: true });
   } catch (error) {
@@ -52,4 +88,24 @@ export async function POST(req: NextRequest) {
     }
     return NextResponse.json({ error: 'Произошла внутренняя ошибка. Попробуйте позже.' }, { status: 500 });
   }
+}
+
+/**
+ * Экипировка/снятие предмета с hp/mp-бонусом может задним числом опустить эффективный
+ * максимум ниже текущего hp/mp (например, сняли амулет +40 HP на полном здоровье) —
+ * без клампа игрок временно ходил бы с hp выше отображаемого максимума до следующего
+ * лечения. Возвращает только изменившиеся поля (или null, если клампить нечего).
+ */
+function clampHpMpTo(
+  player: { hp: number; mp: number; maxHp: number; maxMp: number },
+  inventoryAfterChange: { equipped: boolean; stats: string | null }[]
+): { hp?: number; mp?: number } | null {
+  const bonuses = computeEquipmentBonuses(inventoryAfterChange);
+  const effectiveMaxHp = player.maxHp + bonuses.hp;
+  const effectiveMaxMp = player.maxMp + bonuses.mp;
+
+  const result: { hp?: number; mp?: number } = {};
+  if (player.hp > effectiveMaxHp) result.hp = effectiveMaxHp;
+  if (player.mp > effectiveMaxMp) result.mp = effectiveMaxMp;
+  return Object.keys(result).length > 0 ? result : null;
 }

@@ -13,6 +13,13 @@ import {
   resolveAbility,
   type PlayerCombatStats,
 } from '@/lib/combat-engine';
+import {
+  initBossState,
+  applyDamageToBoss,
+  resolveBossTurn,
+  bossAcMultiplier,
+  type BossFightState,
+} from '@/lib/boss-mechanics';
 
 export async function POST(req: NextRequest) {
   const auth = validateTelegramRequest(req);
@@ -23,7 +30,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { action } = body; // 'attack', 'ability', 'flee', 'use_item'
+    const { action } = body; // 'attack', 'ability', 'flee', 'use_item', 'defend'
     const itemId = body.itemId;
 
     const player = await db.player.findUnique({
@@ -52,8 +59,14 @@ export async function POST(req: NextRequest) {
       combatLog = player.combatLog ? JSON.parse(player.combatLog) : [];
     } catch { combatLog = []; }
 
+    let bossState: BossFightState;
+    try {
+      bossState = player.bossState ? JSON.parse(player.bossState) : initBossState(enemyTemplate.mechanics);
+    } catch { bossState = initBossState(enemyTemplate.mechanics); }
+
     const currentTurn = combatLog.length;
     let enemyHp = player.enemyHp || 0;
+    const enemyMaxHp = player.enemyMaxHp || enemyHp;
     let playerHp = player.hp;
     let playerMp = player.mp;
     let combatOver = false;
@@ -84,8 +97,21 @@ export async function POST(req: NextRequest) {
     const weapon = player.inventory.find(i => i.equipped && i.slot === 'weapon');
     const weaponBonus = weapon?.stats ? (JSON.parse(weapon.stats).attack || 0) : 0;
 
+    // Защита босса (форма/берсерк) временно меняет его эффективный AC против атак игрока
+    const effectiveAc = Math.max(1, Math.round(enemyTemplate.ac * bossAcMultiplier(enemyTemplate.mechanics, bossState)));
+
+    // Обездвиживание корнями с предыдущего хода отменяет текущее действие игрока целиком
+    let actionNegated = false;
+    if (bossState.playerRooted) {
+      actionNegated = true;
+      bossState.playerRooted = false;
+      combatLog.push({ text: 'Вы скованы корнями-ловушками и не можете действовать!', turn: currentTurn });
+    }
+
     // Player action
-    if (action === 'flee') {
+    if (actionNegated) {
+      // действие игрока отменено обездвиживанием — переходим сразу к ходу врага
+    } else if (action === 'flee') {
       const fleeChance = 0.5 + player.dexterity / 200; // выше Ловкость — выше шанс сбежать
       if (Math.random() < fleeChance) {
         playerFled = true;
@@ -94,10 +120,16 @@ export async function POST(req: NextRequest) {
       } else {
         combatLog.push({ text: 'Побег не удался!', turn: currentTurn });
       }
+    } else if (action === 'defend') {
+      bossState.playerDefendedLastTurn = true;
+      combatLog.push({ text: 'Вы приняли защитную стойку.', turn: currentTurn });
     } else if (action === 'attack') {
-      const damage = mitigateDamage(basicAttackDamage(combatStats) + weaponBonus, enemyTemplate.ac);
-      enemyHp = Math.max(0, enemyHp - damage);
-      combatLog.push({ text: `Вы атакуете! Урон: ${damage}`, turn: currentTurn });
+      const rawDamage = mitigateDamage(basicAttackDamage(combatStats) + weaponBonus, effectiveAc);
+      const { hpDamage, messages } = applyDamageToBoss(enemyTemplate.mechanics, bossState, rawDamage);
+      enemyHp = Math.max(0, enemyHp - hpDamage);
+      const absorbed = rawDamage > 0 && hpDamage === 0;
+      combatLog.push({ text: absorbed ? 'Вы атакуете! Урон поглощён щитом.' : `Вы атакуете! Урон: ${hpDamage}`, turn: currentTurn });
+      for (const m of messages) combatLog.push({ text: m, turn: currentTurn });
     } else if (action === 'use_item') {
       const item = player.inventory.find(i => i.itemId === itemId && i.type === 'consumable');
       if (!item) {
@@ -108,8 +140,11 @@ export async function POST(req: NextRequest) {
           playerHp = Math.min(player.maxHp, playerHp + stats.healHp);
           combatLog.push({ text: `Вы использовали ${item.name}. Восстановлено ${stats.healHp} HP.`, turn: currentTurn });
         } else if (stats.damage) {
-          enemyHp = Math.max(0, enemyHp - stats.damage);
-          combatLog.push({ text: `Вы использовали ${item.name}. Урон: ${stats.damage}`, turn: currentTurn });
+          const { hpDamage, messages } = applyDamageToBoss(enemyTemplate.mechanics, bossState, stats.damage);
+          enemyHp = Math.max(0, enemyHp - hpDamage);
+          const absorbed = stats.damage > 0 && hpDamage === 0;
+          combatLog.push({ text: absorbed ? `Вы использовали ${item.name}. Урон поглощён щитом.` : `Вы использовали ${item.name}. Урон: ${hpDamage}`, turn: currentTurn });
+          for (const m of messages) combatLog.push({ text: m, turn: currentTurn });
         }
 
         // Defer item consumption for transaction
@@ -131,17 +166,23 @@ export async function POST(req: NextRequest) {
           combatLog.push({ text: `Нужно ${manaCost} маны!`, turn: currentTurn });
         } else {
           playerMp -= manaCost;
-          const resolution = resolveAbility(ability.description, combatStats, enemyTemplate.ac);
+          const resolution = resolveAbility(ability.description, combatStats, effectiveAc);
 
+          let damageAbsorbed = false;
           if (resolution.damage > 0) {
-            enemyHp = Math.max(0, enemyHp - resolution.damage);
+            const { hpDamage, messages } = applyDamageToBoss(enemyTemplate.mechanics, bossState, resolution.damage);
+            enemyHp = Math.max(0, enemyHp - hpDamage);
+            damageAbsorbed = hpDamage === 0;
+            resolution.damage = hpDamage;
+            for (const m of messages) combatLog.push({ text: m, turn: currentTurn });
           }
           if (resolution.heal > 0) {
             playerHp = Math.min(player.maxHp, playerHp + resolution.heal);
           }
 
           const parts = [`${ability.icon} ${ability.name}!`];
-          if (resolution.damage > 0) parts.push(`Урон: ${resolution.damage}`);
+          if (damageAbsorbed) parts.push('Урон поглощён щитом.');
+          else if (resolution.damage > 0) parts.push(`Урон: ${resolution.damage}`);
           if (resolution.heal > 0) parts.push(`Восстановлено ${resolution.heal} ХП`);
           if (resolution.enemyDamageReduction > 0) parts.push(`Враг ослаблен на ${Math.round(resolution.enemyDamageReduction * 100)}%`);
           combatLog.push({ text: parts.join(' '), turn: currentTurn });
@@ -174,9 +215,27 @@ export async function POST(req: NextRequest) {
       const armorItem = player.inventory.find(i => i.equipped && i.type === 'armor');
       const armorBonus = armorItem?.stats ? (JSON.parse(armorItem.stats).defense || 0) : 0;
       const rawDamage = rollDice(enemyTemplate.damage) * (1 - enemyDamageReduction);
-      const enemyDamage = Math.max(1, Math.round(mitigateDamage(rawDamage, player.vitality) - armorBonus));
-      playerHp = Math.max(0, playerHp - enemyDamage);
-      combatLog.push({ text: `${enemyTemplate.nameRu} атакует! Урон: ${enemyDamage}`, turn: currentTurn + 1 });
+      const baseEnemyDamage = Math.max(1, Math.round(mitigateDamage(rawDamage, player.vitality) - armorBonus));
+
+      const turnResult = resolveBossTurn(enemyTemplate.mechanics, bossState, enemyHp, enemyMaxHp, baseEnemyDamage, player.maxHp);
+
+      if (turnResult.bossHeal > 0) {
+        enemyHp = Math.min(enemyMaxHp, enemyHp + turnResult.bossHeal);
+      }
+
+      let incomingDamage = turnResult.damageToPlayer;
+      if (action === 'defend' && !actionNegated) {
+        incomingDamage = Math.round(incomingDamage * 0.5);
+      }
+      playerHp = Math.max(0, playerHp - incomingDamage);
+      combatLog.push({ text: `${enemyTemplate.nameRu} атакует! Урон: ${incomingDamage}`, turn: currentTurn + 1 });
+
+      if (turnResult.dotDamageToPlayer > 0) {
+        playerHp = Math.max(0, playerHp - turnResult.dotDamageToPlayer);
+        combatLog.push({ text: `Вы получаете ${turnResult.dotDamageToPlayer} урона от продолжающегося эффекта!`, turn: currentTurn + 1 });
+      }
+
+      for (const m of turnResult.messages) combatLog.push({ text: m, turn: currentTurn + 1 });
     }
 
     // Mana regen each round (Фаза 1.3: +10 маны за ход)
@@ -209,6 +268,7 @@ export async function POST(req: NextRequest) {
       hp: playerHp,
       mp: playerMp,
       combatLog: JSON.stringify(combatLog),
+      bossState: combatOver ? null : JSON.stringify(bossState),
       xp: newXp,
       gold: { increment: goldGained },
     };
@@ -271,13 +331,16 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json({
-      combatLog: combatLog.slice(-5), // Last 5 entries
+      combatLog: combatLog.slice(-8), // Last 8 entries
       player: updatedPlayer,
       combatOver,
       playerWon,
       playerFled,
       enemyHp,
       enemyMaxHp: player.enemyMaxHp,
+      bossPhase: enemyTemplate.mechanics ? bossState.phase : undefined,
+      bossShieldHp: enemyTemplate.mechanics?.shieldMax ? bossState.shieldHp : undefined,
+      bossShieldMax: enemyTemplate.mechanics?.shieldMax,
       xpGained,
       goldGained,
       droppedItems,

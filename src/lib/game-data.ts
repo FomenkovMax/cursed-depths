@@ -1,3 +1,5 @@
+import type { BossMechanics } from './boss-mechanics';
+
 // ===== LOCATIONS =====
 // Акт 1: Пепельные Врата (Люди), уровни 1-3. Акт 2: Корневая Роща (Эльфы), уровни 3-4.
 // Акт 3: Каменный Чертог (Гномы), уровни 4-5. Акт 4: Драконье Горнило (Драконорождённые),
@@ -423,22 +425,12 @@ export const ITEMS: Item[] = [
 // Акт 3: Каменный Чертог, уровни 4-5. Акт 4: Драконье Горнило, уровни 5-6.
 // Акт 5: Гнилые Топи, уровни 6-7. Акт 6: Хребет Грумгара, уровни 7-8 (последний
 // поверхностный Акт — см. комментарий у LOCATIONS про «Глубь»).
-// У всех боссов по лору многофазные механики («Первый Свидетель» чередует физический
-// и магический облик каждые 3 хода и сливает их на 30% HP; «Эхо Айлет» самоисцеляется 5%
-// HP за ход, на фазе 2 обездвиживает корнями, на фазе 3 накладывает яд на весь бой;
-// «Сломанная Клятва» имеет щит, восстанавливающийся каждые 4 хода, а при сломанном щите
-// уходит в берсерк — +50% урона, -30% защиты; «Первый Дракон» накладывает «Горение»
-// каждый ход, а на фазе 2 гаснет — урон падает, но появляется Скверна, и игроку даётся
-// выбор добить его или попытаться исцелить; «Первый Восставший» призывает скелетов
-// каждые 2 хода, на фазе 2 перестаёт призывать и начинает красть ХП, а перед смертью
-// предлагает информацию в обмен на пощаду; «Грумгар Нерождённый» — самый агрессивный
-// босс, каждые 2 хода наносит Ответный удар, требуя чередовать атаку с защитой, а на
-// фазе 2 призывает духов воинов клана, усиливающих его урон на 15% каждый) — ни одна из
-// этих механик пока не реализована в combat-engine (текущий движок работает с одиночным
-// набором hp/ac/attack/damage на врага без фаз, самоисцеления, щитов, ДоТ-эффектов,
-// призыва существ, состояний защиты или ветвящихся исходов) и намеренно отложена как
-// отдельная задача; все шесть боссов представлены усреднённым набором характеристик под
-// сложность своего Акта.
+// Все шесть боссов теперь несут поле `mechanics` (см. lib/boss-mechanics.ts) — щиты,
+// чередование форм, самоисцеление, ДоТ, призыв приспешников, кража ХП и ответный удар
+// разрешаются общим движком, а не усреднённым статблоком. Два чисто нарративных
+// ответвления («добить или исцелить» у Первого Дракона, «пощада за информацию» у
+// Первого Восставшего) остаются вне боевой математики — см. комментарий в начале
+// boss-mechanics.ts.
 export interface EnemyTemplate {
   id: string;
   nameRu: string;
@@ -453,6 +445,8 @@ export interface EnemyTemplate {
   locationId: string;
   isBoss: boolean;
   icon: string;
+  /** Только у боссов — фазы/щит/ДоТ/призывы (см. lib/boss-mechanics.ts). */
+  mechanics?: BossMechanics;
 }
 
 export const ENEMIES: EnemyTemplate[] = [
@@ -478,7 +472,18 @@ export const ENEMIES: EnemyTemplate[] = [
 
   // Разлом Карсуса (Level 3)
   { id: 'rift_spawn', nameRu: 'Порождение Разлома', nameEn: 'Rift Spawn', hp: 28, ac: 11, attack: 6, damage: '1d8+2', xp: 30, gold: 12, lootTable: [{ itemId: 'shadow_essence', chance: 0.3 }, { itemId: 'greater_health', chance: 0.2 }], locationId: 'karsus_rift', isBoss: false, icon: '🕳️' },
-  { id: 'first_witness', nameRu: 'Первый Свидетель', nameEn: 'The First Witness', hp: 95, ac: 14, attack: 10, damage: '2d8+5', xp: 280, gold: 120, lootTable: [{ itemId: 'witness_eye', chance: 0.25 }, { itemId: 'ashen_amulet', chance: 0.15 }, { itemId: 'elixir_power', chance: 0.3 }], locationId: 'karsus_rift', isBoss: true, icon: '👁️' },
+  {
+    id: 'first_witness', nameRu: 'Первый Свидетель', nameEn: 'The First Witness', hp: 95, ac: 14, attack: 10, damage: '2d8+5', xp: 280, gold: 120,
+    lootTable: [{ itemId: 'witness_eye', chance: 0.25 }, { itemId: 'ashen_amulet', chance: 0.15 }, { itemId: 'elixir_power', chance: 0.3 }],
+    locationId: 'karsus_rift', isBoss: true, icon: '👁️',
+    mechanics: {
+      alternateFormEveryTurns: 3,
+      formADamageMult: 1.4, formAAcMult: 0.75, // физическая форма: высокий урон, низкая защита
+      formBDamageMult: 1.0, formBAcMult: 1.3,  // магическая форма: средний урон, высокая защита
+      mergeFormsAtPhase: 2,
+      phase2AtHpPercent: 0.3,
+    },
+  },
 
   // Внешняя роща (Level 3)
   { id: 'blighted_treant', nameRu: 'Заражённый древень', nameEn: 'Blighted Treant', hp: 32, ac: 12, attack: 6, damage: '1d8+2', xp: 30, gold: 12, lootTable: [{ itemId: 'iron_ore', chance: 0.2 }, { itemId: 'health_potion', chance: 0.3 }], locationId: 'outer_grove', isBoss: false, icon: '🌳' },
@@ -502,7 +507,17 @@ export const ENEMIES: EnemyTemplate[] = [
 
   // Корень Бездны (Level 4)
   { id: 'root_horror', nameRu: 'Ужас корней', nameEn: 'Root Horror', hp: 40, ac: 13, attack: 9, damage: '1d10+3', xp: 45, gold: 20, lootTable: [{ itemId: 'greater_health', chance: 0.3 }, { itemId: 'iron_ore', chance: 0.3 }], locationId: 'abyss_root', isBoss: false, icon: '🌿' },
-  { id: 'echo_of_ailet', nameRu: 'Эхо Айлет', nameEn: 'Echo of Ailet', hp: 110, ac: 15, attack: 11, damage: '2d8+6', xp: 350, gold: 150, lootTable: [{ itemId: 'echo_thorn_crown', chance: 0.2 }, { itemId: 'ailet_tear', chance: 0.3 }, { itemId: 'scroll_heal', chance: 0.3 }], locationId: 'abyss_root', isBoss: true, icon: '🥀' },
+  {
+    id: 'echo_of_ailet', nameRu: 'Эхо Айлет', nameEn: 'Echo of Ailet', hp: 110, ac: 15, attack: 11, damage: '2d8+6', xp: 350, gold: 150,
+    lootTable: [{ itemId: 'echo_thorn_crown', chance: 0.2 }, { itemId: 'ailet_tear', chance: 0.3 }, { itemId: 'scroll_heal', chance: 0.3 }],
+    locationId: 'abyss_root', isBoss: true, icon: '🥀',
+    mechanics: {
+      selfHealPercent: 0.05, selfHealUntilPhase: 2,
+      rootEveryTurns: 3, rootFromPhase: 2, rootUntilPhase: 3, // корни-ловушки на фазе 2
+      playerDotPercent: 0.03, playerDotFromPhase: 3,          // яд на весь бой на фазе 3
+      phase2AtHpPercent: 0.6, phase3AtHpPercent: 0.25,
+    },
+  },
 
   // Внешние шахты (Level 4)
   { id: 'collapsed_miner', nameRu: 'Погребённый шахтёр', nameEn: 'Collapsed Miner', hp: 36, ac: 12, attack: 8, damage: '1d8+3', xp: 36, gold: 16, lootTable: [{ itemId: 'iron_ore', chance: 0.4 }, { itemId: 'health_potion', chance: 0.25 }], locationId: 'outer_mines', isBoss: false, icon: '⛏️' },
@@ -526,7 +541,15 @@ export const ENEMIES: EnemyTemplate[] = [
 
   // Разлом Основы (Level 5)
   { id: 'rift_collapse_horror', nameRu: 'Ужас обвала', nameEn: 'Rift Collapse Horror', hp: 50, ac: 15, attack: 11, damage: '1d10+5', xp: 56, gold: 26, lootTable: [{ itemId: 'greater_health', chance: 0.3 }, { itemId: 'dwarven_plate', chance: 0.08 }], locationId: 'foundation_rift', isBoss: false, icon: '🕳️' },
-  { id: 'broken_oath', nameRu: 'Сломанная Клятва', nameEn: 'The Broken Oath', hp: 140, ac: 17, attack: 13, damage: '2d10+6', xp: 450, gold: 200, lootTable: [{ itemId: 'broken_oath_hammer', chance: 0.15 }, { itemId: 'oath_shield_shard', chance: 0.3 }, { itemId: 'greater_health', chance: 0.3 }], locationId: 'foundation_rift', isBoss: true, icon: '💔' },
+  {
+    id: 'broken_oath', nameRu: 'Сломанная Клятва', nameEn: 'The Broken Oath', hp: 140, ac: 17, attack: 13, damage: '2d10+6', xp: 450, gold: 200,
+    lootTable: [{ itemId: 'broken_oath_hammer', chance: 0.15 }, { itemId: 'oath_shield_shard', chance: 0.3 }, { itemId: 'greater_health', chance: 0.3 }],
+    locationId: 'foundation_rift', isBoss: true, icon: '💔',
+    mechanics: {
+      shieldMax: 60, shieldRegenTurns: 4,
+      enrageOnShieldBreak: { damageMult: 1.5, acMult: 0.7 }, // +50% урона, -30% защиты, пока щит пробит
+    },
+  },
 
   // Пепельная пустошь (Level 5)
   { id: 'cinder_stalker', nameRu: 'Пепельный хищник', nameEn: 'Cinder Stalker', hp: 52, ac: 15, attack: 11, damage: '1d10+4', xp: 55, gold: 24, lootTable: [{ itemId: 'greater_health', chance: 0.25 }, { itemId: 'iron_ore', chance: 0.3 }], locationId: 'ashen_wasteland', isBoss: false, icon: '🔥' },
@@ -549,7 +572,16 @@ export const ENEMIES: EnemyTemplate[] = [
 
   // Колыбель Пламени (Level 6)
   { id: 'flame_wisp_swarm', nameRu: 'Рой огненных духов', nameEn: 'Flame Wisp Swarm', hp: 60, ac: 15, attack: 14, damage: '1d10+6', xp: 70, gold: 32, lootTable: [{ itemId: 'mana_potion', chance: 0.3 }], locationId: 'flame_cradle', isBoss: false, icon: '✨' },
-  { id: 'first_dragon', nameRu: 'Первый Дракон', nameEn: 'The First Dragon', hp: 160, ac: 18, attack: 15, damage: '3d8+6', xp: 550, gold: 250, lootTable: [{ itemId: 'first_dragon_scale', chance: 0.15 }, { itemId: 'ignira_fang', chance: 0.25 }, { itemId: 'elixir_power', chance: 0.3 }], locationId: 'flame_cradle', isBoss: true, icon: '🐉' },
+  {
+    id: 'first_dragon', nameRu: 'Первый Дракон', nameEn: 'The First Dragon', hp: 160, ac: 18, attack: 15, damage: '3d8+6', xp: 550, gold: 250,
+    lootTable: [{ itemId: 'first_dragon_scale', chance: 0.15 }, { itemId: 'ignira_fang', chance: 0.25 }, { itemId: 'elixir_power', chance: 0.3 }],
+    locationId: 'flame_cradle', isBoss: true, icon: '🐉',
+    mechanics: {
+      playerDotPercent: 0.04, // Горение каждый ход
+      phase2DamageMult: 0.6,  // на фазе 2 дракон гаснет — урон падает
+      phase2AtHpPercent: 0.4,
+    },
+  },
 
   // Внешние топи (Level 6)
   { id: 'marsh_zombie', nameRu: 'Болотный зомби', nameEn: 'Marsh Zombie', hp: 62, ac: 16, attack: 13, damage: '1d10+5', xp: 62, gold: 26, lootTable: [{ itemId: 'greater_health', chance: 0.3 }, { itemId: 'antidote', chance: 0.3 }], locationId: 'outer_marshes', isBoss: false, icon: '🧟' },
@@ -572,7 +604,16 @@ export const ENEMIES: EnemyTemplate[] = [
 
   // Врата Мора (Level 7)
   { id: 'mass_grave_horror', nameRu: 'Ужас братской могилы', nameEn: 'Mass Grave Horror', hp: 70, ac: 17, attack: 16, damage: '2d6+6', xp: 78, gold: 36, lootTable: [{ itemId: 'greater_health', chance: 0.3 }, { itemId: 'shadow_essence', chance: 0.3 }], locationId: 'plague_gate', isBoss: false, icon: '🪦' },
-  { id: 'first_risen', nameRu: 'Первый Восставший', nameEn: 'The First Risen', hp: 180, ac: 19, attack: 17, damage: '3d8+7', xp: 650, gold: 300, lootTable: [{ itemId: 'first_risen_crown', chance: 0.15 }, { itemId: 'first_fall_dust', chance: 0.3 }, { itemId: 'elixir_power', chance: 0.3 }], locationId: 'plague_gate', isBoss: true, icon: '💀' },
+  {
+    id: 'first_risen', nameRu: 'Первый Восставший', nameEn: 'The First Risen', hp: 180, ac: 19, attack: 17, damage: '3d8+7', xp: 650, gold: 300,
+    lootTable: [{ itemId: 'first_risen_crown', chance: 0.15 }, { itemId: 'first_fall_dust', chance: 0.3 }, { itemId: 'elixir_power', chance: 0.3 }],
+    locationId: 'plague_gate', isBoss: true, icon: '💀',
+    mechanics: {
+      summonEveryTurns: 2, summonBonusDamage: 6, summonUntilPhase: 2, // призывает скелетов каждые 2 хода до фазы 2
+      hpDrainFromPhase: 2, hpDrainPercent: 0.4,                       // на фазе 2 перестаёт призывать, крадёт ХП
+      phase2AtHpPercent: 0.5,
+    },
+  },
 
   // Пограничье (Level 7)
   { id: 'border_raider', nameRu: 'Пограничный налётчик', nameEn: 'Border Raider', hp: 72, ac: 17, attack: 16, damage: '1d10+6', xp: 75, gold: 34, lootTable: [{ itemId: 'steel_sword', chance: 0.2 }, { itemId: 'greater_health', chance: 0.3 }], locationId: 'borderlands', isBoss: false, icon: '🪓' },
@@ -595,7 +636,16 @@ export const ENEMIES: EnemyTemplate[] = [
 
   // Зев Бездны (Level 8)
   { id: 'abyss_maw_horror', nameRu: 'Ужас Зева', nameEn: 'Maw Horror', hp: 85, ac: 19, attack: 18, damage: '2d8+7', xp: 95, gold: 44, lootTable: [{ itemId: 'greater_health', chance: 0.3 }, { itemId: 'void_crystal', chance: 0.1 }], locationId: 'abyss_maw', isBoss: false, icon: '🕳️' },
-  { id: 'grumgar_unborn', nameRu: 'Грумгар Нерождённый', nameEn: 'Grumgar the Unborn', hp: 200, ac: 20, attack: 19, damage: '3d10+8', xp: 800, gold: 400, lootTable: [{ itemId: 'grumgar_fang', chance: 0.15 }, { itemId: 'unborn_chieftain_seal', chance: 0.15 }, { itemId: 'elixir_power', chance: 0.3 }], locationId: 'abyss_maw', isBoss: true, icon: '👹' },
+  {
+    id: 'grumgar_unborn', nameRu: 'Грумгар Нерождённый', nameEn: 'Grumgar the Unborn', hp: 200, ac: 20, attack: 19, damage: '3d10+8', xp: 800, gold: 400,
+    lootTable: [{ itemId: 'grumgar_fang', chance: 0.15 }, { itemId: 'unborn_chieftain_seal', chance: 0.15 }, { itemId: 'elixir_power', chance: 0.3 }],
+    locationId: 'abyss_maw', isBoss: true, icon: '👹',
+    mechanics: {
+      counterStrikeEveryTurns: 2, counterStrikeBonusMult: 1.6,               // каждые 2 хода — Ответный удар
+      summonEveryTurns: 2, summonDamageMultPerStack: 0.15, summonFromPhase: 2, // на фазе 2 призывает духов воинов (+15% урона каждый)
+      phase2AtHpPercent: 0.5,
+    },
+  },
 ];
 
 // ===== CRAFTING RECIPES =====

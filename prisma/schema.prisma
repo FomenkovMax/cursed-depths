@@ -36,6 +36,7 @@ model Player {
   enemyHp         Int?
   enemyMaxHp      Int?
   combatLog       String?   // JSON string
+  bossState       String?   // JSON string — фазы/щит/ДоТ/призывы текущего боя с боссом (см. lib/boss-mechanics.ts)
   lastDailyReward String?   // ISO date string
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt

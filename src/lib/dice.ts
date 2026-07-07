@@ -3,18 +3,27 @@
  */
 
 export function rollDice(notation: string): number {
-  const match = notation.match(/^(\d+)d(\d+)([+-]\d+)?$/);
-  if (!match) return 0;
-  
-  const count = parseInt(match[1]);
-  const sides = parseInt(match[2]);
-  const modifier = match[3] ? parseInt(match[3]) : 0;
-  
+  // Supports single terms ("2d6", "2d6+3") and additive multi-dice notation ("1d8+1d4")
+  const terms = notation.match(/[+-]?\d+d\d+|[+-]?\d+/g);
+  if (!terms) return 0;
+
   let total = 0;
-  for (let i = 0; i < count; i++) {
-    total += Math.floor(Math.random() * sides) + 1;
+  for (const term of terms) {
+    const diceMatch = term.match(/^([+-]?)(\d+)d(\d+)$/);
+    if (diceMatch) {
+      const sign = diceMatch[1] === '-' ? -1 : 1;
+      const count = parseInt(diceMatch[2]);
+      const sides = parseInt(diceMatch[3]);
+      let roll = 0;
+      for (let i = 0; i < count; i++) {
+        roll += Math.floor(Math.random() * sides) + 1;
+      }
+      total += sign * roll;
+    } else {
+      total += parseInt(term);
+    }
   }
-  return total + modifier;
+  return total;
 }
 
 export function rollD20(): number {

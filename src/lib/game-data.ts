@@ -5,10 +5,19 @@ import type { BossMechanics } from './boss-mechanics';
 // Акт 3: Каменный Чертог (Гномы), уровни 4-5. Акт 4: Драконье Горнило (Драконорождённые),
 // уровни 5-6. Акт 5: Гнилые Топи (Нежить), уровни 6-7. Акт 6: Хребет Грумгара (Орки),
 // уровни 7-8 — последний из 6 поверхностных Актов кампании (раздел 2.1 мастер-документа).
-// Дальше в документе идёт «Глубь» — отдельная вертикальная PvE-кампания (Акты 7-12,
-// разделы 2.2+) с совсем другой структурой (уровни глубины вместо линейной карты,
-// привязка к падшим Столпам), это самостоятельная большая задача и сюда сознательно
-// не включена.
+//
+// Глубь (раздел 2.2) — вертикальная PvE-кампания, уровни 8-9: Верхняя Глубь (хаб, куда
+// ведёт каждый из шести Разломов Актов 1-6 — по лору "каждый спуск в подземелье — шаг
+// туда, где Глубь уже проснулась") и четыре зоны падших Столпов (Тихие Залы/Кессара,
+// Корневая Бездна/Айлет, Горнило Безумия/Веларион, Окаменевший Закон/Торнак), каждая —
+// одна локация с уникальным боссом. «Дно» (эндгейм, раздел 2.2) сюда сознательно НЕ
+// включено — по документу оно требует "полную группу в максимальной экипировке", то есть
+// пати/рейд-механику, которой пока нет в этом соло-PvE. Также сознательно НЕ реализованы
+// пять «механик зоны» из документа (Скверна-проверка Верхней Глуби, Шёпот Кессары,
+// мутирующий реген Корневой Бездны, таймер Жара Горнила, Окаменение Закона) — в отличие
+// от боссовых механик (см. boss-mechanics.ts), это модификаторы, действующие на КАЖДЫЙ
+// бой в локации, а не только на босса, и требуют отдельного слоя (привязки механик к
+// локации, а не к врагу) поверх текущего combat-engine.
 export interface Location {
   id: string;
   nameRu: string;
@@ -89,7 +98,7 @@ export const LOCATIONS: Location[] = [
     descriptionEn: "A crack in the fabric of the world. Here Karsus' voice first rang out across the Ashen Reach. The entrance to the Depths.",
     icon: '🌀',
     level: 3,
-    connections: ['ashen_fortress', 'outer_grove'],
+    connections: ['ashen_fortress', 'outer_grove', 'upper_deep'],
   },
   {
     id: 'outer_grove',
@@ -139,7 +148,7 @@ export const LOCATIONS: Location[] = [
     descriptionEn: "The dead tree's roots plunge straight into the Depths. Here dwells what remains of the goddess of Life.",
     icon: '🥀',
     level: 4,
-    connections: ['shade_mycelium', 'outer_mines'],
+    connections: ['shade_mycelium', 'outer_mines', 'upper_deep'],
   },
   {
     id: 'outer_mines',
@@ -189,7 +198,7 @@ export const LOCATIONS: Location[] = [
     descriptionEn: 'The forge collapsed straight into the Depths. At the bottom of the rift waits one who once swore to protect it.',
     icon: '💔',
     level: 5,
-    connections: ['great_forge', 'ashen_wasteland'],
+    connections: ['great_forge', 'ashen_wasteland', 'upper_deep'],
   },
   {
     id: 'ashen_wasteland',
@@ -239,7 +248,7 @@ export const LOCATIONS: Location[] = [
     descriptionEn: 'The heart of the volcano. Here Velarion forged the first of his children — and here that child went mad with his own fire.',
     icon: '🐉',
     level: 6,
-    connections: ['ignira_maw', 'outer_marshes'],
+    connections: ['ignira_maw', 'outer_marshes', 'upper_deep'],
   },
   {
     id: 'outer_marshes',
@@ -289,7 +298,7 @@ export const LOCATIONS: Location[] = [
     descriptionEn: 'A mass grave — an entrance to the Depths. Here rests the one who died first when the world broke.',
     icon: '🪦',
     level: 7,
-    connections: ['bone_cathedral', 'borderlands'],
+    connections: ['bone_cathedral', 'borderlands', 'upper_deep'],
   },
   {
     id: 'borderlands',
@@ -339,7 +348,59 @@ export const LOCATIONS: Location[] = [
     descriptionEn: "The largest rift of all. Here waits the spirit of a chieftain slain by his own clan's betrayal.",
     icon: '👹',
     level: 8,
-    connections: ['skull_trail'],
+    connections: ['skull_trail', 'upper_deep'],
+  },
+
+  // ===== ГЛУБЬ (раздел 2.2) =====
+  {
+    id: 'upper_deep',
+    nameRu: 'Верхняя Глубь',
+    nameEn: 'Upper Depths',
+    descriptionRu: 'Первый слой того, что лежит под миром. Руины упавшего сверху — обломки зданий, кораблей, деревьев. Скверна здесь слабая, но ощутимая. Отсюда расходятся пути к зонам павших Столпов.',
+    descriptionEn: 'The first layer of what lies beneath the world. Ruins of what fell from above — wreckage of buildings, ships, trees. The Blight is weak here, but present. From here, paths branch out to the fallen Pillars’ zones.',
+    icon: '🕳️',
+    level: 8,
+    connections: ['karsus_rift', 'abyss_root', 'foundation_rift', 'flame_cradle', 'plague_gate', 'abyss_maw', 'silent_halls', 'root_abyss', 'madness_forge', 'petrified_law'],
+  },
+  {
+    id: 'silent_halls',
+    nameRu: 'Тихие Залы',
+    nameEn: 'Silent Halls',
+    descriptionRu: 'Зона Кессары. Абсолютная тишина. Стены покрыты зеркалами, которые показывают не отражение, а страхи.',
+    descriptionEn: "Kessara's zone. Absolute silence. The walls are covered in mirrors that show not reflections, but fears.",
+    icon: '🪞',
+    level: 9,
+    connections: ['upper_deep'],
+  },
+  {
+    id: 'root_abyss',
+    nameRu: 'Корневая Бездна',
+    nameEn: 'Root Abyss',
+    descriptionRu: 'Зона Айлет. Жизнь, которая не должна существовать. Паразитические корни, плоть-растения, мутации.',
+    descriptionEn: "Ailet's zone. Life that should not exist. Parasitic roots, flesh-plants, mutations.",
+    icon: '🧬',
+    level: 9,
+    connections: ['upper_deep'],
+  },
+  {
+    id: 'madness_forge',
+    nameRu: 'Горнило Безумия',
+    nameEn: 'Forge of Madness',
+    descriptionRu: 'Зона Велариона. Огонь без смысла. Пламя, которое горит без топлива. Жар, от которого плавится реальность.',
+    descriptionEn: "Velarion's zone. Fire without purpose. Flame that burns without fuel. Heat that melts reality itself.",
+    icon: '🔥',
+    level: 9,
+    connections: ['upper_deep'],
+  },
+  {
+    id: 'petrified_law',
+    nameRu: 'Окаменевший Закон',
+    nameEn: 'Petrified Law',
+    descriptionRu: 'Зона Торнака. Мир, где всё застыло. Камень, который был живым. Время, которое остановилось.',
+    descriptionEn: "Tornak's zone. A world where everything froze. Stone that was once alive. Time that stopped.",
+    icon: '🗿',
+    level: 9,
+    connections: ['upper_deep'],
   },
 ];
 
@@ -372,6 +433,7 @@ export const ITEMS: Item[] = [
   { id: 'broken_oath_hammer', nameRu: 'Молот Сломанной Клятвы', nameEn: 'Hammer of the Broken Oath', type: 'weapon', rarity: 'legendary', stats: { attack: 18, strength: 3, vitality: 2 }, descriptionRu: 'Молот гнома-титана, преданного своим богом. Каждый удар — эхо разбитой клятвы.', descriptionEn: 'The hammer of a dwarf-titan betrayed by his own god. Every blow echoes a broken vow.', icon: '🔨', value: 1800 },
   { id: 'ignira_fang', nameRu: 'Клык Игниры', nameEn: 'Fang of Ignira', type: 'weapon', rarity: 'epic', stats: { attack: 14, strength: 2, instinct: 1 }, descriptionRu: 'Клык, вырванный из пасти древнего огненного зверя.', descriptionEn: 'A fang torn from the maw of an ancient fire beast.', icon: '🦷', value: 750 },
   { id: 'grumgar_fang', nameRu: 'Клык Грумгара', nameEn: 'Fang of Grumgar', type: 'weapon', rarity: 'legendary', stats: { attack: 20, strength: 4, instinct: 2 }, descriptionRu: 'Клык духа вождя, что должен был объединить кланы, но пал от предательства.', descriptionEn: "The fang of the chieftain-spirit who should have united the clans, but fell to betrayal.", icon: '🪓', value: 2000 },
+  { id: 'eternal_ember', nameRu: 'Вечный Уголь', nameEn: 'Eternal Ember', type: 'weapon', rarity: 'legendary', stats: { attack: 22, strength: 3, intellect: 2 }, descriptionRu: 'Уголь чистого пламени Велариона — горит без топлива и без смысла.', descriptionEn: "An ember of Velarion's pure flame — it burns without fuel and without purpose.", icon: '🔥', value: 3100 },
 
   // === ARMOR ===
   { id: 'leather_armor', nameRu: 'Кожаная броня', nameEn: 'Leather Armor', type: 'armor', rarity: 'common', stats: { defense: 2 }, descriptionRu: 'Простая кожаная броня.', descriptionEn: 'Simple leather armor.', icon: '🦺', value: 15 },
@@ -382,9 +444,13 @@ export const ITEMS: Item[] = [
   { id: 'celestial_robe', nameRu: 'Небесная мантия', nameEn: 'Celestial Robe', type: 'armor', rarity: 'epic', stats: { defense: 4, intellect: 3, willpower: 2 }, descriptionRu: 'Мантия, благословлённая небесами.', descriptionEn: 'Robe blessed by the heavens.', icon: '✨', value: 700 },
   { id: 'crown_armor', nameRu: 'Броня Короны', nameEn: 'Crown Armor', type: 'armor', rarity: 'legendary', stats: { defense: 14, strength: 2, vitality: 3, willpower: 2 }, descriptionRu: 'Легендарная броня, носящая печать Короля.', descriptionEn: "Legendary armor bearing the King's seal.", icon: '👑', value: 2000 },
   { id: 'first_dragon_scale', nameRu: 'Чешуя Первого Дракона', nameEn: 'Scale of the First Dragon', type: 'armor', rarity: 'legendary', stats: { defense: 16, strength: 2, vitality: 3 }, descriptionRu: 'Чешуя дракона, выкованного самим Веларионом. Ещё хранит жар его безумия.', descriptionEn: 'A scale from the dragon forged by Velarion himself. It still holds the heat of his madness.', icon: '🐉', value: 2200 },
+  { id: 'petrified_law_shard', nameRu: 'Осколок Окаменевшего Закона', nameEn: 'Shard of Petrified Law', type: 'armor', rarity: 'legendary', stats: { defense: 18, vitality: 4, willpower: 2 }, descriptionRu: 'Кусок бога, обратившегося в камень. Почти невозможно пробить.', descriptionEn: 'A piece of a god turned to stone. Nearly impossible to break.', icon: '🗿', value: 3200 },
   { id: 'first_fall_dust', nameRu: 'Пыль Первого Падения', nameEn: 'Dust of the First Fall', type: 'accessory', rarity: 'rare', stats: { willpower: 2, instinct: 2, hp: 15 }, descriptionRu: 'Горсть праха с того самого мгновения, когда мир раскололся. Ещё помнит, каким он был.', descriptionEn: 'A handful of dust from the very moment the world broke. It still remembers what it was.', icon: '⏳', value: 260 },
   { id: 'first_risen_crown', nameRu: 'Корона Первого Восставшего', nameEn: 'Crown of the First Risen', type: 'accessory', rarity: 'legendary', stats: { willpower: 3, instinct: 3, hp: 25 }, descriptionRu: 'Корона того, кто умер вместе с миром и вернулся раньше всех остальных.', descriptionEn: 'The crown of the one who died with the world and returned before all others.', icon: '👑', value: 2400 },
   { id: 'unborn_chieftain_seal', nameRu: 'Печать Нерождённого Вождя', nameEn: 'Seal of the Unborn Chieftain', type: 'accessory', rarity: 'legendary', stats: { strength: 3, instinct: 3, hp: 30 }, descriptionRu: 'Печать вождя, чьё объединение кланов так и не состоялось. Тяжёлая, как несбывшаяся клятва.', descriptionEn: "The seal of a chieftain whose unification of the clans never came to pass. Heavy as an unfulfilled oath.", icon: '🩸', value: 2600 },
+  { id: 'gatekeeper_key', nameRu: 'Ключ Привратника', nameEn: 'Key of the Gatekeeper', type: 'accessory', rarity: 'legendary', stats: { strength: 2, intellect: 2, willpower: 2, hp: 30 }, descriptionRu: 'Ключ существа, что охраняет вход в Глубь и подстраивается под любую атаку.', descriptionEn: 'A key from the being that guards the entrance to the Depths and adapts to any attack.', icon: '🗝️', value: 2800 },
+  { id: 'kessara_mirror_shard', nameRu: 'Осколок Зеркала Кессары', nameEn: "Shard of Kessara's Mirror", type: 'accessory', rarity: 'legendary', stats: { instinct: 3, willpower: 3, hp: 30 }, descriptionRu: 'Осколок зеркала, что показывало вашу идеальную версию. Оно всё ещё немного видит вас насквозь.', descriptionEn: 'A shard of the mirror that showed your perfect self. It still sees through you, just a little.', icon: '🪞', value: 2900 },
+  { id: 'ailet_pulsing_heart', nameRu: 'Пульсирующее Сердце', nameEn: 'Pulsing Heart', type: 'accessory', rarity: 'legendary', stats: { vitality: 3, willpower: 3, hp: 40 }, descriptionRu: 'Орган богини, ставший паразитом. Даже вырванное, оно продолжает биться.', descriptionEn: 'An organ of a goddess turned parasite. Even torn out, it keeps beating.', icon: '💗', value: 3000 },
 
   // === ACCESSORIES ===
   { id: 'copper_ring', nameRu: 'Медное кольцо', nameEn: 'Copper Ring', type: 'accessory', rarity: 'common', stats: { hp: 5 }, descriptionRu: 'Простое медное кольцо с защитным чаром.', descriptionEn: 'Simple copper ring with a ward charm.', icon: '💍', value: 10 },
@@ -609,7 +675,7 @@ export const ENEMIES: EnemyTemplate[] = [
     lootTable: [{ itemId: 'first_risen_crown', chance: 0.15 }, { itemId: 'first_fall_dust', chance: 0.3 }, { itemId: 'elixir_power', chance: 0.3 }],
     locationId: 'plague_gate', isBoss: true, icon: '💀',
     mechanics: {
-      summonEveryTurns: 2, summonBonusDamage: 6, summonUntilPhase: 2, // призывает скелетов каждые 2 хода до фазы 2
+      summonEveryTurns: 2, summonBonusDamage: 6, summonUntilPhase: 2, summonMaxStacks: 5, // призывает скелетов каждые 2 хода до фазы 2
       hpDrainFromPhase: 2, hpDrainPercent: 0.4,                       // на фазе 2 перестаёт призывать, крадёт ХП
       phase2AtHpPercent: 0.5,
     },
@@ -642,8 +708,80 @@ export const ENEMIES: EnemyTemplate[] = [
     locationId: 'abyss_maw', isBoss: true, icon: '👹',
     mechanics: {
       counterStrikeEveryTurns: 2, counterStrikeBonusMult: 1.6,               // каждые 2 хода — Ответный удар
-      summonEveryTurns: 2, summonDamageMultPerStack: 0.15, summonFromPhase: 2, // на фазе 2 призывает духов воинов (+15% урона каждый)
+      summonEveryTurns: 2, summonDamageMultPerStack: 0.15, summonFromPhase: 2, summonMaxStacks: 5, // на фазе 2 призывает духов воинов (+15% урона каждый, до потолка)
       phase2AtHpPercent: 0.5,
+    },
+  },
+
+  // ===== ГЛУБЬ =====
+
+  // Верхняя Глубь (Level 8)
+  { id: 'fallen_ruin_wraith', nameRu: 'Дух Обрушенных Руин', nameEn: 'Fallen Ruin Wraith', hp: 90, ac: 18, attack: 16, damage: '2d8+6', xp: 90, gold: 40, lootTable: [{ itemId: 'void_crystal', chance: 0.15 }, { itemId: 'greater_health', chance: 0.3 }], locationId: 'upper_deep', isBoss: false, icon: '🏚️' },
+  { id: 'drifting_hulk', nameRu: 'Дрейфующий Остов', nameEn: 'Drifting Hulk', hp: 95, ac: 17, attack: 17, damage: '2d8+7', xp: 95, gold: 42, lootTable: [{ itemId: 'iron_ore', chance: 0.4 }, { itemId: 'dwarven_plate', chance: 0.06 }], locationId: 'upper_deep', isBoss: false, icon: '🚢' },
+  { id: 'weak_blight_spawn', nameRu: 'Слабое порождение Скверны', nameEn: 'Weak Blight Spawn', hp: 80, ac: 16, attack: 15, damage: '2d6+6', xp: 85, gold: 38, lootTable: [{ itemId: 'shadow_essence', chance: 0.3 }], locationId: 'upper_deep', isBoss: false, icon: '🌑' },
+  {
+    id: 'gatekeeper_of_the_deep', nameRu: 'Привратник Глуби', nameEn: 'Gatekeeper of the Deep', hp: 220, ac: 19, attack: 19, damage: '3d10+7', xp: 900, gold: 450,
+    lootTable: [{ itemId: 'gatekeeper_key', chance: 0.15 }, { itemId: 'void_crystal', chance: 0.3 }, { itemId: 'elixir_power', chance: 0.3 }],
+    locationId: 'upper_deep', isBoss: true, icon: '🚪',
+    mechanics: {
+      adaptiveResistToRepeatedActionType: true, adaptiveResistPerRepeat: 0.2, adaptiveResistMax: 0.6, // адаптируется к повторному типу урона — чередуйте атаку и способности
+    },
+  },
+
+  // Тихие Залы (Level 9, зона Кессары)
+  { id: 'mirror_shard_wraith', nameRu: 'Осколок Зеркала', nameEn: 'Mirror Shard Wraith', hp: 95, ac: 18, attack: 18, damage: '2d8+7', xp: 98, gold: 44, lootTable: [{ itemId: 'void_crystal', chance: 0.2 }], locationId: 'silent_halls', isBoss: false, icon: '🪞' },
+  { id: 'whispering_fear', nameRu: 'Шепчущий Страх', nameEn: 'Whispering Fear', hp: 90, ac: 17, attack: 18, damage: '2d8+7', xp: 95, gold: 42, lootTable: [{ itemId: 'shadow_essence', chance: 0.3 }], locationId: 'silent_halls', isBoss: false, icon: '👁️' },
+  {
+    id: 'mirror_of_kessara', nameRu: 'Зеркало Кессары', nameEn: "Kessara's Mirror", hp: 240, ac: 19, attack: 20, damage: '3d10+8', xp: 950, gold: 470,
+    lootTable: [{ itemId: 'kessara_mirror_shard', chance: 0.15 }, { itemId: 'void_crystal', chance: 0.3 }, { itemId: 'elixir_power', chance: 0.3 }],
+    locationId: 'silent_halls', isBoss: true, icon: '🪞',
+    mechanics: {
+      // "идеальная копия" игрока с удвоенными статами, но каждые 3 хода теряет бафф — окно для добивания
+      alternateFormEveryTurns: 3, formADamageMult: 1.5, formAAcMult: 1, formBDamageMult: 0.4, formBAcMult: 1,
+    },
+  },
+
+  // Корневая Бездна (Level 9, зона Айлет)
+  { id: 'mutated_root_horror', nameRu: 'Мутировавший корневой ужас', nameEn: 'Mutated Root Horror', hp: 98, ac: 18, attack: 18, damage: '2d8+7', xp: 98, gold: 44, lootTable: [{ itemId: 'shadow_essence', chance: 0.3 }], locationId: 'root_abyss', isBoss: false, icon: '🧬' },
+  { id: 'parasitic_flesh_bloom', nameRu: 'Паразитический плотоцвет', nameEn: 'Parasitic Flesh Bloom', hp: 92, ac: 17, attack: 18, damage: '2d8+7', xp: 95, gold: 42, lootTable: [{ itemId: 'greater_health', chance: 0.3 }], locationId: 'root_abyss', isBoss: false, icon: '🥀' },
+  {
+    id: 'heart_of_ailet', nameRu: 'Сердце Айлет', nameEn: "Ailet's Heart", hp: 250, ac: 18, attack: 19, damage: '3d10+7', xp: 950, gold: 470,
+    lootTable: [{ itemId: 'ailet_pulsing_heart', chance: 0.15 }, { itemId: 'void_crystal', chance: 0.3 }, { itemId: 'elixir_power', chance: 0.3 }],
+    locationId: 'root_abyss', isBoss: true, icon: '💗',
+    mechanics: {
+      selfHealPercent: 0.10, selfHealUntilPhase: 2,                                      // хилит себя 10%/ход до фазы 2
+      summonEveryTurns: 3, summonHealPercentPerStack: 0.03, summonUntilPhase: 2, summonMaxStacks: 5, // призывает «Корни», которые хилят босса
+      healPlayerFromPhase: 2, healPlayerPercent: 0.08, curseStackPercent: 0.08,           // фаза 2: лечит ИГРОКА, но с проклятием на его урон
+      phase2AtHpPercent: 0.5,
+    },
+  },
+
+  // Горнило Безумия (Level 9, зона Велариона)
+  { id: 'mindless_flame_wisp', nameRu: 'Бездумный огненный дух', nameEn: 'Mindless Flame Wisp', hp: 95, ac: 17, attack: 19, damage: '2d10+7', xp: 98, gold: 44, lootTable: [{ itemId: 'mana_potion', chance: 0.3 }], locationId: 'madness_forge', isBoss: false, icon: '🔥' },
+  { id: 'reality_melting_ember', nameRu: 'Плавящий реальность уголёк', nameEn: 'Reality-Melting Ember', hp: 90, ac: 17, attack: 19, damage: '2d10+7', xp: 95, gold: 42, lootTable: [{ itemId: 'void_crystal', chance: 0.2 }], locationId: 'madness_forge', isBoss: false, icon: '🌋' },
+  {
+    id: 'flame_of_velarion', nameRu: 'Пламя Велариона', nameEn: "Velarion's Flame", hp: 240, ac: 18, attack: 20, damage: '3d10+8', xp: 950, gold: 470,
+    lootTable: [{ itemId: 'eternal_ember', chance: 0.15 }, { itemId: 'void_crystal', chance: 0.3 }, { itemId: 'elixir_power', chance: 0.3 }],
+    locationId: 'madness_forge', isBoss: true, icon: '🔥',
+    mechanics: {
+      playerDotPercent: 0.03,                                            // огненный урон каждый ход
+      phase2DamageMult: 0.6,                                             // фаза 2: пламя гаснет, урон падает
+      summonEveryTurns: 2, summonBonusDamage: 8, summonFromPhase: 2, summonMaxStacks: 3, // фаза 2: самовзрывающиеся «Угли» (упрощены до доп. урона, с потолком)
+      phase2AtHpPercent: 0.4,
+    },
+  },
+
+  // Окаменевший Закон (Level 9, зона Торнака)
+  { id: 'petrified_sentinel', nameRu: 'Окаменевший страж', nameEn: 'Petrified Sentinel', hp: 100, ac: 20, attack: 17, damage: '2d8+7', xp: 98, gold: 44, lootTable: [{ itemId: 'iron_ore', chance: 0.4 }], locationId: 'petrified_law', isBoss: false, icon: '🗿' },
+  { id: 'frozen_moment_wraith', nameRu: 'Дух застывшего мгновения', nameEn: 'Frozen Moment Wraith', hp: 90, ac: 18, attack: 18, damage: '2d8+7', xp: 95, gold: 42, lootTable: [{ itemId: 'shadow_essence', chance: 0.3 }], locationId: 'petrified_law', isBoss: false, icon: '⏳' },
+  {
+    id: 'statue_of_tornak', nameRu: 'Статуя Торнака', nameEn: "Tornak's Statue", hp: 260, ac: 20, attack: 22, damage: '3d12+8', xp: 1000, gold: 500,
+    lootTable: [{ itemId: 'petrified_law_shard', chance: 0.15 }, { itemId: 'void_crystal', chance: 0.3 }, { itemId: 'elixir_power', chance: 0.3 }],
+    locationId: 'petrified_law', isBoss: true, icon: '🗿',
+    mechanics: {
+      nearInvulnerableAcMult: 45,      // почти неуязвим (~90% снижение урона) в базе
+      bigHitEveryTurns: 5, bigHitMult: 2.5, // раз в 5 ходов — колоссальный удар
+      vulnerabilityWindowAcMult: 0.5,  // следующий ход после удара — окно уязвимости
     },
   },
 ];

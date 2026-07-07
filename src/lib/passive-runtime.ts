@@ -39,7 +39,7 @@ export function hpThresholdBonuses(effects: PassiveEffect[], hpPercent: number) 
   return { damageMultBonus, incomingReductionPercent, healingBonusPercent, defenseMultBonus, regenPercent };
 }
 
-/** Безусловные бонусы (Клятва, Безмолвный жнец и т.п.) — действуют всегда, суммируются. */
+/** Безусловные бонусы (Клятва, Безмолвный жнец, Священная аура, Вожак и т.п.) — действуют всегда, суммируются. */
 export function unconditionalBonuses(effects: PassiveEffect[]) {
   let damageMultBonus = 0, defenseMultBonus = 0, healingBonusPercent = 0;
   for (const e of effects) {
@@ -49,6 +49,8 @@ export function unconditionalBonuses(effects: PassiveEffect[]) {
       healingBonusPercent += e.healingBonusPercent;
     } else if (e.kind === 'unconditional_damage_buff') {
       damageMultBonus += e.damageMultBonus;
+    } else if (e.kind === 'unconditional_healing_buff') {
+      healingBonusPercent += e.healingBonusPercent;
     }
   }
   return { damageMultBonus, defenseMultBonus, healingBonusPercent };
@@ -143,4 +145,35 @@ export function deathSaveHealPercent(effects: PassiveEffect[]): number | null {
 
 export function hasRootImmune(effects: PassiveEffect[]): boolean {
   return effects.some(e => e.kind === 'root_immune');
+}
+
+/** Суммарный бонус брони (снижение входящего урона), пока игрок в защитной стойке (last-bastion и аналоги). */
+export function onDefendDefenseBonus(effects: PassiveEffect[]): number {
+  return effects.reduce((sum, e) => sum + (e.kind === 'on_defend_bonus_defense' ? e.defenseMultBonus : 0), 0);
+}
+
+/** Гарантированный крит на самую первую результативную атаку/способность игрока в бою (ranger-night-hunter). */
+export function hasFirstAttackCrit(effects: PassiveEffect[]): boolean {
+  return effects.some(e => e.kind === 'first_attack_guaranteed_crit');
+}
+
+/** Суммарное лечение при блокировании удара (защитная стойка, tornak-foundation и аналоги). */
+export function onBlockHealPercent(effects: PassiveEffect[]): number {
+  return effects.reduce((sum, e) => sum + (e.kind === 'on_block_heal' ? e.healPercent : 0), 0);
+}
+
+/** Суммарный контр-урон врагу при блокировании удара (bone-spike и аналоги). */
+export function onBlockCounterPercent(effects: PassiveEffect[]): number {
+  return effects.reduce((sum, e) => sum + (e.kind === 'on_block_counter_percent_absorbed' ? e.percent : 0), 0);
+}
+
+/** Суммарный шанс снять стак проклятия (лечение-с-проклятием боссов) при собственном лечении (fiery-sermon). */
+export function healChanceCleanseCurseChance(effects: PassiveEffect[]): number {
+  return Math.min(0.9, effects.reduce((sum, e) => sum + (e.kind === 'heal_chance_cleanse_curse' ? e.chancePercent : 0), 0));
+}
+
+/** Самый строгий (наименьший) предел самоисцеления врага среди активных пассивок (depth-silence и аналоги). */
+export function enemyHealCapPercent(effects: PassiveEffect[]): number | null {
+  const caps = effects.filter((e): e is Extract<PassiveEffect, { kind: 'enemy_heal_cap' }> => e.kind === 'enemy_heal_cap').map(e => e.capPercent);
+  return caps.length ? Math.min(...caps) : null;
 }

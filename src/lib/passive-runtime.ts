@@ -177,3 +177,14 @@ export function enemyHealCapPercent(effects: PassiveEffect[]): number | null {
   const caps = effects.filter((e): e is Extract<PassiveEffect, { kind: 'enemy_heal_cap' }> => e.kind === 'enemy_heal_cap').map(e => e.capPercent);
   return caps.length ? Math.min(...caps) : null;
 }
+
+/** Суммарная вне-боевая регенерация ХП/маны за один вызов /api/explore (forest-whisper и аналоги). */
+export function outOfCombatRegen(effects: PassiveEffect[]) {
+  let hpPercent = 0, mpPercent = 0;
+  for (const e of effects) {
+    if (e.kind !== 'out_of_combat_regen') continue;
+    hpPercent += e.hpPercent;
+    mpPercent += e.mpPercent;
+  }
+  return { hpPercent, mpPercent };
+}

@@ -1,176 +1,6 @@
-// ===== RACES (9 D&D 5e races) =====
-export interface Race {
-  id: string;
-  nameRu: string;
-  nameEn: string;
-  descriptionRu: string;
-  descriptionEn: string;
-  bonuses: Record<string, number>;
-  icon: string;
-}
-
-export const RACES: Race[] = [
-  {
-    id: 'human',
-    nameRu: 'Человек',
-    nameEn: 'Human',
-    descriptionRu: 'Универсальная раса. Все характеристики +1. Адаптивные и амбициозные.',
-    descriptionEn: 'Versatile race. All stats +1. Adaptable and ambitious.',
-    bonuses: { strength: 1, dexterity: 1, constitution: 1, intelligence: 1, wisdom: 1, charisma: 1 },
-    icon: '🧑',
-  },
-  {
-    id: 'elf',
-    nameRu: 'Эльф',
-    nameEn: 'Elf',
-    descriptionRu: 'Ловкие и мудрые. Ловкость +2, Мудрость +1. Острые чувства и любовь к магии.',
-    descriptionEn: 'Agile and wise. Dexterity +2, Wisdom +1. Keen senses and love of magic.',
-    bonuses: { dexterity: 2, wisdom: 1 },
-    icon: '🧝',
-  },
-  {
-    id: 'dwarf',
-    nameRu: 'Дварф',
-    nameEn: 'Dwarf',
-    descriptionRu: 'Стойкие и сильные. Выносливость +2, Сила +1. Мастера кузнечного дела.',
-    descriptionEn: 'Stout and strong. Constitution +2, Strength +1. Master smiths.',
-    bonuses: { constitution: 2, strength: 1 },
-    icon: '🪓',
-  },
-  {
-    id: 'halfling',
-    nameRu: 'Полурослик',
-    nameEn: 'Halfling',
-    descriptionRu: 'Проворные и удачливые. Ловкость +2, Харизма +1. Удача всегда на их стороне.',
-    descriptionEn: 'Nimble and lucky. Dexterity +2, Charisma +1. Luck is always on their side.',
-    bonuses: { dexterity: 2, charisma: 1 },
-    icon: '🍀',
-  },
-  {
-    id: 'gnome',
-    nameRu: 'Гном',
-    nameEn: 'Gnome',
-    descriptionRu: 'Мудрые и любознательные. Интеллект +2, Выносливость +1. Прирождённые изобретатели.',
-    descriptionEn: 'Wise and curious. Intelligence +2, Constitution +1. Natural inventors.',
-    bonuses: { intelligence: 2, constitution: 1 },
-    icon: '⚙️',
-  },
-  {
-    id: 'half-orc',
-    nameRu: 'Полуорк',
-    nameEn: 'Half-Orc',
-    descriptionRu: 'Могучие воины. Сила +2, Выносливость +1. Свирепые в бою, неутомимые.',
-    descriptionEn: 'Mighty warriors. Strength +2, Constitution +1. Fierce in battle, relentless.',
-    bonuses: { strength: 2, constitution: 1 },
-    icon: '🗡️',
-  },
-  {
-    id: 'tiefling',
-    nameRu: 'Тифлинг',
-    nameEn: 'Tiefling',
-    descriptionRu: 'Дети преисподней. Харизма +2, Интеллект +1. Тёмное наследие и врождённая магия.',
-    descriptionEn: 'Children of the hells. Charisma +2, Intelligence +1. Dark heritage and innate magic.',
-    bonuses: { charisma: 2, intelligence: 1 },
-    icon: '😈',
-  },
-  {
-    id: 'dragonborn',
-    nameRu: 'Драконорождённый',
-    nameEn: 'Dragonborn',
-    descriptionRu: 'Могучие потомки драконов. Сила +2, Харизма +1. Дыхание дракона и чешуя.',
-    descriptionEn: 'Powerful dragon descendants. Strength +2, Charisma +1. Dragon breath and scales.',
-    bonuses: { strength: 2, charisma: 1 },
-    icon: '🐉',
-  },
-  {
-    id: 'half-elf',
-    nameRu: 'Полуэльф',
-    nameEn: 'Half-Elf',
-    descriptionRu: 'Обаятельные и разносторонние. Харизма +2, две любые +1. Лучшее от обеих рас.',
-    descriptionEn: 'Charming and versatile. Charisma +2, two any +1. Best of both races.',
-    bonuses: { charisma: 2, dexterity: 1, wisdom: 1 },
-    icon: '🌟',
-  },
-];
-
-// ===== CLASSES =====
-export interface GameClass {
-  id: string;
-  nameRu: string;
-  nameEn: string;
-  descriptionRu: string;
-  descriptionEn: string;
-  primaryStat: string;
-  hitDie: string;
-  icon: string;
-  baseHp: number;
-  baseMp: number;
-}
-
-export const CLASSES: GameClass[] = [
-  {
-    id: 'warrior',
-    nameRu: 'Воин',
-    nameEn: 'Warrior',
-    descriptionRu: 'Мастер ближнего боя. Высокое HP, тяжёлые доспехи. Базовое HP: 12.',
-    descriptionEn: 'Master of melee. High HP, heavy armor. Base HP: 12.',
-    primaryStat: 'strength',
-    hitDie: '1d12',
-    icon: '⚔️',
-    baseHp: 12,
-    baseMp: 2,
-  },
-  {
-    id: 'mage',
-    nameRu: 'Маг',
-    nameEn: 'Mage',
-    descriptionRu: 'Повелитель арканы. Мощные заклинания, но мало HP. Базовое HP: 6.',
-    descriptionEn: 'Master of arcane. Powerful spells but low HP. Base HP: 6.',
-    primaryStat: 'intelligence',
-    hitDie: '1d6',
-    icon: '🔮',
-    baseHp: 6,
-    baseMp: 10,
-  },
-  {
-    id: 'rogue',
-    nameRu: 'Плут',
-    nameEn: 'Rogue',
-    descriptionRu: 'Мастер скрытности и критических ударов. Ловкий и смертоносный. Базовое HP: 8.',
-    descriptionEn: 'Master of stealth and critical hits. Agile and deadly. Base HP: 8.',
-    primaryStat: 'dexterity',
-    hitDie: '1d8',
-    icon: '🗡️',
-    baseHp: 8,
-    baseMp: 3,
-  },
-  {
-    id: 'cleric',
-    nameRu: 'Жрец',
-    nameEn: 'Cleric',
-    descriptionRu: 'Целитель и защитник. Исцеление и божественная магия. Базовое HP: 8.',
-    descriptionEn: 'Healer and protector. Healing and divine magic. Base HP: 8.',
-    primaryStat: 'wisdom',
-    hitDie: '1d8',
-    icon: '✨',
-    baseHp: 8,
-    baseMp: 8,
-  },
-  {
-    id: 'ranger',
-    nameRu: 'Следопыт',
-    nameEn: 'Ranger',
-    descriptionRu: 'Охотник и следопыт. Луки, ловушки, магия природы. Базовое HP: 10.',
-    descriptionEn: 'Hunter and tracker. Bows, traps, nature magic. Base HP: 10.',
-    primaryStat: 'dexterity',
-    hitDie: '1d10',
-    icon: '🏹',
-    baseHp: 10,
-    baseMp: 4,
-  },
-];
-
 // ===== LOCATIONS =====
+// Акт 1: Пепельные Врата (Люди), уровни 1-3. Остальные Акты (2-6) ещё не спроектированы
+// под новый лор и намеренно не включены — см. docs/cursed_depths_master.pdf, раздел 2.1.
 export interface Location {
   id: string;
   nameRu: string;
@@ -185,93 +15,73 @@ export interface Location {
 export const LOCATIONS: Location[] = [
   {
     id: 'town',
-    nameRu: 'Таверна «Проклятая Глубина»',
-    nameEn: 'Cursed Depth Tavern',
-    descriptionRu: 'Безопасное место для отдыха. Восстановите HP и MP здесь.',
-    descriptionEn: 'Safe haven for rest. Restore HP and MP here.',
-    icon: '🍺',
+    nameRu: 'Пепельные Врата',
+    nameEn: 'Ashen Gate',
+    descriptionRu: 'Вы очнулись здесь без памяти — лишь шрам через полмира и эхо голоса Карсуса в ушах. Безопасное убежище. Отдохните, чтобы восстановить HP и MP.',
+    descriptionEn: 'You woke here with no memory — only a scar across half the world and the echo of Karsus\' voice. A safe haven. Rest here to restore HP and MP.',
+    icon: '🏚️',
     level: 0,
-    connections: ['forest', 'market'],
+    connections: ['market', 'burned_village'],
   },
   {
     id: 'market',
-    nameRu: 'Рынок Теней',
-    nameEn: 'Shadow Market',
-    descriptionRu: 'Купите и продайте снаряжение. Торговцы со всего подземелья.',
-    descriptionEn: 'Buy and sell equipment. Merchants from across the dungeon.',
+    nameRu: 'Торговый двор Врат',
+    nameEn: "Gate's Trading Yard",
+    descriptionRu: 'Уцелевшие торговцы предлагают снаряжение тем немногим, кто ещё решается выйти за стены.',
+    descriptionEn: 'Surviving merchants offer gear to the few still willing to leave the walls.',
     icon: '🏪',
     level: 0,
     connections: ['town'],
   },
   {
-    id: 'forest',
-    nameRu: 'Тёмный Лес',
-    nameEn: 'Dark Forest',
-    descriptionRu: 'Мрачный лес у входа в подземелье. Уровень 1-3.',
-    descriptionEn: 'Gloomy forest at the dungeon entrance. Level 1-3.',
-    icon: '🌲',
-    level: 1,
-    connections: ['town', 'caves'],
-  },
-  {
-    id: 'caves',
-    nameRu: 'Пещеры Эха',
-    nameEn: 'Echo Caves',
-    descriptionRu: 'Извилистые пещеры с эхом криков. Уровень 3-5.',
-    descriptionEn: 'Winding caves with echoing cries. Level 3-5.',
-    icon: '🕳️',
-    level: 3,
-    connections: ['forest', 'crypt'],
-  },
-  {
-    id: 'crypt',
-    nameRu: 'Древняя Гробница',
-    nameEn: 'Ancient Crypt',
-    descriptionRu: 'Проклятая гробница нежити. Уровень 5-7.',
-    descriptionEn: 'Cursed crypt of the undead. Level 5-7.',
-    icon: '💀',
-    level: 5,
-    connections: ['caves', 'labyrinth'],
-  },
-  {
-    id: 'labyrinth',
-    nameRu: 'Лабиринт Теней',
-    nameEn: 'Shadow Labyrinth',
-    descriptionRu: 'Запутанный лабиринт, полный ловушек. Уровень 7-9.',
-    descriptionEn: 'Confusing labyrinth full of traps. Level 7-9.',
-    icon: '🌀',
-    level: 7,
-    connections: ['crypt', 'forge'],
-  },
-  {
-    id: 'forge',
-    nameRu: 'Кузница Демонов',
-    nameEn: 'Demon Forge',
-    descriptionRu: 'Раскалённая кузница, где куются легендарные клинки. Уровень 9-11.',
-    descriptionEn: 'Blazing forge where legendary blades are made. Level 9-11.',
+    id: 'burned_village',
+    nameRu: 'Сожжённая деревня',
+    nameEn: 'Burned Village',
+    descriptionRu: 'Обугленные остовы домов. Здесь выжившие делают первые шаги против того, во что превратился мир после Падения.',
+    descriptionEn: 'Charred husks of houses. Here survivors take their first steps against what the world became after the Fall.',
     icon: '🔥',
-    level: 9,
-    connections: ['labyrinth', 'abyss'],
+    level: 1,
+    connections: ['town', 'velarion_temple', 'sorrow_road'],
   },
   {
-    id: 'abyss',
-    nameRu: 'Врата Бездны',
-    nameEn: 'Abyss Gates',
-    descriptionRu: 'Врата, за которыми скрывается древнее зло. Уровень 11-13.',
-    descriptionEn: 'Gates behind which ancient evil lurks. Level 11-13.',
-    icon: '👹',
-    level: 11,
-    connections: ['forge', 'throne'],
+    id: 'velarion_temple',
+    nameRu: 'Храм Велариона',
+    nameEn: 'Temple of Velarion',
+    descriptionRu: 'Заброшенный храм Владыки Огня и Пепла. Тени под сводами ещё помнят, каким он был до Падения.',
+    descriptionEn: 'An abandoned temple of the Lord of Fire and Ash. The shadows beneath its vaults still remember what it was before the Fall.',
+    icon: '⛩️',
+    level: 1,
+    connections: ['burned_village'],
   },
   {
-    id: 'throne',
-    nameRu: 'Трон Проклятого Короля',
-    nameEn: "Cursed King's Throne",
-    descriptionRu: 'Последний рубеж. Проклятый Король ждёт. Уровень 13+.',
-    descriptionEn: 'The final frontier. The Cursed King awaits. Level 13+.',
-    icon: '👑',
-    level: 13,
-    connections: ['abyss'],
+    id: 'sorrow_road',
+    nameRu: 'Тракт Скорби',
+    nameEn: 'Sorrow Road',
+    descriptionRu: 'Дорога между руинами, усеянная брошенными телегами и следами тех, кто не дошёл.',
+    descriptionEn: 'A road between ruins, littered with abandoned carts and the traces of those who never made it.',
+    icon: '🪦',
+    level: 2,
+    connections: ['burned_village', 'ashen_fortress'],
+  },
+  {
+    id: 'ashen_fortress',
+    nameRu: 'Пепельная крепость',
+    nameEn: 'Ashen Fortress',
+    descriptionRu: 'Последний оплот людей перед Падением. Стены ещё стоят — но гарнизон уже не тот.',
+    descriptionEn: "Humanity's last stronghold before the Fall. The walls still stand — but the garrison is no longer what it was.",
+    icon: '🏰',
+    level: 2,
+    connections: ['sorrow_road', 'karsus_rift'],
+  },
+  {
+    id: 'karsus_rift',
+    nameRu: 'Разлом Карсуса',
+    nameEn: "Karsus' Rift",
+    descriptionRu: 'Трещина в самой ткани мира. Отсюда голос Карсуса впервые прозвучал на весь Пепельный Край. Вход в Глубь.',
+    descriptionEn: "A crack in the fabric of the world. Here Karsus' voice first rang out across the Ashen Reach. The entrance to the Depths.",
+    icon: '🌀',
+    level: 3,
+    connections: ['ashen_fortress'],
   },
 ];
 
@@ -296,28 +106,30 @@ export const ITEMS: Item[] = [
   { id: 'steel_sword', nameRu: 'Стальной меч', nameEn: 'Steel Sword', type: 'weapon', rarity: 'uncommon', stats: { attack: 6 }, descriptionRu: 'Острый стальной меч.', descriptionEn: 'Sharp steel sword.', icon: '⚔️', value: 80 },
   { id: 'elven_bow', nameRu: 'Эльфийский лук', nameEn: 'Elven Bow', type: 'weapon', rarity: 'uncommon', stats: { attack: 5, dexterity: 1 }, descriptionRu: 'Изящный лук эльфийской работы.', descriptionEn: 'Elegant elven-crafted bow.', icon: '🏹', value: 100 },
   { id: 'shadow_dagger', nameRu: 'Теневой кинжал', nameEn: 'Shadow Dagger', type: 'weapon', rarity: 'rare', stats: { attack: 7, dexterity: 2 }, descriptionRu: 'Кинжал, пронзающий тени.', descriptionEn: 'A dagger that pierces shadows.', icon: '🗡️', value: 200 },
-  { id: 'flame_blade', nameRu: 'Пламенный клинок', nameEn: 'Flame Blade', type: 'weapon', rarity: 'rare', stats: { attack: 9, intelligence: 1 }, descriptionRu: 'Меч, пылающий магическим огнём.', descriptionEn: 'Sword blazing with magical fire.', icon: '🔥', value: 350 },
+  { id: 'flame_blade', nameRu: 'Пламенный клинок', nameEn: 'Flame Blade', type: 'weapon', rarity: 'rare', stats: { attack: 9, intellect: 1 }, descriptionRu: 'Меч, пылающий магическим огнём.', descriptionEn: 'Sword blazing with magical fire.', icon: '🔥', value: 350 },
   { id: 'frost_axe', nameRu: 'Ледяной топор', nameEn: 'Frost Axe', type: 'weapon', rarity: 'epic', stats: { attack: 12, strength: 2 }, descriptionRu: 'Топор вечного холода. Замораживает врагов.', descriptionEn: 'Axe of eternal cold. Freezes enemies.', icon: '🪓', value: 600 },
-  { id: 'void_staff', nameRu: 'Посох Пустоты', nameEn: 'Void Staff', type: 'weapon', rarity: 'epic', stats: { attack: 8, intelligence: 4, mp: 15 }, descriptionRu: 'Посох, черпающий силу из Пустоты.', descriptionEn: 'Staff drawing power from the Void.', icon: '🪄', value: 700 },
-  { id: 'dragonslayer', nameRu: 'Драконоборец', nameEn: 'Dragonslayer', type: 'weapon', rarity: 'legendary', stats: { attack: 16, strength: 3, constitution: 2 }, descriptionRu: 'Легендарный меч, созданный для убийства драконов.', descriptionEn: 'Legendary sword forged to slay dragons.', icon: '⚔️', value: 1500 },
+  { id: 'void_staff', nameRu: 'Посох Пустоты', nameEn: 'Void Staff', type: 'weapon', rarity: 'epic', stats: { attack: 8, intellect: 4, mp: 15 }, descriptionRu: 'Посох, черпающий силу из Пустоты.', descriptionEn: 'Staff drawing power from the Void.', icon: '🪄', value: 700 },
+  { id: 'dragonslayer', nameRu: 'Драконоборец', nameEn: 'Dragonslayer', type: 'weapon', rarity: 'legendary', stats: { attack: 16, strength: 3, vitality: 2 }, descriptionRu: 'Легендарный меч, созданный для убийства драконов.', descriptionEn: 'Legendary sword forged to slay dragons.', icon: '⚔️', value: 1500 },
   { id: 'cursed_king_blade', nameRu: 'Клинок Проклятого Короля', nameEn: "Cursed King's Blade", type: 'weapon', rarity: 'mythic', stats: { attack: 25, strength: 5, dexterity: 3 }, descriptionRu: 'Мифический клинок, пропитанный проклятием Короля.', descriptionEn: "Mythic blade soaked in the King's curse.", icon: '👑', value: 5000 },
 
   // === ARMOR ===
   { id: 'leather_armor', nameRu: 'Кожаная броня', nameEn: 'Leather Armor', type: 'armor', rarity: 'common', stats: { defense: 2 }, descriptionRu: 'Простая кожаная броня.', descriptionEn: 'Simple leather armor.', icon: '🦺', value: 15 },
   { id: 'chainmail', nameRu: 'Кольчуга', nameEn: 'Chainmail', type: 'armor', rarity: 'uncommon', stats: { defense: 4 }, descriptionRu: 'Кольчужная броня из стальных колец.', descriptionEn: 'Chainmail of steel rings.', icon: '🛡️', value: 60 },
-  { id: 'dwarven_plate', nameRu: 'Дварфийская латная броня', nameEn: 'Dwarven Plate', type: 'armor', rarity: 'rare', stats: { defense: 7, constitution: 1 }, descriptionRu: 'Тяжёлая броня дварфийской ковки.', descriptionEn: 'Heavy armor of dwarven make.', icon: '🛡️', value: 250 },
+  { id: 'dwarven_plate', nameRu: 'Дварфийская латная броня', nameEn: 'Dwarven Plate', type: 'armor', rarity: 'rare', stats: { defense: 7, vitality: 1 }, descriptionRu: 'Тяжёлая броня дварфийской ковки.', descriptionEn: 'Heavy armor of dwarven make.', icon: '🛡️', value: 250 },
   { id: 'shadow_cloak', nameRu: 'Плащ Теней', nameEn: 'Shadow Cloak', type: 'armor', rarity: 'rare', stats: { defense: 3, dexterity: 2 }, descriptionRu: 'Плащ, скрывающий во тьме.', descriptionEn: 'A cloak that hides in darkness.', icon: '🧥', value: 200 },
-  { id: 'dragonscale_armor', nameRu: 'Драконья чешуя', nameEn: 'Dragonscale Armor', type: 'armor', rarity: 'epic', stats: { defense: 10, strength: 1, constitution: 2 }, descriptionRu: 'Броня из чешуи дракона.', descriptionEn: 'Armor made from dragon scales.', icon: '🐉', value: 800 },
-  { id: 'celestial_robe', nameRu: 'Небесная мантия', nameEn: 'Celestial Robe', type: 'armor', rarity: 'epic', stats: { defense: 4, intelligence: 3, wisdom: 2 }, descriptionRu: 'Мантия, благословлённая небесами.', descriptionEn: 'Robe blessed by the heavens.', icon: '✨', value: 700 },
-  { id: 'crown_armor', nameRu: 'Броня Короны', nameEn: 'Crown Armor', type: 'armor', rarity: 'legendary', stats: { defense: 14, strength: 2, constitution: 3, charisma: 2 }, descriptionRu: 'Легендарная броня, носящая печать Короля.', descriptionEn: "Legendary armor bearing the King's seal.", icon: '👑', value: 2000 },
+  { id: 'dragonscale_armor', nameRu: 'Драконья чешуя', nameEn: 'Dragonscale Armor', type: 'armor', rarity: 'epic', stats: { defense: 10, strength: 1, vitality: 2 }, descriptionRu: 'Броня из чешуи дракона.', descriptionEn: 'Armor made from dragon scales.', icon: '🐉', value: 800 },
+  { id: 'celestial_robe', nameRu: 'Небесная мантия', nameEn: 'Celestial Robe', type: 'armor', rarity: 'epic', stats: { defense: 4, intellect: 3, willpower: 2 }, descriptionRu: 'Мантия, благословлённая небесами.', descriptionEn: 'Robe blessed by the heavens.', icon: '✨', value: 700 },
+  { id: 'crown_armor', nameRu: 'Броня Короны', nameEn: 'Crown Armor', type: 'armor', rarity: 'legendary', stats: { defense: 14, strength: 2, vitality: 3, willpower: 2 }, descriptionRu: 'Легендарная броня, носящая печать Короля.', descriptionEn: "Legendary armor bearing the King's seal.", icon: '👑', value: 2000 },
 
   // === ACCESSORIES ===
   { id: 'copper_ring', nameRu: 'Медное кольцо', nameEn: 'Copper Ring', type: 'accessory', rarity: 'common', stats: { hp: 5 }, descriptionRu: 'Простое медное кольцо с защитным чаром.', descriptionEn: 'Simple copper ring with a ward charm.', icon: '💍', value: 10 },
-  { id: 'amulet_vitality', nameRu: 'Амулет Жизни', nameEn: 'Amulet of Vitality', type: 'accessory', rarity: 'uncommon', stats: { hp: 15, constitution: 1 }, descriptionRu: 'Амулет, усиливающий жизненную силу.', descriptionEn: 'Amulet that enhances vitality.', icon: '📿', value: 80 },
+  { id: 'amulet_vitality', nameRu: 'Амулет Жизни', nameEn: 'Amulet of Vitality', type: 'accessory', rarity: 'uncommon', stats: { hp: 15, vitality: 1 }, descriptionRu: 'Амулет, усиливающий жизненную силу.', descriptionEn: 'Amulet that enhances vitality.', icon: '📿', value: 80 },
   { id: 'ring_power', nameRu: 'Кольцо Силы', nameEn: 'Ring of Power', type: 'accessory', rarity: 'rare', stats: { strength: 2, attack: 3 }, descriptionRu: 'Кольцо, дающее невероятную силу.', descriptionEn: 'Ring granting incredible power.', icon: '💍', value: 200 },
-  { id: 'arcane_pendant', nameRu: 'Тайная подвеска', nameEn: 'Arcane Pendant', type: 'accessory', rarity: 'rare', stats: { intelligence: 2, mp: 10 }, descriptionRu: 'Подвеска, концентрирующая магическую энергию.', descriptionEn: 'Pendant concentrating magical energy.', icon: '🔮', value: 250 },
-  { id: 'lucky_charm', nameRu: 'Талисман Удачи', nameEn: 'Lucky Charm', type: 'accessory', rarity: 'epic', stats: { dexterity: 2, charisma: 2, hp: 10 }, descriptionRu: 'Талисман, приносящий удачу в бою.', descriptionEn: 'Charm bringing luck in battle.', icon: '🍀', value: 500 },
-  { id: 'crown_fragment', nameRu: 'Осколок Короны', nameEn: 'Crown Fragment', type: 'accessory', rarity: 'legendary', stats: { strength: 3, intelligence: 3, hp: 25 }, descriptionRu: 'Фрагмент Короны Проклятого Короля.', descriptionEn: "Fragment of the Cursed King's Crown.", icon: '👑', value: 3000 },
+  { id: 'arcane_pendant', nameRu: 'Тайная подвеска', nameEn: 'Arcane Pendant', type: 'accessory', rarity: 'rare', stats: { intellect: 2, mp: 10 }, descriptionRu: 'Подвеска, концентрирующая магическую энергию.', descriptionEn: 'Pendant concentrating magical energy.', icon: '🔮', value: 250 },
+  { id: 'lucky_charm', nameRu: 'Талисман Удачи', nameEn: 'Lucky Charm', type: 'accessory', rarity: 'epic', stats: { dexterity: 2, instinct: 2, hp: 10 }, descriptionRu: 'Талисман, приносящий удачу в бою.', descriptionEn: 'Charm bringing luck in battle.', icon: '🍀', value: 500 },
+  { id: 'crown_fragment', nameRu: 'Осколок Короны', nameEn: 'Crown Fragment', type: 'accessory', rarity: 'legendary', stats: { strength: 3, intellect: 3, hp: 25 }, descriptionRu: 'Фрагмент Короны Проклятого Короля.', descriptionEn: "Fragment of the Cursed King's Crown.", icon: '👑', value: 3000 },
+  { id: 'ashen_amulet', nameRu: 'Пепельный амулет Хранителя', nameEn: "Keeper's Ashen Amulet", type: 'accessory', rarity: 'rare', stats: { willpower: 2, hp: 15 }, descriptionRu: 'Амулет падшего жреца Велариона, ещё хранящий отголосок веры.', descriptionEn: "Amulet of a fallen priest of Velarion, still echoing with faith.", icon: '📿', value: 220 },
+  { id: 'witness_eye', nameRu: 'Око Первого Свидетеля', nameEn: 'Eye of the First Witness', type: 'accessory', rarity: 'epic', stats: { instinct: 3, willpower: 2, hp: 20 }, descriptionRu: 'Застывшее око духа, видевшего Падение. Носитель иногда слышит его крик.', descriptionEn: 'The frozen eye of the spirit who witnessed the Fall. Its wearer sometimes hears its scream.', icon: '👁️', value: 650 },
 
   // === CONSUMABLES ===
   { id: 'health_potion', nameRu: 'Зелье здоровья', nameEn: 'Health Potion', type: 'consumable', rarity: 'common', stats: { healHp: 15 }, descriptionRu: 'Восстанавливает 15 HP.', descriptionEn: 'Restores 15 HP.', icon: '🧪', value: 15 },
@@ -341,6 +153,11 @@ export const ITEMS: Item[] = [
 ];
 
 // ===== ENEMIES =====
+// Акт 1: Пепельные Врата, уровни 1-3. У босса «Первый Свидетель» по лору два боевых
+// облика, чередующихся каждые 3 хода (физический/магический), и вторая фаза на 30% HP,
+// объединяющая оба облика — эта механика фаз пока не реализована в combat-engine
+// (текущий движок работает с одиночным набором hp/ac/attack/damage на врага) и намеренно
+// отложена как отдельная задача; сейчас босс представлен усреднённым набором характеристик.
 export interface EnemyTemplate {
   id: string;
   nameRu: string;
@@ -358,41 +175,29 @@ export interface EnemyTemplate {
 }
 
 export const ENEMIES: EnemyTemplate[] = [
-  // Forest (Level 1-3)
-  { id: 'goblin', nameRu: 'Гоблин', nameEn: 'Goblin', hp: 12, ac: 8, attack: 3, damage: '1d4+1', xp: 15, gold: 5, lootTable: [{ itemId: 'rusty_sword', chance: 0.2 }, { itemId: 'health_potion', chance: 0.3 }], locationId: 'forest', isBoss: false, icon: '👺' },
-  { id: 'wolf', nameRu: 'Лютоволк', nameEn: 'Dire Wolf', hp: 18, ac: 10, attack: 4, damage: '1d6+2', xp: 20, gold: 3, lootTable: [{ itemId: 'leather_armor', chance: 0.15 }], locationId: 'forest', isBoss: false, icon: '🐺' },
-  { id: 'spider', nameRu: 'Гигантский паук', nameEn: 'Giant Spider', hp: 15, ac: 9, attack: 4, damage: '1d4+2', xp: 18, gold: 4, lootTable: [{ itemId: 'antidote', chance: 0.4 }, { itemId: 'shadow_essence', chance: 0.1 }], locationId: 'forest', isBoss: false, icon: '🕷️' },
-  { id: 'forest_witch', nameRu: 'Лесная ведьма', nameEn: 'Forest Witch', hp: 25, ac: 11, attack: 6, damage: '1d8+3', xp: 50, gold: 20, lootTable: [{ itemId: 'mana_potion', chance: 0.5 }, { itemId: 'shadow_essence', chance: 0.3 }], locationId: 'forest', isBoss: true, icon: '🧙‍♀️' },
+  // Сожжённая деревня (Level 1)
+  { id: 'blighted_villager', nameRu: 'Заражённый Скверной крестьянин', nameEn: 'Blighted Villager', hp: 12, ac: 7, attack: 3, damage: '1d4+1', xp: 12, gold: 4, lootTable: [{ itemId: 'health_potion', chance: 0.3 }, { itemId: 'rusty_sword', chance: 0.15 }], locationId: 'burned_village', isBoss: false, icon: '🧟' },
+  { id: 'ashen_jackal', nameRu: 'Пепельный шакал', nameEn: 'Ashen Jackal', hp: 10, ac: 8, attack: 3, damage: '1d4', xp: 10, gold: 2, lootTable: [{ itemId: 'antidote', chance: 0.2 }], locationId: 'burned_village', isBoss: false, icon: '🐺' },
+  { id: 'ash_marauder', nameRu: 'Мародёр Пепла', nameEn: 'Ash Marauder', hp: 16, ac: 9, attack: 4, damage: '1d6+1', xp: 16, gold: 7, lootTable: [{ itemId: 'leather_armor', chance: 0.15 }, { itemId: 'rusty_sword', chance: 0.2 }], locationId: 'burned_village', isBoss: false, icon: '🔪' },
 
-  // Caves (Level 3-5)
-  { id: 'bat_swarm', nameRu: 'Стая летучих мышей', nameEn: 'Bat Swarm', hp: 14, ac: 9, attack: 3, damage: '1d4+1', xp: 12, gold: 2, lootTable: [], locationId: 'caves', isBoss: false, icon: '🦇' },
-  { id: 'cave_troll', nameRu: 'Пещерный тролль', nameEn: 'Cave Troll', hp: 35, ac: 10, attack: 6, damage: '1d8+4', xp: 35, gold: 15, lootTable: [{ itemId: 'iron_ore', chance: 0.4 }, { itemId: 'iron_sword', chance: 0.15 }], locationId: 'caves', isBoss: false, icon: '🧌' },
-  { id: 'slime', nameRu: 'Кислотный слизень', nameEn: 'Acid Slime', hp: 20, ac: 6, attack: 4, damage: '1d6+2', xp: 15, gold: 8, lootTable: [{ itemId: 'antidote', chance: 0.3 }], locationId: 'caves', isBoss: false, icon: '🟢' },
-  { id: 'rock_golem', nameRu: 'Каменный голем', nameEn: 'Rock Golem', hp: 45, ac: 14, attack: 7, damage: '1d10+5', xp: 60, gold: 30, lootTable: [{ itemId: 'iron_ore', chance: 0.6 }, { itemId: 'steel_sword', chance: 0.2 }], locationId: 'caves', isBoss: true, icon: '🗿' },
+  // Храм Велариона (Level 1-2)
+  { id: 'corrupted_acolyte', nameRu: 'Осквернённый послушник', nameEn: 'Corrupted Acolyte', hp: 18, ac: 9, attack: 4, damage: '1d6+1', xp: 18, gold: 8, lootTable: [{ itemId: 'mana_potion', chance: 0.3 }, { itemId: 'antidote', chance: 0.2 }], locationId: 'velarion_temple', isBoss: false, icon: '🕯️' },
+  { id: 'ashen_guardian', nameRu: 'Пепельный страж', nameEn: 'Ashen Guardian', hp: 24, ac: 11, attack: 5, damage: '1d6+2', xp: 24, gold: 10, lootTable: [{ itemId: 'iron_sword', chance: 0.15 }, { itemId: 'iron_ore', chance: 0.3 }], locationId: 'velarion_temple', isBoss: false, icon: '🗿' },
+  { id: 'keeper_of_ashes', nameRu: 'Хранитель Пепла', nameEn: 'Keeper of Ashes', hp: 42, ac: 12, attack: 7, damage: '1d8+3', xp: 70, gold: 30, lootTable: [{ itemId: 'ashen_amulet', chance: 0.4 }, { itemId: 'greater_health', chance: 0.3 }], locationId: 'velarion_temple', isBoss: true, icon: '⚱️' },
 
-  // Crypt (Level 5-7)
-  { id: 'skeleton', nameRu: 'Скелет-воин', nameEn: 'Skeleton Warrior', hp: 22, ac: 11, attack: 5, damage: '1d6+3', xp: 25, gold: 10, lootTable: [{ itemId: 'chainmail', chance: 0.1 }], locationId: 'crypt', isBoss: false, icon: '💀' },
-  { id: 'zombie', nameRu: 'Гниющий зомби', nameEn: 'Rotting Zombie', hp: 30, ac: 8, attack: 5, damage: '1d8+2', xp: 22, gold: 5, lootTable: [{ itemId: 'health_potion', chance: 0.3 }], locationId: 'crypt', isBoss: false, icon: '🧟' },
-  { id: 'wraith', nameRu: 'Призрак', nameEn: 'Wraith', hp: 28, ac: 13, attack: 7, damage: '1d8+4', xp: 35, gold: 15, lootTable: [{ itemId: 'shadow_essence', chance: 0.4 }, { itemId: 'arcane_pendant', chance: 0.05 }], locationId: 'crypt', isBoss: false, icon: '👻' },
-  { id: 'lich', nameRu: 'Лич', nameEn: 'Lich', hp: 60, ac: 15, attack: 10, damage: '2d6+5', xp: 100, gold: 50, lootTable: [{ itemId: 'void_staff', chance: 0.1 }, { itemId: 'void_crystal', chance: 0.3 }], locationId: 'crypt', isBoss: true, icon: '☠️' },
+  // Тракт Скорби (Level 2)
+  { id: 'road_bandit', nameRu: 'Разбойник Тракта', nameEn: 'Road Bandit', hp: 20, ac: 9, attack: 5, damage: '1d6+2', xp: 20, gold: 15, lootTable: [{ itemId: 'iron_sword', chance: 0.2 }, { itemId: 'chainmail', chance: 0.1 }], locationId: 'sorrow_road', isBoss: false, icon: '🗡️' },
+  { id: 'mourning_wraith', nameRu: 'Скорбный дух', nameEn: 'Mourning Wraith', hp: 19, ac: 11, attack: 5, damage: '1d6+2', xp: 23, gold: 6, lootTable: [{ itemId: 'shadow_essence', chance: 0.25 }, { itemId: 'mana_potion', chance: 0.3 }], locationId: 'sorrow_road', isBoss: false, icon: '👻' },
+  { id: 'ashen_crow_flock', nameRu: 'Стая пепельных воронов', nameEn: 'Ashen Crow Flock', hp: 14, ac: 8, attack: 4, damage: '1d4+2', xp: 15, gold: 4, lootTable: [{ itemId: 'antidote', chance: 0.2 }], locationId: 'sorrow_road', isBoss: false, icon: '🐦' },
 
-  // Labyrinth (Level 7-9)
-  { id: 'minotaur', nameRu: 'Минотавр', nameEn: 'Minotaur', hp: 45, ac: 12, attack: 8, damage: '1d10+6', xp: 45, gold: 20, lootTable: [{ itemId: 'steel_sword', chance: 0.15 }], locationId: 'labyrinth', isBoss: false, icon: '🐂' },
-  { id: 'medusa', nameRu: 'Медуза', nameEn: 'Medusa', hp: 40, ac: 14, attack: 9, damage: '1d8+5', xp: 50, gold: 25, lootTable: [{ itemId: 'shadow_dagger', chance: 0.1 }], locationId: 'labyrinth', isBoss: false, icon: '🐍' },
-  { id: 'dark_mage', nameRu: 'Тёмный маг', nameEn: 'Dark Mage', hp: 35, ac: 11, attack: 12, damage: '2d6+4', xp: 55, gold: 30, lootTable: [{ itemId: 'scroll_fireball', chance: 0.2 }, { itemId: 'arcane_pendant', chance: 0.1 }], locationId: 'labyrinth', isBoss: false, icon: '🧙' },
-  { id: 'shadow_lord', nameRu: 'Повелитель Теней', nameEn: 'Shadow Lord', hp: 80, ac: 16, attack: 12, damage: '2d8+6', xp: 150, gold: 80, lootTable: [{ itemId: 'shadow_cloak', chance: 0.2 }, { itemId: 'shadow_dagger', chance: 0.3 }], locationId: 'labyrinth', isBoss: true, icon: '🌑' },
+  // Пепельная крепость (Level 2-3)
+  { id: 'possessed_guard', nameRu: 'Одержимый страж крепости', nameEn: 'Possessed Fortress Guard', hp: 30, ac: 12, attack: 6, damage: '1d8+3', xp: 30, gold: 16, lootTable: [{ itemId: 'chainmail', chance: 0.2 }, { itemId: 'steel_sword', chance: 0.1 }], locationId: 'ashen_fortress', isBoss: false, icon: '🛡️' },
+  { id: 'renegade_mage', nameRu: 'Скверный маг-отступник', nameEn: 'Blight-touched Renegade', hp: 26, ac: 10, attack: 7, damage: '1d8+2', xp: 32, gold: 18, lootTable: [{ itemId: 'mana_potion', chance: 0.4 }, { itemId: 'scroll_fireball', chance: 0.1 }], locationId: 'ashen_fortress', isBoss: false, icon: '🧙' },
+  { id: 'fortress_ash_golem', nameRu: 'Пепельный голем крепости', nameEn: 'Fortress Ash Golem', hp: 45, ac: 13, attack: 8, damage: '1d10+3', xp: 48, gold: 25, lootTable: [{ itemId: 'iron_ore', chance: 0.5 }, { itemId: 'dwarven_plate', chance: 0.05 }], locationId: 'ashen_fortress', isBoss: false, icon: '🗿' },
 
-  // Forge (Level 9-11)
-  { id: 'fire_elemental', nameRu: 'Огненный элементаль', nameEn: 'Fire Elemental', hp: 50, ac: 13, attack: 10, damage: '2d6+5', xp: 55, gold: 25, lootTable: [{ itemId: 'flame_blade', chance: 0.08 }], locationId: 'forge', isBoss: false, icon: '🔥' },
-  { id: 'demon_forge', nameRu: 'Демон-кузнец', nameEn: 'Forge Demon', hp: 55, ac: 14, attack: 11, damage: '2d8+4', xp: 60, gold: 30, lootTable: [{ itemId: 'iron_ore', chance: 0.5 }, { itemId: 'dragon_scale', chance: 0.1 }], locationId: 'forge', isBoss: false, icon: '😈' },
-  { id: 'inferno_dragon', nameRu: 'Инфернальный дракон', nameEn: 'Inferno Dragon', hp: 100, ac: 17, attack: 14, damage: '3d6+8', xp: 200, gold: 100, lootTable: [{ itemId: 'dragonscale_armor', chance: 0.15 }, { itemId: 'dragon_scale', chance: 0.5 }], locationId: 'forge', isBoss: true, icon: '🐲' },
-
-  // Abyss (Level 11-13)
-  { id: 'void_walker', nameRu: 'Ходок Пустоты', nameEn: 'Void Walker', hp: 60, ac: 15, attack: 13, damage: '2d8+6', xp: 70, gold: 35, lootTable: [{ itemId: 'void_crystal', chance: 0.2 }], locationId: 'abyss', isBoss: false, icon: '🕳️' },
-  { id: 'abyss_horror', nameRu: 'Ужас Бездны', nameEn: 'Abyss Horror', hp: 70, ac: 16, attack: 15, damage: '3d6+7', xp: 85, gold: 40, lootTable: [{ itemId: 'void_crystal', chance: 0.3 }, { itemId: 'crown_shard', chance: 0.05 }], locationId: 'abyss', isBoss: false, icon: '👁️' },
-
-  // Throne (Level 13+)
-  { id: 'cursed_king', nameRu: 'Проклятый Король', nameEn: 'Cursed King', hp: 200, ac: 20, attack: 18, damage: '3d10+10', xp: 500, gold: 300, lootTable: [{ itemId: 'cursed_king_blade', chance: 0.1 }, { itemId: 'crown_fragment', chance: 0.15 }, { itemId: 'crown_shard', chance: 0.4 }], locationId: 'throne', isBoss: true, icon: '👑' },
+  // Разлом Карсуса (Level 3)
+  { id: 'rift_spawn', nameRu: 'Порождение Разлома', nameEn: 'Rift Spawn', hp: 28, ac: 11, attack: 6, damage: '1d8+2', xp: 30, gold: 12, lootTable: [{ itemId: 'shadow_essence', chance: 0.3 }, { itemId: 'greater_health', chance: 0.2 }], locationId: 'karsus_rift', isBoss: false, icon: '🕳️' },
+  { id: 'first_witness', nameRu: 'Первый Свидетель', nameEn: 'The First Witness', hp: 95, ac: 14, attack: 10, damage: '2d8+5', xp: 280, gold: 120, lootTable: [{ itemId: 'witness_eye', chance: 0.25 }, { itemId: 'ashen_amulet', chance: 0.15 }, { itemId: 'elixir_power', chance: 0.3 }], locationId: 'karsus_rift', isBoss: true, icon: '👁️' },
 ];
 
 // ===== CRAFTING RECIPES =====
@@ -419,76 +224,6 @@ export const CRAFTING_RECIPES: CraftingRecipe[] = [
   { id: 'craft_elixir', nameRu: 'Варить Эликсир Мощи', nameEn: 'Brew Elixir of Power', materials: [{ itemId: 'shadow_essence', quantity: 2 }, { itemId: 'health_potion', quantity: 1 }], result: { itemId: 'elixir_power', quantity: 1 }, icon: '⚗️' },
 ];
 
-// ===== QUEST TEMPLATES =====
-export interface QuestTemplate {
-  id: string;
-  type: string;
-  titleRu: string;
-  titleEn: string;
-  descriptionRu: string;
-  descriptionEn: string;
-  target: number;
-  reward: { xp: number; gold: number; items?: string[] };
-}
-
-export const QUEST_TEMPLATES: QuestTemplate[] = [
-  { id: 'daily_kill_1', type: 'daily', titleRu: 'Охота на гоблинов', titleEn: 'Goblin Hunt', descriptionRu: 'Убейте 3 гоблинов в Тёмном Лесу.', descriptionEn: 'Kill 3 goblins in the Dark Forest.', target: 3, reward: { xp: 30, gold: 15 } },
-  { id: 'daily_explore_1', type: 'daily', titleRu: 'Исследователь', titleEn: 'Explorer', descriptionRu: 'Исследуйте любую локацию 5 раз.', descriptionEn: 'Explore any location 5 times.', target: 5, reward: { xp: 20, gold: 10 } },
-  { id: 'daily_craft_1', type: 'daily', titleRu: 'Подмастерье', titleEn: 'Apprentice', descriptionRu: 'Скрафтите 2 предмета.', descriptionEn: 'Craft 2 items.', target: 2, reward: { xp: 25, gold: 12 } },
-  { id: 'kill_boss_1', type: 'kill', titleRu: 'Убить Лесную ведьму', titleEn: 'Kill the Forest Witch', descriptionRu: 'Победите Лесную ведьму.', descriptionEn: 'Defeat the Forest Witch.', target: 1, reward: { xp: 100, gold: 50, items: ['shadow_essence'] } },
-  { id: 'kill_boss_2', type: 'kill', titleRu: 'Убить Лича', titleEn: 'Kill the Lich', descriptionRu: 'Победите Лича в Древней Гробнице.', descriptionEn: 'Defeat the Lich in the Ancient Crypt.', target: 1, reward: { xp: 200, gold: 100, items: ['void_crystal'] } },
-  { id: 'kill_boss_3', type: 'kill', titleRu: 'Свергнуть Короля', titleEn: 'Dethrone the King', descriptionRu: 'Победите Проклятого Короля.', descriptionEn: 'Defeat the Cursed King.', target: 1, reward: { xp: 1000, gold: 500, items: ['crown_fragment'] } },
-];
-
-// ===== ABILITIES =====
-export interface Ability {
-  id: string;
-  nameRu: string;
-  nameEn: string;
-  descriptionRu: string;
-  descriptionEn: string;
-  classId: string;       // which class can use this
-  mpCost: number;        // MP cost to use
-  hpCost: number;        // HP cost (0 for most)
-  level: number;         // minimum level required
-  type: 'damage' | 'heal' | 'buff';  // ability type
-  damage?: string;       // dice formula for damage (e.g. "3d6")
-  heal?: string;         // dice formula for healing
-  scalingStat: string;   // which stat adds bonus (e.g. "intelligence")
-  icon: string;
-}
-
-export const ABILITIES: Ability[] = [
-  // Warrior
-  { id: 'power_strike', nameRu: 'Мощный удар', nameEn: 'Power Strike', descriptionRu: 'Сильный удар, наносящий двойной урон.', descriptionEn: 'A powerful strike dealing double damage.', classId: 'warrior', mpCost: 0, hpCost: 5, level: 1, type: 'damage', damage: '2d8', scalingStat: 'strength', icon: '💥' },
-  { id: 'shield_bash', nameRu: 'Удар щитом', nameEn: 'Shield Bash', descriptionRu: 'Оглушает врага, пропуская его ход.', descriptionEn: 'Stuns the enemy, skipping their turn.', classId: 'warrior', mpCost: 3, hpCost: 0, level: 3, type: 'damage', damage: '1d6', scalingStat: 'strength', icon: '🛡️' },
-  { id: 'berserker_rage', nameRu: 'Берсерк', nameEn: 'Berserker Rage', descriptionRu: 'Жертвует HP для массивного урона.', descriptionEn: 'Sacrifices HP for massive damage.', classId: 'warrior', mpCost: 0, hpCost: 10, level: 5, type: 'damage', damage: '3d10', scalingStat: 'strength', icon: '😤' },
-
-  // Mage
-  { id: 'fireball', nameRu: 'Огненный шар', nameEn: 'Fireball', descriptionRu: 'Взрыв огня, наносящий 3d6 урона.', descriptionEn: 'Blast of fire dealing 3d6 damage.', classId: 'mage', mpCost: 5, hpCost: 0, level: 1, type: 'damage', damage: '3d6', scalingStat: 'intelligence', icon: '🔥' },
-  { id: 'ice_storm', nameRu: 'Ледяная буря', nameEn: 'Ice Storm', descriptionRu: 'Замораживающая буря. 2d8 урона.', descriptionEn: 'Freezing storm. 2d8 damage.', classId: 'mage', mpCost: 7, hpCost: 0, level: 3, type: 'damage', damage: '2d8', scalingStat: 'intelligence', icon: '❄️' },
-  { id: 'arcane_blast', nameRu: 'Арканный взрыв', nameEn: 'Arcane Blast', descriptionRu: 'Чистая магическая энергия. 4d6 урона.', descriptionEn: 'Pure magical energy. 4d6 damage.', classId: 'mage', mpCost: 10, hpCost: 0, level: 5, type: 'damage', damage: '4d6', scalingStat: 'intelligence', icon: '💜' },
-
-  // Rogue
-  { id: 'sneak_attack', nameRu: 'Скрытая атака', nameEn: 'Sneak Attack', descriptionRu: 'Атака из тени с авто-критом.', descriptionEn: 'Strike from shadows with auto-crit.', classId: 'rogue', mpCost: 3, hpCost: 0, level: 1, type: 'damage', damage: '2d6', scalingStat: 'dexterity', icon: '🗡️' },
-  { id: 'poison_blade', nameRu: 'Отравленный клинок', nameEn: 'Poison Blade', descriptionRu: 'Наносит урон ядом. 1d8 + 1d4.', descriptionEn: 'Poisoned strike. 1d8 + 1d4.', classId: 'rogue', mpCost: 4, hpCost: 0, level: 3, type: 'damage', damage: '1d8+1d4', scalingStat: 'dexterity', icon: '☠️' },
-  { id: 'shadow_strike', nameRu: 'Теневой удар', nameEn: 'Shadow Strike', descriptionRu: 'Молниеносная атака. 3d8 урона.', descriptionEn: 'Lightning strike. 3d8 damage.', classId: 'rogue', mpCost: 6, hpCost: 0, level: 5, type: 'damage', damage: '3d8', scalingStat: 'dexterity', icon: '🌑' },
-
-  // Cleric
-  { id: 'heal', nameRu: 'Исцеление', nameEn: 'Heal', descriptionRu: 'Восстанавливает HP.', descriptionEn: 'Restores HP.', classId: 'cleric', mpCost: 4, hpCost: 0, level: 1, type: 'heal', heal: '2d8', scalingStat: 'wisdom', icon: '✨' },
-  { id: 'smite', nameRu: 'Кара', nameEn: 'Smite', descriptionRu: 'Божественный удар. 2d8 урона нежити.', descriptionEn: 'Divine strike. 2d8 damage to undead.', classId: 'cleric', mpCost: 5, hpCost: 0, level: 1, type: 'damage', damage: '2d8', scalingStat: 'wisdom', icon: '⚡' },
-  { id: 'divine_shield', nameRu: 'Божественный щит', nameEn: 'Divine Shield', descriptionRu: 'Исцеление + урон. 1d6 исцеления, 1d6 урона.', descriptionEn: 'Heal + damage. 1d6 heal, 1d6 damage.', classId: 'cleric', mpCost: 7, hpCost: 0, level: 4, type: 'heal', heal: '1d6', damage: '1d6', scalingStat: 'wisdom', icon: '🛡️' },
-
-  // Ranger
-  { id: 'aimed_shot', nameRu: 'Прицельный выстрел', nameEn: 'Aimed Shot', descriptionRu: 'Точный выстрел с бонусом. 2d8 урона.', descriptionEn: 'Precise shot with bonus. 2d8 damage.', classId: 'ranger', mpCost: 3, hpCost: 0, level: 1, type: 'damage', damage: '2d8', scalingStat: 'dexterity', icon: '🎯' },
-  { id: 'volley', nameRu: 'Залп стрел', nameEn: 'Arrow Volley', descriptionRu: 'Дождь стрел. 2d6 урона.', descriptionEn: 'Rain of arrows. 2d6 damage.', classId: 'ranger', mpCost: 5, hpCost: 0, level: 3, type: 'damage', damage: '2d6', scalingStat: 'dexterity', icon: '🏹' },
-  { id: 'natures_wrath', nameRu: 'Гнев природы', nameEn: "Nature's Wrath", descriptionRu: 'Сила природы обрушивается на врага. 3d8 урона.', descriptionEn: "Nature's fury unleashed. 3d8 damage.", classId: 'ranger', mpCost: 8, hpCost: 0, level: 5, type: 'damage', damage: '3d8', scalingStat: 'wisdom', icon: '🌿' },
-];
-
-export function getAbilitiesForClass(classId: string, level: number): Ability[] {
-  return ABILITIES.filter(a => a.classId === classId && a.level <= level);
-}
-
 // ===== RARITY COLORS =====
 export const RARITY_COLORS: Record<string, string> = {
   common: '#9ca3af',
@@ -509,36 +244,3 @@ export const RARITY_NAMES_RU: Record<string, string> = {
   artifact: 'Артефакт',
   mythic: 'Мифический',
 };
-
-// ===== HELPER FUNCTIONS =====
-export function getRace(id: string): Race | undefined {
-  return RACES.find(r => r.id === id);
-}
-
-export function getClass(id: string): GameClass | undefined {
-  return CLASSES.find(c => c.id === id);
-}
-
-export function getLocation(id: string): Location | undefined {
-  return LOCATIONS.find(l => l.id === id);
-}
-
-export function getItem(id: string): Item | undefined {
-  return ITEMS.find(i => i.id === id);
-}
-
-export function getEnemiesForLocation(locationId: string): EnemyTemplate[] {
-  return ENEMIES.filter(e => e.locationId === locationId);
-}
-
-export function calculateStat(base: number, raceBonus: number, level: number): number {
-  return base + raceBonus + Math.floor(level / 4);
-}
-
-export function xpForLevel(level: number): number {
-  return level * 100;
-}
-
-export function getItemByRarity(rarity: string): Item[] {
-  return ITEMS.filter(i => i.rarity === rarity);
-}

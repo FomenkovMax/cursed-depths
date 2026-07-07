@@ -7,8 +7,13 @@
  * извлекаются здесь эвристикой по ключевым словам и первому числу с "%".
  * Это осознанное упрощение первой версии движка: сложные уникальные механики
  * (стойки, призывы, условные триггеры) сведены к своей ближайшей базовой
- * категории эффекта. Пассивные способности пока не участвуют в расчёте боя —
- * они уже показываются игроку как изученные, но их эффекты — следующий шаг.
+ * категории эффекта. Пассивные способности разрешаются отдельным эвристическим
+ * движком той же природы — см. lib/passive-engine.ts.
+ *
+ * Баффы/дебаффы/щиты теперь настоящие многоходовые эффекты (см.
+ * lib/combat-effects.ts), а не одноходовые заменители урона — эта функция
+ * лишь извлекает их магнитуду/длительность из текста, применяет их
+ * combat/action/route.ts.
  */
 
 export type EffectKind = 'damage' | 'heal' | 'shield' | 'debuff' | 'buff' | 'utility';
@@ -82,22 +87,32 @@ export function classifyEffect(description: string): EffectKind {
   return 'utility';
 }
 
+/** Стандартная длительность баффов/дебаффов/щитов от активных способностей. */
+export const EFFECT_DURATION_TURNS = 3;
+
 export interface AbilityResolution {
   kind: EffectKind;
   /** Урон, нанесённый цели (после смягчения защитой), если kind === 'damage'. */
   damage: number;
   /** Восстановленное здоровье атакующему, если kind === 'heal'. */
   heal: number;
-  /** Временный щит/бафф — сколько следующего урона поглощается (в очках ХП), если kind === 'shield'. */
+  /** Щит — сколько будущего входящего урона поглощается (в очках ХП), если kind === 'shield'. */
   shield: number;
-  /** Насколько ослаблен следующий удар врага (доля 0-1), если kind === 'debuff'. */
+  /** Насколько ослаблен урон врага (доля 0-1) на debuffTurns ходов, если kind === 'debuff'. */
   enemyDamageReduction: number;
+  /** Насколько усилен урон игрока (доля 0-1) на buffTurns ходов, если kind === 'buff'. */
+  playerDamageBonus: number;
+  /** Сколько ходов действует бафф/дебафф (0, если способность не создаёт длящийся эффект). */
+  effectTurns: number;
 }
 
 /**
  * Разрешает эффект активной способности относительно базовой атаки атакующего.
- * Урон/лечение/щит считаются как (процент из описания) от урона базовой атаки —
+ * Урон/лечение считаются как (процент из описания) от урона базовой атаки —
  * простая, но единообразная точка отсчёта для всех ~140 активных способностей.
+ * Щит/бафф/дебафф больше не превращаются в разовый урон — это настоящие
+ * многоходовые эффекты (EFFECT_DURATION_TURNS ходов), которые combat/action/route.ts
+ * добавляет в персистентный список активных эффектов боя (lib/combat-effects.ts).
  */
 export function resolveAbility(
   description: string,
@@ -108,7 +123,9 @@ export function resolveAbility(
   const kind = classifyEffect(description);
   const base = basicAttackDamage(attacker);
 
-  const result: AbilityResolution = { kind, damage: 0, heal: 0, shield: 0, enemyDamageReduction: 0 };
+  const result: AbilityResolution = {
+    kind, damage: 0, heal: 0, shield: 0, enemyDamageReduction: 0, playerDamageBonus: 0, effectTurns: 0,
+  };
 
   switch (kind) {
     case 'damage':
@@ -122,12 +139,13 @@ export function resolveAbility(
       break;
     case 'debuff':
       result.enemyDamageReduction = Math.min(0.75, percent);
+      result.effectTurns = EFFECT_DURATION_TURNS;
       // дебафф почти всегда сопровождается небольшим прямым уроном от самой атаки
       result.damage = mitigateDamage(Math.round(base * 0.5), defenderVitality);
       break;
     case 'buff':
-      // бафф считается как усиленная атака в этот же ход (полноценные баффы на N ходов — TODO)
-      result.damage = mitigateDamage(Math.round(base * (1 + percent * 0.5)), defenderVitality);
+      result.playerDamageBonus = Math.min(0.75, percent);
+      result.effectTurns = EFFECT_DURATION_TURNS;
       break;
     default:
       result.damage = mitigateDamage(base, defenderVitality);

@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
 
     const abilities = await db.ability.findMany({
       where,
-      orderBy: [{ levelReq: 'asc' }, { name: 'asc' }],
+      orderBy: [{ stage: 'asc' }, { name: 'asc' }],
     });
     return NextResponse.json(abilities);
   } catch (error) {

@@ -112,46 +112,43 @@ model Enemy {
   @@index([locationId])
 }
 
+// Расы, классы и способности — источник истины: docs/cursed_depths_master.pdf
+// и docs/cursed_depths_abilities.pdf (v2 — баланс). 6 рас, 26 классов (по 4 на
+// расу, кроме Людей — у них 6: по 3 на каждый Путь), ~180 способностей по 3
+// стадиям эволюции на класс.
 model Race {
-  id          String  @id @default(cuid())
-  name        String
-  slug        String  @unique
-  description String
-  icon        String
-  lore        String
-  baseHp      Int
-  baseMana    Int
-  baseStr     Int
-  baseDex     Int
-  baseInt     Int
-  baseWis     Int
-  baseCon     Int
+  id            String  @id @default(cuid())
+  name          String
+  slug          String  @unique
+  description   String
+  icon          String
+  lore          String  // связь расы со Столпом-богом (Библия мира)
+  baseStrength  Int
+  baseDexterity Int
+  baseVitality  Int
+  baseIntellect Int
+  baseWillpower Int
+  baseInstinct  Int
 
-  classes     GameClass[]
+  classes       GameClass[]
 }
 
 model GameClass {
-  id          String  @id @default(cuid())
+  id          String    @id @default(cuid())
   name        String
-  slug        String  @unique
+  slug        String    @unique
   description String
   icon        String
-  role        String  // dps, healer, support
-  raceId      String?
-  race        Race?   @relation(fields: [raceId], references: [id], onDelete: Cascade)
-  isUniversal Boolean @default(false)
-  hpMod       Float
-  manaMod     Float
-  strMod      Float
-  dexMod      Float
-  intMod      Float
-  wisMod      Float
-  conMod      Float
+  raceId      String
+  race        Race      @relation(fields: [raceId], references: [id], onDelete: Cascade)
+  path        String    // ash (Путь Пепла) | blight (Путь Скверны)
+  role        String    // tank, healer, dps, support, antibuff
+  primaryStat String    // приоритетная характеристика (информационно)
 
   abilities   Ability[]
 
   @@index([raceId])
-  @@index([isUniversal])
+  @@index([path])
 }
 
 model Ability {
@@ -160,17 +157,13 @@ model Ability {
   slug        String    @unique
   description String
   icon        String
-  type        String    // active, passive, ultimate
-  school      String    // shadow, arcane, fire, physical, holy, ...
-  manaCost    Int
-  cooldown    Int
-  damage      Int
-  healing     Int
-  duration    Int
   classId     String
   class       GameClass @relation(fields: [classId], references: [id], onDelete: Cascade)
-  levelReq    Int
+  stage       Int       // 1, 2 или 3 — стадия эволюции класса
+  stageName   String    // название тира на этой стадии (напр. "Страж Предела")
+  type        String    // active | passive
+  bossNote    String?   // как способность работает иначе против боссов
 
   @@index([classId])
-  @@index([levelReq])
+  @@index([stage])
 }

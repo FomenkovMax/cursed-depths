@@ -1,10 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { ABILITIES, ENEMIES, ITEMS } from '@/lib/game-data';
-import { rollD20, rollDice, getModifier, rollLoot, isCriticalHit } from '@/lib/dice';
+import { ENEMIES, ITEMS } from '@/lib/game-data';
+import { rollDice, rollLoot } from '@/lib/dice';
 import { validateTelegramRequest } from '@/lib/auth';
 import { getCached, setCached, CACHE_TTL } from '@/lib/cache';
 import { addItemToInventory } from '@/lib/inventory-utils';
+import {
+  basicAttackDamage,
+  mitigateDamage,
+  manaCostForStage,
+  stageUnlockLevel,
+  resolveAbility,
+  type PlayerCombatStats,
+} from '@/lib/combat-engine';
 
 export async function POST(req: NextRequest) {
   const auth = validateTelegramRequest(req);
@@ -15,12 +23,12 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { action } = body; // 'attack', 'spell', 'flee', 'use_item', 'ability'
+    const { action } = body; // 'attack', 'ability', 'flee', 'use_item'
     const itemId = body.itemId;
 
     const player = await db.player.findUnique({
       where: { telegramId },
-      include: { inventory: true },
+      include: { inventory: true, class: { include: { abilities: true } } },
     });
 
     if (!player) return NextResponse.json({ error: 'Персонаж не найден' }, { status: 404 });
@@ -58,45 +66,38 @@ export async function POST(req: NextRequest) {
     // Track deferred DB operations for transaction
     let itemToConsume: { id: string; delete: boolean } | null = null;
     const lootItems: { itemData: typeof ITEMS[0]; quantity: number }[] = [];
+    // Дебафф ослабляет урон врага в его ответный удар в этом же раунде
+    // (упрощение: способности-дебаффы пока не переносятся между ходами).
+    let enemyDamageReduction = 0;
+
+    const combatStats: PlayerCombatStats = {
+      strength: player.strength,
+      dexterity: player.dexterity,
+      vitality: player.vitality,
+      intellect: player.intellect,
+      willpower: player.willpower,
+      instinct: player.instinct,
+      level: player.level,
+      primaryStat: player.class.primaryStat,
+    };
+
+    const weapon = player.inventory.find(i => i.equipped && i.slot === 'weapon');
+    const weaponBonus = weapon?.stats ? (JSON.parse(weapon.stats).attack || 0) : 0;
 
     // Player action
     if (action === 'flee') {
-      const fleeRoll = rollD20() + getModifier(player.dexterity);
-      if (fleeRoll > enemyTemplate.ac) {
+      const fleeChance = 0.5 + player.dexterity / 200; // выше Ловкость — выше шанс сбежать
+      if (Math.random() < fleeChance) {
         playerFled = true;
         combatOver = true;
         combatLog.push({ text: `Вы сбежали от ${enemyTemplate.nameRu}!`, turn: currentTurn });
       } else {
-        combatLog.push({ text: `Побег не удался!`, turn: currentTurn });
+        combatLog.push({ text: 'Побег не удался!', turn: currentTurn });
       }
     } else if (action === 'attack') {
-      const roll = rollD20();
-      const attackMod = getModifier(player.strength);
-      // Check equipped weapon for attack bonus
-      const weapon = player.inventory.find(i => i.equipped && i.slot === 'weapon');
-      const weaponBonus = weapon?.stats ? (JSON.parse(weapon.stats).attack || 0) : 0;
-      const totalAttack = roll + attackMod + weaponBonus;
-
-      if (roll === 20 || totalAttack >= enemyTemplate.ac) {
-        const crit = isCriticalHit(roll);
-        const damage = rollDice(enemyTemplate.damage) + getModifier(player.strength) + weaponBonus + (crit ? rollDice(enemyTemplate.damage) : 0);
-        enemyHp = Math.max(0, enemyHp - damage);
-        combatLog.push({
-          text: `Вы атакуете! Бросок: ${roll}+${attackMod}+${weaponBonus}=${totalAttack}. ${crit ? 'КРИТИЧЕСКИЙ УДАР! ' : ''}Урон: ${damage}`,
-          turn: currentTurn,
-        });
-      } else {
-        combatLog.push({ text: `Вы атакуете! Бросок: ${roll}+${attackMod}+${weaponBonus}=${totalAttack}. Промах!`, turn: currentTurn });
-      }
-    } else if (action === 'spell') {
-      if (playerMp < 3) {
-        combatLog.push({ text: 'Недостаточно маны для заклинания!', turn: currentTurn });
-      } else {
-        playerMp -= 3;
-        const spellDamage = rollDice('2d6') + getModifier(player.intelligence);
-        enemyHp = Math.max(0, enemyHp - spellDamage);
-        combatLog.push({ text: `Вы произносите заклинание! Урон: ${spellDamage}`, turn: currentTurn });
-      }
+      const damage = mitigateDamage(basicAttackDamage(combatStats) + weaponBonus, enemyTemplate.ac);
+      enemyHp = Math.max(0, enemyHp - damage);
+      combatLog.push({ text: `Вы атакуете! Урон: ${damage}`, turn: currentTurn });
     } else if (action === 'use_item') {
       const item = player.inventory.find(i => i.itemId === itemId && i.type === 'consumable');
       if (!item) {
@@ -116,43 +117,35 @@ export async function POST(req: NextRequest) {
       }
     } else if (action === 'ability') {
       const abilityId = body.abilityId;
-      const ability = ABILITIES.find(a => a.id === abilityId);
+      const ability = player.class.abilities.find(a => a.id === abilityId);
 
       if (!ability) {
         combatLog.push({ text: 'Способность не найдена!', turn: currentTurn });
-      } else if (ability.classId !== player.class) {
-        combatLog.push({ text: 'Эта способность не для вашего класса!', turn: currentTurn });
-      } else if (ability.level > player.level) {
-        combatLog.push({ text: `Нужен уровень ${ability.level}!`, turn: currentTurn });
-      } else if (playerMp < ability.mpCost) {
-        combatLog.push({ text: `Нужно ${ability.mpCost} MP!`, turn: currentTurn });
-      } else if (playerHp <= ability.hpCost) {
-        combatLog.push({ text: `Нужно ${ability.hpCost} HP! Вы слишком слабы.`, turn: currentTurn });
+      } else if (ability.type !== 'active') {
+        combatLog.push({ text: 'Эта способность пассивна и не используется в бою напрямую!', turn: currentTurn });
+      } else if (player.level < stageUnlockLevel(ability.stage)) {
+        combatLog.push({ text: `Нужен уровень ${stageUnlockLevel(ability.stage)}!`, turn: currentTurn });
       } else {
-        // Pay costs
-        playerMp -= ability.mpCost;
-        playerHp -= ability.hpCost;
+        const manaCost = manaCostForStage(ability.stage);
+        if (playerMp < manaCost) {
+          combatLog.push({ text: `Нужно ${manaCost} маны!`, turn: currentTurn });
+        } else {
+          playerMp -= manaCost;
+          const resolution = resolveAbility(ability.description, combatStats, enemyTemplate.ac);
 
-        const statBonus = getModifier(player[ability.scalingStat as keyof typeof player] as number);
+          if (resolution.damage > 0) {
+            enemyHp = Math.max(0, enemyHp - resolution.damage);
+          }
+          if (resolution.heal > 0) {
+            playerHp = Math.min(player.maxHp, playerHp + resolution.heal);
+          }
 
-        // Handle damage abilities
-        if (ability.damage) {
-          const abilityDamage = rollDice(ability.damage) + statBonus;
-          enemyHp = Math.max(0, enemyHp - abilityDamage);
-          combatLog.push({
-            text: `${ability.icon} ${ability.nameRu}! Урон: ${abilityDamage}${ability.hpCost > 0 ? ` (цена: ${ability.hpCost} HP)` : ''}${ability.mpCost > 0 ? ` (${ability.mpCost} MP)` : ''}`,
-            turn: currentTurn,
-          });
-        }
-
-        // Handle heal abilities
-        if (ability.heal) {
-          const healAmount = rollDice(ability.heal) + statBonus;
-          playerHp = Math.min(player.maxHp, playerHp + healAmount);
-          combatLog.push({
-            text: `${ability.icon} ${ability.nameRu}! Восстановлено ${healAmount} HP`,
-            turn: currentTurn,
-          });
+          const parts = [`${ability.icon} ${ability.name}!`];
+          if (resolution.damage > 0) parts.push(`Урон: ${resolution.damage}`);
+          if (resolution.heal > 0) parts.push(`Восстановлено ${resolution.heal} ХП`);
+          if (resolution.enemyDamageReduction > 0) parts.push(`Враг ослаблен на ${Math.round(resolution.enemyDamageReduction * 100)}%`);
+          combatLog.push({ text: parts.join(' '), turn: currentTurn });
+          enemyDamageReduction = resolution.enemyDamageReduction;
         }
       }
     }
@@ -178,19 +171,17 @@ export async function POST(req: NextRequest) {
 
     // Enemy attacks back if not dead and not fled
     if (!combatOver && !playerFled) {
-      const enemyRoll = rollD20();
-      const playerAc = 10 + getModifier(player.dexterity);
       const armorItem = player.inventory.find(i => i.equipped && i.type === 'armor');
       const armorBonus = armorItem?.stats ? (JSON.parse(armorItem.stats).defense || 0) : 0;
-      const totalAc = playerAc + armorBonus;
+      const rawDamage = rollDice(enemyTemplate.damage) * (1 - enemyDamageReduction);
+      const enemyDamage = Math.max(1, Math.round(mitigateDamage(rawDamage, player.vitality) - armorBonus));
+      playerHp = Math.max(0, playerHp - enemyDamage);
+      combatLog.push({ text: `${enemyTemplate.nameRu} атакует! Урон: ${enemyDamage}`, turn: currentTurn + 1 });
+    }
 
-      if (enemyRoll >= totalAc) {
-        const enemyDamage = rollDice(enemyTemplate.damage);
-        playerHp = Math.max(0, playerHp - enemyDamage);
-        combatLog.push({ text: `${enemyTemplate.nameRu} атакует! Урон: ${enemyDamage}`, turn: currentTurn + 1 });
-      } else {
-        combatLog.push({ text: `${enemyTemplate.nameRu} атакует, но промахивается!`, turn: currentTurn + 1 });
-      }
+    // Mana regen each round (Фаза 1.3: +10 маны за ход)
+    if (!combatOver) {
+      playerMp = Math.min(player.maxMp, playerMp + 10);
     }
 
     // Check if player is dead
@@ -204,10 +195,12 @@ export async function POST(req: NextRequest) {
     let newXp = player.xp + xpGained;
     let newLevel = player.level;
     let newXpToNext = player.xpToNext;
+    let newStatPoints = player.statPoints;
     while (newXp >= newXpToNext) {
       newXp -= newXpToNext;
       newLevel++;
       newXpToNext = newLevel * 100;
+      newStatPoints += 2;
       leveledUp = true;
     }
 
@@ -223,7 +216,8 @@ export async function POST(req: NextRequest) {
     if (leveledUp) {
       updateData.level = newLevel;
       updateData.xpToNext = newXpToNext;
-      const newMaxHp = player.maxHp + rollDice('1d8');
+      updateData.statPoints = newStatPoints;
+      const newMaxHp = player.maxHp + 10;
       updateData.maxHp = newMaxHp;
       updateData.hp = newMaxHp; // Full heal on level up
     }
@@ -272,7 +266,7 @@ export async function POST(req: NextRequest) {
       return tx.player.update({
         where: { telegramId },
         data: updateData,
-        include: { inventory: true },
+        include: { inventory: true, race: true, class: { include: { abilities: true } } },
       });
     });
 

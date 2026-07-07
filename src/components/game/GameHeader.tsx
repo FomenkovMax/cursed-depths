@@ -1,4 +1,3 @@
-import { RACES, CLASSES } from '@/lib/game-data';
 import { PlayerData } from '@/lib/game-types';
 
 interface GameHeaderProps {
@@ -16,11 +15,11 @@ export function GameHeader({ player, locationIcon, locationName }: GameHeaderPro
     <header className="sticky top-0 z-50 bg-card/95 backdrop-blur-sm border-b border-border px-4 py-2">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span className="text-xl">{RACES.find(r => r.id === player?.race)?.icon || '👤'}</span>
+          <span className="text-xl">{player?.race?.icon || '👤'}</span>
           <div>
             <div className="font-bold text-sm text-foreground leading-tight">{player?.name}</div>
             <div className="text-[10px] text-muted-foreground">
-              Ур. {player?.level} {RACES.find(r => r.id === player?.race)?.nameRu} {CLASSES.find(c => c.id === player?.class)?.nameRu}
+              Ур. {player?.level} {player?.race?.name} {player?.class?.name}
             </div>
           </div>
         </div>

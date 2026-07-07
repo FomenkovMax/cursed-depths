@@ -12,7 +12,13 @@ export async function GET(req: NextRequest) {
   try {
     const player = await db.player.findUnique({
       where: { telegramId },
-      include: { inventory: true, quests: true, creation: true },
+      include: {
+        inventory: true,
+        quests: true,
+        creation: true,
+        race: true,
+        class: { include: { abilities: true } },
+      },
     });
 
     if (!player) {

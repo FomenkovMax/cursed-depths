@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { LOCATIONS, ENEMIES, CRAFTING_RECIPES, ABILITIES } from '@/lib/game-data';
+import { LOCATIONS, ENEMIES, CRAFTING_RECIPES } from '@/lib/game-data';
+import { stageUnlockLevel } from '@/lib/combat-engine';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   PlayerData,
@@ -474,10 +475,29 @@ export default function CursedDepths() {
     setLoading(false);
   };
 
-  // ===== HELPER: Get available abilities for player =====
+  // ===== ALLOCATE STAT POINT =====
+  const handleAllocateStat = async (stat: string) => {
+    if (!player) return;
+    setLoading(true);
+    try {
+      const data = await apiCall('/api/player/allocate-stat', 'POST', { stat });
+      if (data.error) {
+        setMessage({ text: data.error, type: 'error' });
+      } else {
+        setPlayer(data.player);
+      }
+    } catch {
+      setMessage({ text: 'Ошибка распределения очков', type: 'error' });
+    }
+    setLoading(false);
+  };
+
+  // ===== HELPER: Get available (active, unlocked) abilities for player =====
   const getAvailableAbilities = () => {
     if (!player) return [];
-    return ABILITIES.filter(a => a.classId === player.class && a.level <= player.level);
+    return (player.class.abilities ?? []).filter(
+      a => a.type === 'active' && player.level >= stageUnlockLevel(a.stage)
+    );
   };
 
   // ===== HELPER: Get current location info =====
@@ -606,6 +626,7 @@ export default function CursedDepths() {
             onDaily={handleDaily}
             canClaimDaily={canClaimDaily()}
             onGoToCombat={() => setTab('combat')}
+            onAllocateStat={handleAllocateStat}
           />
 
           <CombatTab

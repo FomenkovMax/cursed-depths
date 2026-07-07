@@ -28,6 +28,7 @@ export async function POST(req: NextRequest) {
       const updated = await db.player.update({
         where: { telegramId },
         data: { gold: { increment: goldFound } },
+        include: { inventory: true, race: true, class: { include: { abilities: true } } },
       });
       return NextResponse.json({
         type: 'safe',
@@ -64,6 +65,7 @@ export async function POST(req: NextRequest) {
           enemyMaxHp: enemyHp,
           combatLog: JSON.stringify([{ text: `${enemy.nameRu} появляется!`, turn: 0 }]),
         },
+        include: { inventory: true, race: true, class: { include: { abilities: true } } },
       });
 
       return NextResponse.json({
@@ -102,6 +104,7 @@ export async function POST(req: NextRequest) {
       return tx.player.update({
         where: { telegramId },
         data: { gold: { increment: goldFound } },
+        include: { inventory: true, race: true, class: { include: { abilities: true } } },
       });
     });
 

@@ -1,11 +1,13 @@
-import { RACES, CLASSES } from '@/lib/game-data';
+'use client';
+
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
-import { GameMessage, STAT_NAMES_RU, STAT_SHORT_RU } from '@/lib/game-types';
+import { GameMessage, RaceData, STAT_SHORT_RU, PATH_NAMES_RU, ROLE_NAMES_RU } from '@/lib/game-types';
 
 interface CharacterCreationScreenProps {
   message: GameMessage;
@@ -15,12 +17,21 @@ interface CharacterCreationScreenProps {
   charName: string;
   setCharName: (name: string) => void;
   charRace: string;
-  setCharRace: (raceId: string) => void;
+  setCharRace: (raceSlug: string) => void;
   charClass: string;
-  setCharClass: (classId: string) => void;
+  setCharClass: (classSlug: string) => void;
   loading: boolean;
   onCreatePlayer: () => void;
 }
+
+const RACE_STATS: { key: keyof RaceData; short: string }[] = [
+  { key: 'baseStrength', short: STAT_SHORT_RU.strength },
+  { key: 'baseDexterity', short: STAT_SHORT_RU.dexterity },
+  { key: 'baseVitality', short: STAT_SHORT_RU.vitality },
+  { key: 'baseIntellect', short: STAT_SHORT_RU.intellect },
+  { key: 'baseWillpower', short: STAT_SHORT_RU.willpower },
+  { key: 'baseInstinct', short: STAT_SHORT_RU.instinct },
+];
 
 export function CharacterCreationScreen({
   message,
@@ -36,8 +47,20 @@ export function CharacterCreationScreen({
   loading,
   onCreatePlayer,
 }: CharacterCreationScreenProps) {
-  const raceData = RACES.find(r => r.id === charRace);
-  const classData = CLASSES.find(c => c.id === charClass);
+  const [races, setRaces] = useState<RaceData[]>([]);
+  const [racesLoading, setRacesLoading] = useState(true);
+
+  useEffect(() => {
+    fetch('/api/races')
+      .then(r => r.json())
+      .then((data: RaceData[]) => setRaces(data))
+      .catch(() => setRaces([]))
+      .finally(() => setRacesLoading(false));
+  }, []);
+
+  const raceData = races.find(r => r.slug === charRace);
+  const classes = raceData?.classes ?? [];
+  const classData = classes.find(c => c.slug === charClass);
 
   return (
     <div className="min-h-screen bg-background p-4 flex flex-col">
@@ -97,36 +120,40 @@ export function CharacterCreationScreen({
           {creationStep === 1 && (
             <div className="animate-fade-in">
               <h2 className="text-lg font-bold mb-3 text-center">Выберите расу</h2>
-              <ScrollArea className="h-[45vh]">
-                <div className="grid gap-2 pr-2">
-                  {RACES.map(race => (
-                    <button
-                      key={race.id}
-                      onClick={() => setCharRace(race.id)}
-                      className={`w-full text-left p-3 rounded-lg border transition-all ${
-                        charRace === race.id
-                          ? 'border-primary bg-primary/10 animate-glow'
-                          : 'border-border bg-card hover:border-primary/50'
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <span className="text-2xl">{race.icon}</span>
-                        <div className="flex-1">
-                          <div className="font-bold text-sm">{race.nameRu}</div>
-                          <div className="text-xs text-muted-foreground">{race.descriptionRu}</div>
-                          <div className="flex gap-1 mt-1 flex-wrap">
-                            {Object.entries(race.bonuses).map(([stat, val]) => (
-                              <Badge key={stat} variant="outline" className="text-[10px] h-5 px-1">
-                                {STAT_SHORT_RU[stat]} +{val}
-                              </Badge>
-                            ))}
+              {racesLoading ? (
+                <p className="text-sm text-muted-foreground text-center py-8">Загрузка рас...</p>
+              ) : (
+                <ScrollArea className="h-[45vh]">
+                  <div className="grid gap-2 pr-2">
+                    {races.map(race => (
+                      <button
+                        key={race.slug}
+                        onClick={() => { setCharRace(race.slug); setCharClass(''); }}
+                        className={`w-full text-left p-3 rounded-lg border transition-all ${
+                          charRace === race.slug
+                            ? 'border-primary bg-primary/10 animate-glow'
+                            : 'border-border bg-card hover:border-primary/50'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="text-2xl">{race.icon}</span>
+                          <div className="flex-1">
+                            <div className="font-bold text-sm">{race.name}</div>
+                            <div className="text-xs text-muted-foreground">{race.description}</div>
+                            <div className="flex gap-1 mt-1 flex-wrap">
+                              {RACE_STATS.map(({ key, short }) => (
+                                <Badge key={key} variant="outline" className="text-[10px] h-5 px-1">
+                                  {short} {race[key] as number}
+                                </Badge>
+                              ))}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </ScrollArea>
+                      </button>
+                    ))}
+                  </div>
+                </ScrollArea>
+              )}
             </div>
           )}
 
@@ -136,12 +163,12 @@ export function CharacterCreationScreen({
               <h2 className="text-lg font-bold mb-3 text-center">Выберите класс</h2>
               <ScrollArea className="h-[45vh]">
                 <div className="grid gap-2 pr-2">
-                  {CLASSES.map(cls => (
+                  {classes.map(cls => (
                     <button
-                      key={cls.id}
-                      onClick={() => setCharClass(cls.id)}
+                      key={cls.slug}
+                      onClick={() => setCharClass(cls.slug)}
                       className={`w-full text-left p-3 rounded-lg border transition-all ${
-                        charClass === cls.id
+                        charClass === cls.slug
                           ? 'border-primary bg-primary/10 animate-glow'
                           : 'border-border bg-card hover:border-primary/50'
                       }`}
@@ -149,17 +176,17 @@ export function CharacterCreationScreen({
                       <div className="flex items-center gap-3">
                         <span className="text-2xl">{cls.icon}</span>
                         <div className="flex-1">
-                          <div className="font-bold text-sm">{cls.nameRu}</div>
-                          <div className="text-xs text-muted-foreground">{cls.descriptionRu}</div>
-                          <div className="flex gap-2 mt-1">
-                            <Badge variant="outline" className="text-[10px] h-5 px-1 text-hp">
-                              HP: {cls.baseHp}
+                          <div className="font-bold text-sm">{cls.name}</div>
+                          <div className="text-xs text-muted-foreground">{cls.description}</div>
+                          <div className="flex gap-2 mt-1 flex-wrap">
+                            <Badge variant="outline" className={`text-[10px] h-5 px-1 ${cls.path === 'ash' ? 'text-gold' : 'text-destructive'}`}>
+                              {PATH_NAMES_RU[cls.path]}
+                            </Badge>
+                            <Badge variant="outline" className="text-[10px] h-5 px-1">
+                              {ROLE_NAMES_RU[cls.role] ?? cls.role}
                             </Badge>
                             <Badge variant="outline" className="text-[10px] h-5 px-1 text-mp">
-                              MP: {cls.baseMp}
-                            </Badge>
-                            <Badge variant="outline" className="text-[10px] h-5 px-1 text-gold">
-                              {STAT_NAMES_RU[cls.primaryStat]}
+                              {cls.primaryStat}
                             </Badge>
                           </div>
                         </div>
@@ -181,31 +208,22 @@ export function CharacterCreationScreen({
                     <div className="text-4xl mb-2">{raceData?.icon} {classData?.icon}</div>
                     <h3 className="text-xl font-bold text-primary">{charName}</h3>
                     <p className="text-sm text-muted-foreground">
-                      {raceData?.nameRu} • {classData?.nameRu}
+                      {raceData?.name} • {classData?.name}
                     </p>
+                    {classData && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {PATH_NAMES_RU[classData.path]} • {ROLE_NAMES_RU[classData.role] ?? classData.role}
+                      </p>
+                    )}
                   </div>
                   <Separator className="my-3 bg-border" />
                   <div className="grid grid-cols-3 gap-2 text-center text-sm">
-                    {raceData && Object.entries(raceData.bonuses).map(([stat, val]) => {
-                      const base = 10 + val;
-                      return (
-                        <div key={stat} className="bg-secondary/50 rounded p-2">
-                          <div className="text-xs text-muted-foreground">{STAT_SHORT_RU[stat]}</div>
-                          <div className="font-bold">{base}</div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                  <Separator className="my-3 bg-border" />
-                  <div className="flex justify-center gap-4 text-sm">
-                    <div className="text-center">
-                      <div className="text-hp font-bold">{classData?.baseHp}</div>
-                      <div className="text-xs text-muted-foreground">HP</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-mp font-bold">{classData?.baseMp}</div>
-                      <div className="text-xs text-muted-foreground">MP</div>
-                    </div>
+                    {raceData && RACE_STATS.map(({ key, short }) => (
+                      <div key={key} className="bg-secondary/50 rounded p-2">
+                        <div className="text-xs text-muted-foreground">{short}</div>
+                        <div className="font-bold">{raceData[key] as number}</div>
+                      </div>
+                    ))}
                   </div>
                 </CardContent>
               </Card>

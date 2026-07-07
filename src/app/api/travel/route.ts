@@ -33,6 +33,7 @@ export async function POST(req: NextRequest) {
     const updated = await db.player.update({
       where: { telegramId },
       data: { locationId },
+      include: { inventory: true, race: true, class: { include: { abilities: true } } },
     });
 
     return NextResponse.json({

@@ -111,3 +111,66 @@ model Enemy {
 
   @@index([locationId])
 }
+
+model Race {
+  id          String  @id @default(cuid())
+  name        String
+  slug        String  @unique
+  description String
+  icon        String
+  lore        String
+  baseHp      Int
+  baseMana    Int
+  baseStr     Int
+  baseDex     Int
+  baseInt     Int
+  baseWis     Int
+  baseCon     Int
+
+  classes     GameClass[]
+}
+
+model GameClass {
+  id          String  @id @default(cuid())
+  name        String
+  slug        String  @unique
+  description String
+  icon        String
+  role        String  // dps, healer, support
+  raceId      String?
+  race        Race?   @relation(fields: [raceId], references: [id], onDelete: Cascade)
+  isUniversal Boolean @default(false)
+  hpMod       Float
+  manaMod     Float
+  strMod      Float
+  dexMod      Float
+  intMod      Float
+  wisMod      Float
+  conMod      Float
+
+  abilities   Ability[]
+
+  @@index([raceId])
+  @@index([isUniversal])
+}
+
+model Ability {
+  id          String    @id @default(cuid())
+  name        String
+  slug        String    @unique
+  description String
+  icon        String
+  type        String    // active, passive, ultimate
+  school      String    // shadow, arcane, fire, physical, holy, ...
+  manaCost    Int
+  cooldown    Int
+  damage      Int
+  healing     Int
+  duration    Int
+  classId     String
+  class       GameClass @relation(fields: [classId], references: [id], onDelete: Cascade)
+  levelReq    Int
+
+  @@index([classId])
+  @@index([levelReq])
+}

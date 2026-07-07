@@ -5,6 +5,8 @@ import { Badge } from '@/components/ui/badge';
 import { LOCATIONS, RARITY_COLORS } from '@/lib/game-data';
 import { PlayerData, STAT_SHORT_RU, SLOT_RU, ITEM_TYPE_RU, parseStats } from '@/lib/game-types';
 import { computeEquipmentBonuses } from '@/lib/equipment-stats';
+import { stageUnlockLevel } from '@/lib/combat-engine';
+import { parsePassiveEffect } from '@/lib/passive-engine';
 
 interface OverviewTabProps {
   player: PlayerData | null;
@@ -132,6 +134,54 @@ export function OverviewTab({
           </div>
         </CardContent>
       </Card>
+
+      {/* Passive abilities */}
+      {player && (
+        <Card className="border-border">
+          <CardHeader className="pb-2 pt-3 px-4">
+            <CardTitle className="text-sm">Пассивные способности</CardTitle>
+          </CardHeader>
+          <CardContent className="px-4 pb-3">
+            {(() => {
+              const passives = (player.class.abilities || []).filter(a => a.type === 'passive');
+              if (passives.length === 0) {
+                return <p className="text-xs text-muted-foreground text-center">У класса нет пассивных способностей</p>;
+              }
+              return (
+                <div className="space-y-2">
+                  {passives.map(a => {
+                    const unlocked = player.level >= stageUnlockLevel(a.stage);
+                    const active = unlocked && parsePassiveEffect(a.description) !== null;
+                    return (
+                      <div
+                        key={a.id}
+                        className={`flex items-start gap-2 p-2 rounded-lg bg-secondary/30 border border-border ${!unlocked ? 'opacity-50' : ''}`}
+                      >
+                        <span className="text-lg">{a.icon || '✨'}</span>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="text-xs font-medium">{a.name}</span>
+                            {unlocked ? (
+                              active ? (
+                                <Badge className="text-[9px] h-4 px-1 bg-uncommon/20 text-uncommon">активна</Badge>
+                              ) : (
+                                <Badge variant="outline" className="text-[9px] h-4 px-1 text-muted-foreground">декоративна</Badge>
+                              )
+                            ) : (
+                              <Badge variant="outline" className="text-[9px] h-4 px-1">ур. {stageUnlockLevel(a.stage)}</Badge>
+                            )}
+                          </div>
+                          <p className="text-[10px] text-muted-foreground">{a.description}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Equipped gear */}
       <Card className="border-border">

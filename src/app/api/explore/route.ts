@@ -7,6 +7,10 @@ import { getCached, setCached, CACHE_TTL } from '@/lib/cache';
 import { addItemToInventory } from '@/lib/inventory-utils';
 import { initBossState } from '@/lib/boss-mechanics';
 import { incrementQuestProgress } from '@/lib/quests';
+import { stageUnlockLevel } from '@/lib/combat-engine';
+import { parsePassiveEffect, type PassiveEffect } from '@/lib/passive-engine';
+import { outOfCombatRegen } from '@/lib/passive-runtime';
+import { computeEquipmentBonuses } from '@/lib/equipment-stats';
 
 export async function POST(req: NextRequest) {
   const auth = validateTelegramRequest(req);
@@ -16,10 +20,36 @@ export async function POST(req: NextRequest) {
   const telegramId = auth.telegramId;
 
   try {
-    const player = await db.player.findUnique({ where: { telegramId } });
+    let player = await db.player.findUnique({
+      where: { telegramId },
+      include: { inventory: true, class: { include: { abilities: true } } },
+    });
     if (!player) return NextResponse.json({ error: 'Персонаж не найден' }, { status: 404 });
     if (player.inCombat) return NextResponse.json({ error: 'Вы уже в бою' }, { status: 400 });
     if (player.hp <= 0) return NextResponse.json({ error: 'Вы мертвы. Отдохните в таверне.' }, { status: 400 });
+
+    // Вне-боевая регенерация (forest-whisper и аналоги) — каждый вызов /api/explore это единственный
+    // в игре реальный аналог "хода вне боя" (см. заголовок lib/passive-engine.ts).
+    const playerLevel = player.level;
+    const passives: PassiveEffect[] = player.class.abilities
+      .filter(a => a.type === 'passive' && playerLevel >= stageUnlockLevel(a.stage))
+      .map(a => parsePassiveEffect(a.description))
+      .filter((e): e is PassiveEffect => e !== null);
+    const regen = outOfCombatRegen(passives);
+    if (regen.hpPercent > 0 || regen.mpPercent > 0) {
+      const equipBonuses = computeEquipmentBonuses(player.inventory);
+      const effectiveMaxHp = player.maxHp + equipBonuses.hp;
+      const effectiveMaxMp = player.maxMp + equipBonuses.mp;
+      const newHp = Math.min(effectiveMaxHp, player.hp + Math.round(effectiveMaxHp * regen.hpPercent));
+      const newMp = Math.min(effectiveMaxMp, player.mp + Math.round(effectiveMaxMp * regen.mpPercent));
+      if (newHp !== player.hp || newMp !== player.mp) {
+        player = await db.player.update({
+          where: { telegramId },
+          data: { hp: newHp, mp: newMp },
+          include: { inventory: true, class: { include: { abilities: true } } },
+        });
+      }
+    }
 
     const location = LOCATIONS.find(l => l.id === player.locationId);
     if (!location) return NextResponse.json({ error: 'Неверная локация' }, { status: 400 });

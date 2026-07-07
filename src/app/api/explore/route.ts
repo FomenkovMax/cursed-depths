@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
       const cacheKey = `enemies:locationId:${player.locationId}`;
       let locationEnemies = getCached<typeof ENEMIES>(cacheKey);
       if (!locationEnemies) {
-        locationEnemies = ENEMIES.filter(e => e.locationId === player.locationId && !e.isBoss);
+        locationEnemies = ENEMIES.filter(e => e.locationId === player.locationId);
         setCached(cacheKey, locationEnemies, CACHE_TTL);
       }
 
@@ -53,7 +53,15 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ type: 'empty', message: 'Пусто... Никаких врагов не найдено.' });
       }
 
-      const enemy = locationEnemies[Math.floor(Math.random() * locationEnemies.length)];
+      // Боссы встречаются редко (15%), обычные враги — в остальных случаях;
+      // если в локации есть только босс, он становится единственным вариантом.
+      const bossPool = locationEnemies.filter(e => e.isBoss);
+      const regularPool = locationEnemies.filter(e => !e.isBoss);
+      const pool = regularPool.length === 0
+        ? bossPool
+        : (bossPool.length > 0 && Math.random() < 0.15 ? bossPool : regularPool);
+
+      const enemy = pool[Math.floor(Math.random() * pool.length)];
       const enemyHp = enemy.hp + Math.floor(Math.random() * 5);
 
       const updated = await db.player.update({

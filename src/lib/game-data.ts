@@ -1,6 +1,7 @@
 // ===== LOCATIONS =====
-// Акт 1: Пепельные Врата (Люди), уровни 1-3. Остальные Акты (2-6) ещё не спроектированы
-// под новый лор и намеренно не включены — см. docs/cursed_depths_master.pdf, раздел 2.1.
+// Акт 1: Пепельные Врата (Люди), уровни 1-3. Акт 2: Корневая Роща (Эльфы), уровни 3-4.
+// Акты 3-6 ещё не спроектированы под новый лор и намеренно не включены —
+// см. docs/cursed_depths_master.pdf, раздел 2.1.
 export interface Location {
   id: string;
   nameRu: string;
@@ -81,7 +82,57 @@ export const LOCATIONS: Location[] = [
     descriptionEn: "A crack in the fabric of the world. Here Karsus' voice first rang out across the Ashen Reach. The entrance to the Depths.",
     icon: '🌀',
     level: 3,
-    connections: ['ashen_fortress'],
+    connections: ['ashen_fortress', 'outer_grove'],
+  },
+  {
+    id: 'outer_grove',
+    nameRu: 'Внешняя роща',
+    nameEn: 'Outer Grove',
+    descriptionRu: 'Лес на границе владений эльфов. Деревья ещё живы, но их листва день ото дня сереет — Нить Жизни рвётся где-то глубже.',
+    descriptionEn: "A forest on the edge of elven lands. The trees still live, but their leaves grey by the day — the Thread of Life is fraying somewhere deeper.",
+    icon: '🌲',
+    level: 3,
+    connections: ['karsus_rift', 'dead_shore', 'heart_of_grove'],
+  },
+  {
+    id: 'dead_shore',
+    nameRu: 'Мёртвый берег',
+    nameEn: 'Dead Shore',
+    descriptionRu: 'Река, несущая Скверну из Глуби. Вода здесь не отражает свет и не даёт жизни ничему, что в неё войдёт.',
+    descriptionEn: "A river carrying Blight up from the Depths. The water here reflects no light and gives life to nothing that enters it.",
+    icon: '🌊',
+    level: 3,
+    connections: ['outer_grove'],
+  },
+  {
+    id: 'heart_of_grove',
+    nameRu: 'Сердце Рощи',
+    nameEn: 'Heart of the Grove',
+    descriptionRu: 'Гигантское мёртвое дерево — некогда храм Айлет. Его корни ещё помнят тепло богини, но кора сочится чёрным соком.',
+    descriptionEn: "A gigantic dead tree — once a temple of Ailet. Its roots still remember the goddess' warmth, but its bark weeps black sap.",
+    icon: '🌳',
+    level: 3,
+    connections: ['outer_grove', 'shade_mycelium'],
+  },
+  {
+    id: 'shade_mycelium',
+    nameRu: 'Тень-грибница',
+    nameEn: 'Shade Mycelium',
+    descriptionRu: 'Подземная сеть, заражённая Скверной. То, что раньше связывало лес воедино, теперь тянет его к гибели.',
+    descriptionEn: "An underground network infected by the Blight. What once bound the forest together now drags it toward death.",
+    icon: '🍄',
+    level: 4,
+    connections: ['heart_of_grove', 'abyss_root'],
+  },
+  {
+    id: 'abyss_root',
+    nameRu: 'Корень Бездны',
+    nameEn: 'Root of the Abyss',
+    descriptionRu: 'Корни мёртвого дерева уходят прямиком в Глубь. Здесь обитает то, что осталось от богини Жизни.',
+    descriptionEn: "The dead tree's roots plunge straight into the Depths. Here dwells what remains of the goddess of Life.",
+    icon: '🥀',
+    level: 4,
+    connections: ['shade_mycelium'],
   },
 ];
 
@@ -130,6 +181,8 @@ export const ITEMS: Item[] = [
   { id: 'crown_fragment', nameRu: 'Осколок Короны', nameEn: 'Crown Fragment', type: 'accessory', rarity: 'legendary', stats: { strength: 3, intellect: 3, hp: 25 }, descriptionRu: 'Фрагмент Короны Проклятого Короля.', descriptionEn: "Fragment of the Cursed King's Crown.", icon: '👑', value: 3000 },
   { id: 'ashen_amulet', nameRu: 'Пепельный амулет Хранителя', nameEn: "Keeper's Ashen Amulet", type: 'accessory', rarity: 'rare', stats: { willpower: 2, hp: 15 }, descriptionRu: 'Амулет падшего жреца Велариона, ещё хранящий отголосок веры.', descriptionEn: "Amulet of a fallen priest of Velarion, still echoing with faith.", icon: '📿', value: 220 },
   { id: 'witness_eye', nameRu: 'Око Первого Свидетеля', nameEn: 'Eye of the First Witness', type: 'accessory', rarity: 'epic', stats: { instinct: 3, willpower: 2, hp: 20 }, descriptionRu: 'Застывшее око духа, видевшего Падение. Носитель иногда слышит его крик.', descriptionEn: 'The frozen eye of the spirit who witnessed the Fall. Its wearer sometimes hears its scream.', icon: '👁️', value: 650 },
+  { id: 'ailet_tear', nameRu: 'Слеза Айлет', nameEn: 'Tear of Ailet', type: 'accessory', rarity: 'rare', stats: { willpower: 2, intellect: 1, hp: 10 }, descriptionRu: 'Застывшая слеза богини, всё ещё хранящая отголосок исцеления.', descriptionEn: "A frozen tear of the goddess, still echoing with healing.", icon: '💧', value: 230 },
+  { id: 'echo_thorn_crown', nameRu: 'Терновый венец Эха', nameEn: "Echo's Thorn Crown", type: 'accessory', rarity: 'epic', stats: { willpower: 3, instinct: 2, hp: 20 }, descriptionRu: 'Венец из терний, что носила Эхо Айлет — прекрасный и ядовитый одновременно.', descriptionEn: 'A thorn crown worn by the Echo of Ailet — beautiful and poisonous at once.', icon: '🥀', value: 680 },
 
   // === CONSUMABLES ===
   { id: 'health_potion', nameRu: 'Зелье здоровья', nameEn: 'Health Potion', type: 'consumable', rarity: 'common', stats: { healHp: 15 }, descriptionRu: 'Восстанавливает 15 HP.', descriptionEn: 'Restores 15 HP.', icon: '🧪', value: 15 },
@@ -153,11 +206,14 @@ export const ITEMS: Item[] = [
 ];
 
 // ===== ENEMIES =====
-// Акт 1: Пепельные Врата, уровни 1-3. У босса «Первый Свидетель» по лору два боевых
-// облика, чередующихся каждые 3 хода (физический/магический), и вторая фаза на 30% HP,
-// объединяющая оба облика — эта механика фаз пока не реализована в combat-engine
-// (текущий движок работает с одиночным набором hp/ac/attack/damage на врага) и намеренно
-// отложена как отдельная задача; сейчас босс представлен усреднённым набором характеристик.
+// Акт 1: Пепельные Врата, уровни 1-3. Акт 2: Корневая Роща, уровни 3-4.
+// У обоих боссов по лору многофазные механики («Первый Свидетель» чередует физический и
+// магический облик каждые 3 хода и сливает их на 30% HP; «Эхо Айлет» самоисцеляется 5%
+// HP за ход, на фазе 2 обездвиживает корнями, на фазе 3 накладывает яд на весь бой) —
+// ни одна из этих механик пока не реализована в combat-engine (текущий движок работает
+// с одиночным набором hp/ac/attack/damage на врага без фаз, самоисцеления или ХоТ/ДоТ-
+// эффектов) и намеренно отложена как отдельная задача; оба босса представлены
+// усреднённым набором характеристик под сложность своего Акта.
 export interface EnemyTemplate {
   id: string;
   nameRu: string;
@@ -198,6 +254,30 @@ export const ENEMIES: EnemyTemplate[] = [
   // Разлом Карсуса (Level 3)
   { id: 'rift_spawn', nameRu: 'Порождение Разлома', nameEn: 'Rift Spawn', hp: 28, ac: 11, attack: 6, damage: '1d8+2', xp: 30, gold: 12, lootTable: [{ itemId: 'shadow_essence', chance: 0.3 }, { itemId: 'greater_health', chance: 0.2 }], locationId: 'karsus_rift', isBoss: false, icon: '🕳️' },
   { id: 'first_witness', nameRu: 'Первый Свидетель', nameEn: 'The First Witness', hp: 95, ac: 14, attack: 10, damage: '2d8+5', xp: 280, gold: 120, lootTable: [{ itemId: 'witness_eye', chance: 0.25 }, { itemId: 'ashen_amulet', chance: 0.15 }, { itemId: 'elixir_power', chance: 0.3 }], locationId: 'karsus_rift', isBoss: true, icon: '👁️' },
+
+  // Внешняя роща (Level 3)
+  { id: 'blighted_treant', nameRu: 'Заражённый древень', nameEn: 'Blighted Treant', hp: 32, ac: 12, attack: 6, damage: '1d8+2', xp: 30, gold: 12, lootTable: [{ itemId: 'iron_ore', chance: 0.2 }, { itemId: 'health_potion', chance: 0.3 }], locationId: 'outer_grove', isBoss: false, icon: '🌳' },
+  { id: 'thorn_wolf', nameRu: 'Терновый волк', nameEn: 'Thorn Wolf', hp: 24, ac: 10, attack: 6, damage: '1d6+3', xp: 24, gold: 8, lootTable: [{ itemId: 'elven_bow', chance: 0.1 }, { itemId: 'antidote', chance: 0.25 }], locationId: 'outer_grove', isBoss: false, icon: '🐺' },
+  { id: 'withering_dryad', nameRu: 'Увядающая дриада', nameEn: 'Withering Dryad', hp: 26, ac: 11, attack: 6, damage: '1d6+3', xp: 28, gold: 14, lootTable: [{ itemId: 'mana_potion', chance: 0.3 }, { itemId: 'shadow_essence', chance: 0.15 }], locationId: 'outer_grove', isBoss: false, icon: '🧚' },
+
+  // Мёртвый берег (Level 3)
+  { id: 'blight_current_spawn', nameRu: 'Порождение Скверного течения', nameEn: 'Blight Current Spawn', hp: 28, ac: 10, attack: 6, damage: '1d6+3', xp: 26, gold: 10, lootTable: [{ itemId: 'shadow_essence', chance: 0.3 }], locationId: 'dead_shore', isBoss: false, icon: '🌊' },
+  { id: 'drowned_elf', nameRu: 'Утопленный эльф', nameEn: 'Drowned Elf', hp: 24, ac: 11, attack: 6, damage: '1d8+2', xp: 27, gold: 12, lootTable: [{ itemId: 'shadow_cloak', chance: 0.08 }, { itemId: 'antidote', chance: 0.25 }], locationId: 'dead_shore', isBoss: false, icon: '💀' },
+  { id: 'silt_crawler', nameRu: 'Илистый ползун', nameEn: 'Silt Crawler', hp: 22, ac: 9, attack: 5, damage: '1d6+2', xp: 22, gold: 6, lootTable: [{ itemId: 'antidote', chance: 0.3 }], locationId: 'dead_shore', isBoss: false, icon: '🐌' },
+
+  // Сердце Рощи (Level 3-4)
+  { id: 'corrupted_treekeeper', nameRu: 'Осквернённый хранитель дерева', nameEn: 'Corrupted Treekeeper', hp: 34, ac: 12, attack: 7, damage: '1d8+3', xp: 34, gold: 16, lootTable: [{ itemId: 'greater_health', chance: 0.25 }, { itemId: 'iron_ore', chance: 0.3 }], locationId: 'heart_of_grove', isBoss: false, icon: '🌲' },
+  { id: 'root_wraith', nameRu: 'Дух-корень', nameEn: 'Root Wraith', hp: 30, ac: 13, attack: 7, damage: '1d6+3', xp: 32, gold: 14, lootTable: [{ itemId: 'shadow_essence', chance: 0.3 }, { itemId: 'mana_potion', chance: 0.3 }], locationId: 'heart_of_grove', isBoss: false, icon: '👻' },
+  { id: 'lost_grove_soul', nameRu: 'Пленённая душа Рощи', nameEn: 'Lost Soul of the Grove', hp: 36, ac: 12, attack: 8, damage: '1d8+3', xp: 38, gold: 18, lootTable: [{ itemId: 'ailet_tear', chance: 0.15 }, { itemId: 'arcane_pendant', chance: 0.1 }], locationId: 'heart_of_grove', isBoss: false, icon: '👤' },
+
+  // Тень-грибница (Level 4)
+  { id: 'spore_horror', nameRu: 'Ужас спор', nameEn: 'Spore Horror', hp: 38, ac: 13, attack: 8, damage: '1d8+3', xp: 40, gold: 18, lootTable: [{ itemId: 'greater_health', chance: 0.25 }, { itemId: 'shadow_essence', chance: 0.3 }], locationId: 'shade_mycelium', isBoss: false, icon: '🍄' },
+  { id: 'blight_mycelium_crawler', nameRu: 'Ползун Скверной грибницы', nameEn: 'Blight Mycelium Crawler', hp: 34, ac: 12, attack: 8, damage: '1d8+3', xp: 38, gold: 16, lootTable: [{ itemId: 'antidote', chance: 0.3 }], locationId: 'shade_mycelium', isBoss: false, icon: '🕸️' },
+  { id: 'fungal_stalker', nameRu: 'Грибной охотник', nameEn: 'Fungal Stalker', hp: 30, ac: 11, attack: 7, damage: '1d6+4', xp: 34, gold: 15, lootTable: [{ itemId: 'shadow_dagger', chance: 0.06 }], locationId: 'shade_mycelium', isBoss: false, icon: '🦠' },
+
+  // Корень Бездны (Level 4)
+  { id: 'root_horror', nameRu: 'Ужас корней', nameEn: 'Root Horror', hp: 40, ac: 13, attack: 9, damage: '1d10+3', xp: 45, gold: 20, lootTable: [{ itemId: 'greater_health', chance: 0.3 }, { itemId: 'iron_ore', chance: 0.3 }], locationId: 'abyss_root', isBoss: false, icon: '🌿' },
+  { id: 'echo_of_ailet', nameRu: 'Эхо Айлет', nameEn: 'Echo of Ailet', hp: 110, ac: 15, attack: 11, damage: '2d8+6', xp: 350, gold: 150, lootTable: [{ itemId: 'echo_thorn_crown', chance: 0.2 }, { itemId: 'ailet_tear', chance: 0.3 }, { itemId: 'scroll_heal', chance: 0.3 }], locationId: 'abyss_root', isBoss: true, icon: '🥀' },
 ];
 
 // ===== CRAFTING RECIPES =====

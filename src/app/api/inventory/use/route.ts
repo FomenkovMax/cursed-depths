@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { validateTelegramRequest } from '@/lib/auth';
+import { computeEquipmentBonuses } from '@/lib/equipment-stats';
 
 export async function POST(req: NextRequest) {
   const auth = validateTelegramRequest(req);
@@ -26,12 +27,13 @@ export async function POST(req: NextRequest) {
 
     const stats = item.stats ? JSON.parse(item.stats) : {};
     const updateData: Record<string, unknown> = {};
+    const bonuses = computeEquipmentBonuses(player.inventory);
 
     if (stats.healHp) {
-      updateData.hp = Math.min(player.maxHp, player.hp + stats.healHp);
+      updateData.hp = Math.min(player.maxHp + bonuses.hp, player.hp + stats.healHp);
     }
     if (stats.healMp) {
-      updateData.mp = Math.min(player.maxMp, player.mp + stats.healMp);
+      updateData.mp = Math.min(player.maxMp + bonuses.mp, player.mp + stats.healMp);
     }
 
     // Wrap HP/MP restoration + item consumption in a transaction

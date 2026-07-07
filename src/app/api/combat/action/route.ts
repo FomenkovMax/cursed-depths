@@ -22,6 +22,7 @@ import {
   playerDamageMultiplier,
   type BossFightState,
 } from '@/lib/boss-mechanics';
+import { computeEquipmentBonuses } from '@/lib/equipment-stats';
 
 export async function POST(req: NextRequest) {
   const auth = validateTelegramRequest(req);
@@ -85,19 +86,24 @@ export async function POST(req: NextRequest) {
     // (упрощение: способности-дебаффы пока не переносятся между ходами).
     let enemyDamageReduction = 0;
 
+    // Бонусы экипировки (оружие/броня/аксессуары) — единая точка подсчёта, см. lib/equipment-stats.ts
+    const equipBonuses = computeEquipmentBonuses(player.inventory);
+    const effectiveMaxHp = player.maxHp + equipBonuses.hp;
+    const effectiveMaxMp = player.maxMp + equipBonuses.mp;
+    const effectiveVitality = player.vitality + equipBonuses.vitality;
+
     const combatStats: PlayerCombatStats = {
-      strength: player.strength,
-      dexterity: player.dexterity,
-      vitality: player.vitality,
-      intellect: player.intellect,
-      willpower: player.willpower,
-      instinct: player.instinct,
+      strength: player.strength + equipBonuses.strength,
+      dexterity: player.dexterity + equipBonuses.dexterity,
+      vitality: effectiveVitality,
+      intellect: player.intellect + equipBonuses.intellect,
+      willpower: player.willpower + equipBonuses.willpower,
+      instinct: player.instinct + equipBonuses.instinct,
       level: player.level,
       primaryStat: player.class.primaryStat,
     };
 
-    const weapon = player.inventory.find(i => i.equipped && i.slot === 'weapon');
-    const weaponBonus = weapon?.stats ? (JSON.parse(weapon.stats).attack || 0) : 0;
+    const weaponBonus = equipBonuses.attack;
 
     // Защита босса (форма/берсерк/почти-неуязвимость) временно меняет его эффективный AC
     const effectiveAc = Math.max(1, Math.round(enemyTemplate.ac * bossAcMultiplier(enemyTemplate.mechanics, bossState)));
@@ -145,7 +151,7 @@ export async function POST(req: NextRequest) {
       } else {
         const stats = item.stats ? JSON.parse(item.stats) : {};
         if (stats.healHp) {
-          playerHp = Math.min(player.maxHp, playerHp + stats.healHp);
+          playerHp = Math.min(effectiveMaxHp, playerHp + stats.healHp);
           combatLog.push({ text: `Вы использовали ${item.name}. Восстановлено ${stats.healHp} HP.`, turn: currentTurn });
         } else if (stats.damage) {
           const itemDamage = Math.round(stats.damage * curseMult);
@@ -189,7 +195,7 @@ export async function POST(req: NextRequest) {
             for (const m of messages) combatLog.push({ text: m, turn: currentTurn });
           }
           if (resolution.heal > 0) {
-            playerHp = Math.min(player.maxHp, playerHp + resolution.heal);
+            playerHp = Math.min(effectiveMaxHp, playerHp + resolution.heal);
           }
 
           const parts = [`${ability.icon} ${ability.name}!`];
@@ -224,19 +230,18 @@ export async function POST(req: NextRequest) {
 
     // Enemy attacks back if not dead and not fled
     if (!combatOver && !playerFled) {
-      const armorItem = player.inventory.find(i => i.equipped && i.type === 'armor');
-      const armorBonus = armorItem?.stats ? (JSON.parse(armorItem.stats).defense || 0) : 0;
+      const armorBonus = equipBonuses.defense;
       const rawDamage = rollDice(enemyTemplate.damage) * (1 - enemyDamageReduction);
-      const baseEnemyDamage = Math.max(1, Math.round(mitigateDamage(rawDamage, player.vitality) - armorBonus));
+      const baseEnemyDamage = Math.max(1, Math.round(mitigateDamage(rawDamage, effectiveVitality) - armorBonus));
 
-      const turnResult = resolveBossTurn(enemyTemplate.mechanics, bossState, enemyHp, enemyMaxHp, baseEnemyDamage, player.maxHp);
+      const turnResult = resolveBossTurn(enemyTemplate.mechanics, bossState, enemyHp, enemyMaxHp, baseEnemyDamage, effectiveMaxHp);
 
       if (turnResult.bossHeal > 0) {
         enemyHp = Math.min(enemyMaxHp, enemyHp + turnResult.bossHeal);
       }
 
       if (turnResult.healToPlayer > 0) {
-        playerHp = Math.min(player.maxHp, playerHp + turnResult.healToPlayer);
+        playerHp = Math.min(effectiveMaxHp, playerHp + turnResult.healToPlayer);
         combatLog.push({ text: `${enemyTemplate.nameRu} исцеляет вас на ${turnResult.healToPlayer} ХП!`, turn: currentTurn + 1 });
       } else {
         let incomingDamage = turnResult.damageToPlayer;
@@ -257,7 +262,7 @@ export async function POST(req: NextRequest) {
 
     // Mana regen each round (Фаза 1.3: +10 маны за ход)
     if (!combatOver) {
-      playerMp = Math.min(player.maxMp, playerMp + 10);
+      playerMp = Math.min(effectiveMaxMp, playerMp + 10);
     }
 
     // Check if player is dead
@@ -296,7 +301,7 @@ export async function POST(req: NextRequest) {
       updateData.statPoints = newStatPoints;
       const newMaxHp = player.maxHp + 10;
       updateData.maxHp = newMaxHp;
-      updateData.hp = newMaxHp; // Full heal on level up
+      updateData.hp = newMaxHp + equipBonuses.hp; // Full heal on level up (с учётом бонуса экипировки)
     }
 
     if (combatOver) {

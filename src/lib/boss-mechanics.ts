@@ -121,6 +121,18 @@ export interface BossFightState {
   curseStacks: number;
   /** Открыто окно уязвимости (после колоссального удара) — следующая атака игрока проходит почти без сопротивления. */
   vulnerableNextTurn: boolean;
+
+  // ===== Общие для любого боя поля (не боссовые механики) — см. lib/combat-effects.ts =====
+  /** Активные баффы/дебаффы от способностей игрока и контр-ДоТы от пассивок, тикающие по ходам. */
+  activeEffects: { kind: 'player_damage_buff' | 'enemy_damage_debuff' | 'enemy_dot'; percent: number; turnsRemaining: number }[];
+  /** Щит игрока от способностей — поглощает входящий урон раньше ХП. */
+  playerShieldHp: number;
+  /** Счётчик результативных атак/способностей игрока за бой — для пассивок "каждый N-й удар". */
+  playerAttackCount: number;
+  /** Счётчик полученных игроком ударов за бой — для пассивок "каждый N-й полученный удар". */
+  playerHitsTakenCount: number;
+  /** Одноразовое воскрешение за бой (Феникс и аналоги) уже использовано. */
+  deathSaveUsed: boolean;
 }
 
 export function initBossState(mechanics: BossMechanics | undefined): BossFightState {
@@ -137,6 +149,11 @@ export function initBossState(mechanics: BossMechanics | undefined): BossFightSt
     repeatStreak: 0,
     curseStacks: 0,
     vulnerableNextTurn: false,
+    activeEffects: [],
+    playerShieldHp: 0,
+    playerAttackCount: 0,
+    playerHitsTakenCount: 0,
+    deathSaveUsed: false,
   };
 }
 

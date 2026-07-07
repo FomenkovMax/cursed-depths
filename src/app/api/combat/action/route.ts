@@ -18,6 +18,8 @@ import {
   applyDamageToBoss,
   resolveBossTurn,
   bossAcMultiplier,
+  adaptiveResistMultiplier,
+  playerDamageMultiplier,
   type BossFightState,
 } from '@/lib/boss-mechanics';
 
@@ -97,8 +99,12 @@ export async function POST(req: NextRequest) {
     const weapon = player.inventory.find(i => i.equipped && i.slot === 'weapon');
     const weaponBonus = weapon?.stats ? (JSON.parse(weapon.stats).attack || 0) : 0;
 
-    // Защита босса (форма/берсерк) временно меняет его эффективный AC против атак игрока
+    // Защита босса (форма/берсерк/почти-неуязвимость) временно меняет его эффективный AC
     const effectiveAc = Math.max(1, Math.round(enemyTemplate.ac * bossAcMultiplier(enemyTemplate.mechanics, bossState)));
+    // Окно уязвимости расходуется на текущее действие вне зависимости от его исхода
+    bossState.vulnerableNextTurn = false;
+    // Проклятие от лечения-с-проклятием (Сердце Айлет) кумулятивно ослабляет урон игрока
+    const curseMult = playerDamageMultiplier(enemyTemplate.mechanics, bossState);
 
     // Обездвиживание корнями с предыдущего хода отменяет текущее действие игрока целиком
     let actionNegated = false;
@@ -124,11 +130,13 @@ export async function POST(req: NextRequest) {
       bossState.playerDefendedLastTurn = true;
       combatLog.push({ text: 'Вы приняли защитную стойку.', turn: currentTurn });
     } else if (action === 'attack') {
-      const rawDamage = mitigateDamage(basicAttackDamage(combatStats) + weaponBonus, effectiveAc);
+      const resist = adaptiveResistMultiplier(enemyTemplate.mechanics, bossState, 'attack');
+      const rawDamage = Math.round(mitigateDamage(basicAttackDamage(combatStats) + weaponBonus, effectiveAc) * curseMult * resist);
       const { hpDamage, messages } = applyDamageToBoss(enemyTemplate.mechanics, bossState, rawDamage);
       enemyHp = Math.max(0, enemyHp - hpDamage);
       const absorbed = rawDamage > 0 && hpDamage === 0;
       combatLog.push({ text: absorbed ? 'Вы атакуете! Урон поглощён щитом.' : `Вы атакуете! Урон: ${hpDamage}`, turn: currentTurn });
+      if (resist < 1) combatLog.push({ text: 'Враг адаптировался к этому типу урона!', turn: currentTurn });
       for (const m of messages) combatLog.push({ text: m, turn: currentTurn });
     } else if (action === 'use_item') {
       const item = player.inventory.find(i => i.itemId === itemId && i.type === 'consumable');
@@ -140,9 +148,10 @@ export async function POST(req: NextRequest) {
           playerHp = Math.min(player.maxHp, playerHp + stats.healHp);
           combatLog.push({ text: `Вы использовали ${item.name}. Восстановлено ${stats.healHp} HP.`, turn: currentTurn });
         } else if (stats.damage) {
-          const { hpDamage, messages } = applyDamageToBoss(enemyTemplate.mechanics, bossState, stats.damage);
+          const itemDamage = Math.round(stats.damage * curseMult);
+          const { hpDamage, messages } = applyDamageToBoss(enemyTemplate.mechanics, bossState, itemDamage);
           enemyHp = Math.max(0, enemyHp - hpDamage);
-          const absorbed = stats.damage > 0 && hpDamage === 0;
+          const absorbed = itemDamage > 0 && hpDamage === 0;
           combatLog.push({ text: absorbed ? `Вы использовали ${item.name}. Урон поглощён щитом.` : `Вы использовали ${item.name}. Урон: ${hpDamage}`, turn: currentTurn });
           for (const m of messages) combatLog.push({ text: m, turn: currentTurn });
         }
@@ -170,10 +179,13 @@ export async function POST(req: NextRequest) {
 
           let damageAbsorbed = false;
           if (resolution.damage > 0) {
-            const { hpDamage, messages } = applyDamageToBoss(enemyTemplate.mechanics, bossState, resolution.damage);
+            const resist = adaptiveResistMultiplier(enemyTemplate.mechanics, bossState, 'ability');
+            const abilityDamage = Math.round(resolution.damage * curseMult * resist);
+            const { hpDamage, messages } = applyDamageToBoss(enemyTemplate.mechanics, bossState, abilityDamage);
             enemyHp = Math.max(0, enemyHp - hpDamage);
             damageAbsorbed = hpDamage === 0;
             resolution.damage = hpDamage;
+            if (resist < 1) messages.push('Враг адаптировался к этому типу урона!');
             for (const m of messages) combatLog.push({ text: m, turn: currentTurn });
           }
           if (resolution.heal > 0) {
@@ -223,12 +235,17 @@ export async function POST(req: NextRequest) {
         enemyHp = Math.min(enemyMaxHp, enemyHp + turnResult.bossHeal);
       }
 
-      let incomingDamage = turnResult.damageToPlayer;
-      if (action === 'defend' && !actionNegated) {
-        incomingDamage = Math.round(incomingDamage * 0.5);
+      if (turnResult.healToPlayer > 0) {
+        playerHp = Math.min(player.maxHp, playerHp + turnResult.healToPlayer);
+        combatLog.push({ text: `${enemyTemplate.nameRu} исцеляет вас на ${turnResult.healToPlayer} ХП!`, turn: currentTurn + 1 });
+      } else {
+        let incomingDamage = turnResult.damageToPlayer;
+        if (action === 'defend' && !actionNegated) {
+          incomingDamage = Math.round(incomingDamage * 0.5);
+        }
+        playerHp = Math.max(0, playerHp - incomingDamage);
+        combatLog.push({ text: `${enemyTemplate.nameRu} атакует! Урон: ${incomingDamage}`, turn: currentTurn + 1 });
       }
-      playerHp = Math.max(0, playerHp - incomingDamage);
-      combatLog.push({ text: `${enemyTemplate.nameRu} атакует! Урон: ${incomingDamage}`, turn: currentTurn + 1 });
 
       if (turnResult.dotDamageToPlayer > 0) {
         playerHp = Math.max(0, playerHp - turnResult.dotDamageToPlayer);

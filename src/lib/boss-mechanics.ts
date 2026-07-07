@@ -1,16 +1,23 @@
 /**
- * Механики боссов (docs/cursed_depths_master.pdf, разделы про боссов Актов 1-6).
+ * Механики боссов (docs/cursed_depths_master.pdf: боссы Актов 1-6, раздел 2.1,
+ * и боссы Глуби, раздел 2.2).
  *
  * Каждый босс описан в документе уникальной сюжетной механикой (щит, чередование
- * форм, самоисцеление, ДоТ, призыв приспешников, кража ХП, ответный удар). Вместо
- * шести отдельных спецслучаев эти механики собраны из небольшого набора
- * составных примитивов (BossMechanics), которые описывают конкретного босса
- * декларативно в game-data.ts и разрешаются здесь одним общим движком.
+ * форм, самоисцеление, ДоТ, призыв приспешников, кража ХП, ответный удар,
+ * адаптивная резистентность, лечение игрока с проклятием, почти-неуязвимость с
+ * окном уязвимости). Вместо отдельных спецслучаев на каждого босса эти механики
+ * собраны из небольшого набора составных примитивов (BossMechanics), которые
+ * описывают конкретного босса декларативно в game-data.ts и разрешаются здесь
+ * одним общим движком.
  *
- * Сознательно не реализовано: два чисто нарративных ответвления —
- * «добить или исцелить» у Первого Дракона и «предложение информации в обмен
- * на пощаду» у Первого Восставшего. Это не боевая математика, а диалоговые
- * развилки, требующие отдельного UI, и остаются отдельной задачей.
+ * Сознательно не реализовано:
+ * - Два чисто нарративных ответвления Актов 1-6 — «добить или исцелить» у Первого
+ *   Дракона и «предложение информации в обмен на пощаду» у Первого Восставшего.
+ *   Это не боевая математика, а диалоговые развилки, требующие отдельного UI.
+ * - «Механики зоны» Глуби (Шёпот Кессары, мутирующий реген Корневой Бездны и т.п.) —
+ *   это модификаторы, действующие на КАЖДЫЙ бой в локации, а не только на босса,
+ *   и требуют привязки механик к локации, а не к врагу — отдельный слой поверх
+ *   этого файла. См. комментарий у LOCATIONS в game-data.ts.
  */
 
 export interface BossMechanics {
@@ -50,6 +57,8 @@ export interface BossMechanics {
   summonUntilPhase?: number;
   /** Призыв действует только начиная с этой фазы. */
   summonFromPhase?: number;
+  /** Максимум одновременных стаков призыва — защита от неограниченного роста урона в затяжном бою. */
+  summonMaxStacks?: number;
 
   /** С этой фазы босс лечится на часть урона, нанесённого игроку (кража ХП). */
   hpDrainFromPhase?: number;
@@ -71,6 +80,27 @@ export interface BossMechanics {
   phase2AtHpPercent?: number;
   /** Порог HP (0-1), при котором наступает фаза 3. */
   phase3AtHpPercent?: number;
+
+  /** Адаптивная резистентность: повтор одного типа действия (attack/ability) подряд слабеет с каждым разом. */
+  adaptiveResistToRepeatedActionType?: boolean;
+  /** Доля снижения урона за каждый повтор подряд одного типа действия. */
+  adaptiveResistPerRepeat?: number;
+  /** Максимальная доля снижения урона от адаптивной резистентности. */
+  adaptiveResistMax?: number;
+
+  /** Дополнительное самоисцеление от приспешников — % от maxHp за каждый стак призыва. */
+  summonHealPercentPerStack?: number;
+
+  /** С этой фазы босс лечит ИГРОКА вместо атаки, но каждое такое лечение проклинает игрока (кумулятивный штраф к его урону). */
+  healPlayerFromPhase?: number;
+  healPlayerPercent?: number;
+  curseStackPercent?: number;
+
+  /** Почти неуязвим (множитель AC), но раз в N ходов наносит колоссальный удар и на следующий ход открывает окно уязвимости. */
+  nearInvulnerableAcMult?: number;
+  bigHitEveryTurns?: number;
+  bigHitMult?: number;
+  vulnerabilityWindowAcMult?: number;
 }
 
 export interface BossFightState {
@@ -83,6 +113,14 @@ export interface BossFightState {
   playerDefendedLastTurn: boolean;
   /** Игрок обездвижен корнями — его следующее действие будет отменено. */
   playerRooted: boolean;
+  /** Тип последнего результативного действия игрока — для адаптивной резистентности. */
+  lastActionType: 'attack' | 'ability' | null;
+  /** Сколько раз подряд игрок использовал один и тот же тип действия. */
+  repeatStreak: number;
+  /** Стаки проклятия от лечения игрока боссом — кумулятивно снижают урон игрока. */
+  curseStacks: number;
+  /** Открыто окно уязвимости (после колоссального удара) — следующая атака игрока проходит почти без сопротивления. */
+  vulnerableNextTurn: boolean;
 }
 
 export function initBossState(mechanics: BossMechanics | undefined): BossFightState {
@@ -95,6 +133,10 @@ export function initBossState(mechanics: BossMechanics | undefined): BossFightSt
     summonStacks: 0,
     playerDefendedLastTurn: false,
     playerRooted: false,
+    lastActionType: null,
+    repeatStreak: 0,
+    curseStacks: 0,
+    vulnerableNextTurn: false,
   };
 }
 
@@ -136,13 +178,46 @@ export function applyDamageToBoss(
   return { hpDamage: overflow, messages };
 }
 
+/**
+ * Адаптивная резистентность (Привратник Глуби): повторение одного и того же типа
+ * действия (attack/ability) подряд слабеет с каждым разом; смена типа сбрасывает
+ * счётчик. Возвращает множитель урона (0-1) и мутирует state.
+ */
+export function adaptiveResistMultiplier(
+  mechanics: BossMechanics | undefined,
+  state: BossFightState,
+  actionType: 'attack' | 'ability'
+): number {
+  if (!mechanics?.adaptiveResistToRepeatedActionType) return 1;
+
+  if (state.lastActionType === actionType) {
+    state.repeatStreak += 1;
+  } else {
+    state.repeatStreak = 1;
+    state.lastActionType = actionType;
+  }
+
+  const perRepeat = mechanics.adaptiveResistPerRepeat ?? 0.15;
+  const max = mechanics.adaptiveResistMax ?? 0.6;
+  const resist = Math.min(max, (state.repeatStreak - 1) * perRepeat);
+  return 1 - resist;
+}
+
+/** Множитель урона игрока с учётом стаков проклятия (лечение-с-проклятием у Сердца Айлет). */
+export function playerDamageMultiplier(mechanics: BossMechanics | undefined, state: BossFightState): number {
+  if (!mechanics?.curseStackPercent || state.curseStacks === 0) return 1;
+  return Math.max(0.2, 1 - state.curseStacks * mechanics.curseStackPercent);
+}
+
 export interface BossTurnResult {
   /** Итоговый урон, наносимый игроку в этот ход (после всех модификаторов). */
   damageToPlayer: number;
-  /** Исцеление, полученное боссом в этот ход (самоисцеление + кража ХП). */
+  /** Исцеление, полученное боссом в этот ход (самоисцеление + кража ХП + приспешники). */
   bossHeal: number;
   /** ДоТ-урон игроку от предыдущего эффекта (яд/горение), отдельно от атаки. */
   dotDamageToPlayer: number;
+  /** Исцеление игрока боссом (с фазы healPlayerFromPhase) — заменяет damageToPlayer в этот ход. */
+  healToPlayer: number;
   messages: string[];
 }
 
@@ -159,7 +234,7 @@ export function resolveBossTurn(
   playerMaxHp: number
 ): BossTurnResult {
   const messages: string[] = [];
-  const result: BossTurnResult = { damageToPlayer: 0, bossHeal: 0, dotDamageToPlayer: 0, messages };
+  const result: BossTurnResult = { damageToPlayer: 0, bossHeal: 0, dotDamageToPlayer: 0, healToPlayer: 0, messages };
   if (!mechanics) {
     result.damageToPlayer = baseAttackDamage;
     return result;
@@ -190,6 +265,15 @@ export function resolveBossTurn(
     result.bossHeal += Math.round(enemyMaxHp * mechanics.selfHealPercent);
   }
 
+  // Лечение игрока вместо атаки (с фазы healPlayerFromPhase) — с проклятием на его урон
+  if (mechanics.healPlayerFromPhase !== undefined && state.phase >= mechanics.healPlayerFromPhase && mechanics.healPlayerPercent) {
+    result.healToPlayer = Math.round(playerMaxHp * mechanics.healPlayerPercent);
+    state.curseStacks += 1;
+    messages.push('Босс исцеляет вас... но это лечение проклято!');
+    state.playerDefendedLastTurn = false;
+    return result;
+  }
+
   // Чередование форм
   let damageMult = 1;
   if (mechanics.alternateFormEveryTurns) {
@@ -207,13 +291,19 @@ export function resolveBossTurn(
   const summonActive =
     (mechanics.summonUntilPhase === undefined || state.phase < mechanics.summonUntilPhase) &&
     (mechanics.summonFromPhase === undefined || state.phase >= mechanics.summonFromPhase);
-  if (mechanics.summonEveryTurns && summonActive && state.turnCount % mechanics.summonEveryTurns === 0) {
+  if (
+    mechanics.summonEveryTurns && summonActive && state.turnCount % mechanics.summonEveryTurns === 0 &&
+    (mechanics.summonMaxStacks === undefined || state.summonStacks < mechanics.summonMaxStacks)
+  ) {
     state.summonStacks += 1;
     messages.push('Босс призывает подкрепление!');
   }
   const summonDamage = (mechanics.summonBonusDamage ?? 0) * state.summonStacks;
   if (mechanics.summonDamageMultPerStack) {
     damageMult *= 1 + mechanics.summonDamageMultPerStack * state.summonStacks;
+  }
+  if (mechanics.summonHealPercentPerStack && state.summonStacks > 0) {
+    result.bossHeal += Math.round(enemyMaxHp * mechanics.summonHealPercentPerStack * state.summonStacks);
   }
 
   // Щитовой берсерк
@@ -243,6 +333,13 @@ export function resolveBossTurn(
       damageMult *= mechanics.counterStrikeBonusMult ?? 1.5;
       messages.push('Ответный удар!');
     }
+  }
+
+  // Колоссальный удар раз в N ходов — следующий ход игрока попадает в окно уязвимости
+  if (mechanics.bigHitEveryTurns && state.turnCount % mechanics.bigHitEveryTurns === 0) {
+    damageMult *= mechanics.bigHitMult ?? 2;
+    state.vulnerableNextTurn = true;
+    messages.push('Колоссальный удар! Защита на миг дрогнула — бейте сейчас!');
   }
 
   const attackDamage = Math.round(baseAttackDamage * damageMult) + summonDamage;
@@ -280,6 +377,9 @@ export function bossAcMultiplier(mechanics: BossMechanics | undefined, state: Bo
   }
   if (mechanics.enrageOnShieldBreak && state.shieldBroken) {
     mult *= mechanics.enrageOnShieldBreak.acMult;
+  }
+  if (mechanics.nearInvulnerableAcMult) {
+    mult *= state.vulnerableNextTurn ? (mechanics.vulnerabilityWindowAcMult ?? 1) : mechanics.nearInvulnerableAcMult;
   }
   return mult;
 }

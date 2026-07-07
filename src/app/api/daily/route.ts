@@ -32,6 +32,7 @@ export async function POST(req: NextRequest) {
           xp: { increment: xpReward },
           lastDailyReward: today,
         },
+        include: { inventory: true, race: true, class: { include: { abilities: true } } },
       });
 
       // Give a health potion (stacks with existing)

@@ -1,9 +1,54 @@
+export interface RaceData {
+  id: string;
+  name: string;
+  slug: string;
+  description: string;
+  icon: string;
+  lore: string;
+  baseStrength: number;
+  baseDexterity: number;
+  baseVitality: number;
+  baseIntellect: number;
+  baseWillpower: number;
+  baseInstinct: number;
+  classes?: GameClassData[];
+}
+
+export interface AbilityData {
+  id: string;
+  name: string;
+  slug: string;
+  description: string;
+  icon: string;
+  classId: string;
+  stage: number;
+  stageName: string;
+  type: string;
+  bossNote: string | null;
+}
+
+export interface GameClassData {
+  id: string;
+  name: string;
+  slug: string;
+  description: string;
+  icon: string;
+  raceId: string;
+  path: string;
+  role: string;
+  primaryStat: string;
+  abilities?: AbilityData[];
+  race?: RaceData;
+}
+
 export interface PlayerData {
   id: string;
   telegramId: string;
   name: string;
-  race: string;
-  class: string;
+  raceId: string;
+  race: RaceData;
+  classId: string;
+  class: GameClassData;
   level: number;
   xp: number;
   xpToNext: number;
@@ -13,10 +58,11 @@ export interface PlayerData {
   maxMp: number;
   strength: number;
   dexterity: number;
-  constitution: number;
-  intelligence: number;
-  wisdom: number;
-  charisma: number;
+  vitality: number;
+  intellect: number;
+  willpower: number;
+  instinct: number;
+  statPoints: number;
   gold: number;
   locationId: string;
   inCombat: boolean;
@@ -76,22 +122,37 @@ export type TelegramWebApp = {
 };
 export type TelegramGlobal = { Telegram?: { WebApp?: TelegramWebApp } };
 
+// Шесть характеристик из docs/cursed_depths_master.pdf (Фаза 1.2) —
+// заменяют D&D-набор Str/Dex/Con/Int/Wis/Cha.
 export const STAT_NAMES_RU: Record<string, string> = {
   strength: 'Сила',
   dexterity: 'Ловкость',
-  constitution: 'Выносливость',
-  intelligence: 'Интеллект',
-  wisdom: 'Мудрость',
-  charisma: 'Харизма',
+  vitality: 'Стойкость',
+  intellect: 'Разум',
+  willpower: 'Воля',
+  instinct: 'Инстинкт',
 };
 
 export const STAT_SHORT_RU: Record<string, string> = {
   strength: 'СИЛ',
   dexterity: 'ЛОВ',
-  constitution: 'ВЫН',
-  intelligence: 'ИНТ',
-  wisdom: 'МДР',
-  charisma: 'ХАР',
+  vitality: 'СТОЙ',
+  intellect: 'РАЗ',
+  willpower: 'ВОЛ',
+  instinct: 'ИНСТ',
+};
+
+export const PATH_NAMES_RU: Record<string, string> = {
+  ash: 'Путь Пепла',
+  blight: 'Путь Скверны',
+};
+
+export const ROLE_NAMES_RU: Record<string, string> = {
+  tank: 'Танк',
+  healer: 'Хилер',
+  dps: 'ДПС',
+  support: 'Саппорт',
+  antibuff: 'Антибафф',
 };
 
 export const ITEM_TYPE_RU: Record<string, string> = {

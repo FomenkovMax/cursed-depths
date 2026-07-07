@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { RACES, CLASSES } from '@/lib/game-data';
 import { validateTelegramRequest } from '@/lib/auth';
 
 export async function POST(req: NextRequest) {
@@ -24,22 +23,25 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Персонаж уже существует' }, { status: 400 });
     }
 
-    const raceData = RACES.find(r => r.id === race);
-    const classData = CLASSES.find(c => c.id === className);
+    const raceData = await db.race.findUnique({ where: { slug: race } });
+    const classData = await db.gameClass.findUnique({ where: { slug: className } });
 
     if (!raceData || !classData) {
       return NextResponse.json({ error: 'Неверная раса или класс' }, { status: 400 });
     }
+    if (classData.raceId !== raceData.id) {
+      return NextResponse.json({ error: 'Этот класс недоступен для выбранной расы' }, { status: 400 });
+    }
 
-    const strength = 10 + (raceData.bonuses.strength || 0);
-    const dexterity = 10 + (raceData.bonuses.dexterity || 0);
-    const constitution = 10 + (raceData.bonuses.constitution || 0);
-    const intelligence = 10 + (raceData.bonuses.intelligence || 0);
-    const wisdom = 10 + (raceData.bonuses.wisdom || 0);
-    const charisma = 10 + (raceData.bonuses.charisma || 0);
+    const strength = raceData.baseStrength;
+    const dexterity = raceData.baseDexterity;
+    const vitality = raceData.baseVitality;
+    const intellect = raceData.baseIntellect;
+    const willpower = raceData.baseWillpower;
+    const instinct = raceData.baseInstinct;
 
-    const maxHp = classData.baseHp + Math.floor((constitution - 10) / 2);
-    const maxMp = classData.baseMp + Math.floor((intelligence - 10) / 2);
+    const maxHp = 50 + vitality * 5;
+    const maxMp = 100 + willpower * 2;
 
     // Wrap player creation + starting inventory in a transaction
     const player = await db.$transaction(async (tx) => {
@@ -47,20 +49,19 @@ export async function POST(req: NextRequest) {
         data: {
           telegramId,
           name,
-          race,
-          class: className,
+          raceId: raceData.id,
+          classId: classData.id,
           strength,
           dexterity,
-          constitution,
-          intelligence,
-          wisdom,
-          charisma,
+          vitality,
+          intellect,
+          willpower,
+          instinct,
           hp: maxHp,
           maxHp,
           mp: maxMp,
           maxMp,
         },
-        include: { inventory: true, quests: true },
       });
 
       // Give starting items
@@ -72,10 +73,15 @@ export async function POST(req: NextRequest) {
         ],
       });
 
-      // Re-fetch player with inventory and quests included
+      // Re-fetch player with inventory, quests, race and class included
       return tx.player.findUnique({
         where: { id: created.id },
-        include: { inventory: true, quests: true },
+        include: {
+          inventory: true,
+          quests: true,
+          race: true,
+          class: { include: { abilities: true } },
+        },
       });
     });
 

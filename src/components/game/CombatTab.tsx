@@ -3,8 +3,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { ENEMIES, ABILITIES } from '@/lib/game-data';
-import { PlayerData, CombatLogEntry, parseStats } from '@/lib/game-types';
+import { ENEMIES } from '@/lib/game-data';
+import { manaCostForStage } from '@/lib/combat-engine';
+import { PlayerData, AbilityData, CombatLogEntry, parseStats } from '@/lib/game-types';
 
 interface CombatTabProps {
   player: PlayerData | null;
@@ -13,7 +14,7 @@ interface CombatTabProps {
   floatingDamage: { id: number; text: string; color: string }[];
   combatLog: CombatLogEntry[];
   loading: boolean;
-  availableAbilities: typeof ABILITIES;
+  availableAbilities: AbilityData[];
   onCombatAction: (action: string, itemId?: string, abilityId?: string) => void;
   onGoToOverview: () => void;
 }
@@ -113,14 +114,6 @@ export function CombatTab({
                   ⚔️ Атака
                 </Button>
                 <Button
-                  className="h-12 bg-mp/80 hover:bg-mp"
-                  onClick={() => onCombatAction('spell')}
-                  disabled={loading || (player?.mp ?? 0) < 3}
-                >
-                  🔮 Заклинание
-                  <span className="text-[10px] ml-1 opacity-70">3 MP</span>
-                </Button>
-                <Button
                   variant="outline"
                   className="h-12 border-border"
                   onClick={() => onCombatAction('flee')}
@@ -160,9 +153,9 @@ export function CombatTab({
                   <div className="col-span-2 mt-2">
                     <p className="text-xs text-muted-foreground mb-1.5">Способности:</p>
                     <div className="grid grid-cols-2 gap-1.5">
-                      {availableAbilities.map(ability => {
-                        const canUse = !loading && player.inCombat &&
-                          player.mp >= ability.mpCost && player.hp > ability.hpCost;
+                      {availableAbilities.map((ability: AbilityData) => {
+                        const manaCost = manaCostForStage(ability.stage);
+                        const canUse = !loading && player.inCombat && player.mp >= manaCost;
                         return (
                           <Button
                             key={ability.id}
@@ -170,14 +163,11 @@ export function CombatTab({
                             className={`h-auto py-2 px-2 border-border text-xs ${!canUse ? 'opacity-50' : ''}`}
                             disabled={!canUse}
                             onClick={() => onCombatAction('ability', undefined, ability.id)}
+                            title={ability.description}
                           >
                             <div className="text-left">
-                              <div className="font-medium">{ability.icon} {ability.nameRu}</div>
-                              <div className="text-[10px] text-muted-foreground">
-                                {ability.mpCost > 0 && `${ability.mpCost} MP`}
-                                {ability.hpCost > 0 && ` ${ability.hpCost} HP`}
-                                {ability.mpCost === 0 && ability.hpCost === 0 && 'Бесплатно'}
-                              </div>
+                              <div className="font-medium">{ability.icon} {ability.name}</div>
+                              <div className="text-[10px] text-muted-foreground">{manaCost} маны</div>
                             </div>
                           </Button>
                         );

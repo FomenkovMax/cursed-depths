@@ -15,6 +15,7 @@ interface OverviewTabProps {
   onDaily: () => void;
   canClaimDaily: boolean;
   onGoToCombat: () => void;
+  onAllocateStat: (stat: string) => void;
 }
 
 export function OverviewTab({
@@ -27,6 +28,7 @@ export function OverviewTab({
   onDaily,
   canClaimDaily,
   onGoToCombat,
+  onAllocateStat,
 }: OverviewTabProps) {
   const playerInventory = player?.inventory || [];
 
@@ -93,18 +95,29 @@ export function OverviewTab({
 
       {/* Character stats */}
       <Card className="border-border">
-        <CardHeader className="pb-2 pt-3 px-4">
+        <CardHeader className="pb-2 pt-3 px-4 flex flex-row items-center justify-between">
           <CardTitle className="text-sm">Характеристики</CardTitle>
+          {!!player?.statPoints && (
+            <Badge className="text-[10px] h-5 bg-gold/20 text-gold">+{player.statPoints} очков</Badge>
+          )}
         </CardHeader>
         <CardContent className="px-4 pb-3">
           <div className="grid grid-cols-3 gap-2">
-            {(['strength', 'dexterity', 'constitution', 'intelligence', 'wisdom', 'charisma'] as const).map(stat => (
+            {(['strength', 'dexterity', 'vitality', 'intellect', 'willpower', 'instinct'] as const).map(stat => (
               <div key={stat} className="bg-secondary/50 rounded-lg p-2 text-center">
                 <div className="text-[10px] text-muted-foreground">{STAT_SHORT_RU[stat]}</div>
                 <div className="font-bold text-sm">{player?.[stat] || 0}</div>
-                <div className="text-[10px] text-muted-foreground">
-                  ({Math.floor(((player?.[stat] || 10) - 10) / 2) >= 0 ? '+' : ''}{Math.floor(((player?.[stat] || 10) - 10) / 2)})
-                </div>
+                {!!player?.statPoints && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-5 w-5 p-0 mt-1 text-[10px] border-border"
+                    disabled={loading}
+                    onClick={() => onAllocateStat(stat)}
+                  >
+                    +
+                  </Button>
+                )}
               </div>
             ))}
           </div>

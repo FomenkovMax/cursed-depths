@@ -18,6 +18,7 @@ export async function POST(req: NextRequest) {
     const updated = await db.player.update({
       where: { telegramId },
       data: { hp: player.maxHp, mp: player.maxMp },
+      include: { inventory: true, race: true, class: { include: { abilities: true } } },
     });
 
     return NextResponse.json({ message: 'Вы отдохнули в таверне. HP и MP полностью восстановлены!', player: updated });

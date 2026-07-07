@@ -8,34 +8,37 @@ datasource db {
 }
 
 model Player {
-  id              String   @id @default(cuid())
-  telegramId      String   @unique
+  id              String    @id @default(cuid())
+  telegramId      String    @unique
   name            String
-  race            String
-  class           String
-  level           Int      @default(1)
-  xp              Int      @default(0)
-  xpToNext        Int      @default(100)
-  hp              Int      @default(10)
-  maxHp           Int      @default(10)
-  mp              Int      @default(5)
-  maxMp           Int      @default(5)
-  strength        Int      @default(10)
-  dexterity       Int      @default(10)
-  constitution    Int      @default(10)
-  intelligence    Int      @default(10)
-  wisdom          Int      @default(10)
-  charisma        Int      @default(10)
-  gold            Int      @default(0)
-  locationId      String   @default("town")
-  inCombat        Boolean  @default(false)
+  raceId          String
+  race            Race      @relation(fields: [raceId], references: [id])
+  classId         String
+  class           GameClass @relation(fields: [classId], references: [id])
+  level           Int       @default(1)
+  xp              Int       @default(0)
+  xpToNext        Int       @default(100)
+  hp              Int       @default(10)
+  maxHp           Int       @default(10)
+  mp              Int       @default(100)
+  maxMp           Int       @default(100)
+  strength        Int       @default(10)
+  dexterity       Int       @default(10)
+  vitality        Int       @default(10)
+  intellect       Int       @default(10)
+  willpower       Int       @default(10)
+  instinct        Int       @default(10)
+  statPoints      Int       @default(0) // неизрасходованные очки характеристик
+  gold            Int       @default(0)
+  locationId      String    @default("town")
+  inCombat        Boolean   @default(false)
   enemyId         String?
   enemyHp         Int?
   enemyMaxHp      Int?
-  combatLog       String?  // JSON string
-  lastDailyReward String?  // ISO date string
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  combatLog       String?   // JSON string
+  lastDailyReward String?   // ISO date string
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
   inventory       Inventory[]
   quests          PlayerQuest[]
@@ -44,6 +47,8 @@ model Player {
   @@index([telegramId])
   @@index([locationId])
   @@index([level])
+  @@index([raceId])
+  @@index([classId])
 }
 
 model Inventory {
@@ -131,6 +136,7 @@ model Race {
   baseInstinct  Int
 
   classes       GameClass[]
+  players       Player[]
 }
 
 model GameClass {
@@ -146,6 +152,7 @@ model GameClass {
   primaryStat String    // приоритетная характеристика (информационно)
 
   abilities   Ability[]
+  players     Player[]
 
   @@index([raceId])
   @@index([path])

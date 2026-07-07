@@ -8,8 +8,8 @@ export async function GET() {
       take: 10,
       select: {
         name: true,
-        race: true,
-        class: true,
+        race: { select: { name: true, icon: true } },
+        class: { select: { name: true, icon: true } },
         level: true,
         xp: true,
         gold: true,

@@ -1,8 +1,8 @@
 // ===== LOCATIONS =====
 // Акт 1: Пепельные Врата (Люди), уровни 1-3. Акт 2: Корневая Роща (Эльфы), уровни 3-4.
 // Акт 3: Каменный Чертог (Гномы), уровни 4-5. Акт 4: Драконье Горнило (Драконорождённые),
-// уровни 5-6. Акты 5-6 ещё не спроектированы под новый лор и намеренно не включены —
-// см. docs/cursed_depths_master.pdf, раздел 2.1.
+// уровни 5-6. Акт 5: Гнилые Топи (Нежить), уровни 6-7. Акт 6 ещё не спроектирован под
+// новый лор и намеренно не включён — см. docs/cursed_depths_master.pdf, раздел 2.1.
 export interface Location {
   id: string;
   nameRu: string;
@@ -233,7 +233,57 @@ export const LOCATIONS: Location[] = [
     descriptionEn: 'The heart of the volcano. Here Velarion forged the first of his children — and here that child went mad with his own fire.',
     icon: '🐉',
     level: 6,
-    connections: ['ignira_maw'],
+    connections: ['ignira_maw', 'outer_marshes'],
+  },
+  {
+    id: 'outer_marshes',
+    nameRu: 'Внешние топи',
+    nameEn: 'Outer Marshes',
+    descriptionRu: 'Болота, где мёртвые не лежат спокойно. Ядовитые испарения стелются над водой, а под кочками кто-то шевелится.',
+    descriptionEn: "Marshes where the dead don't lie still. Poisonous mist creeps over the water, and something stirs beneath the hummocks.",
+    icon: '🌫️',
+    level: 6,
+    connections: ['flame_cradle', 'shipwreck_graveyard'],
+  },
+  {
+    id: 'shipwreck_graveyard',
+    nameRu: 'Кладбище кораблей',
+    nameEn: 'Shipwreck Graveyard',
+    descriptionRu: 'Затонувший флот, ушедший на дно ещё до Падения. Экипажи не покинули свои посты — даже спустя века.',
+    descriptionEn: 'A sunken fleet that went down even before the Fall. The crews never left their posts — not even after centuries.',
+    icon: '⚓',
+    level: 6,
+    connections: ['outer_marshes', 'plague_camp'],
+  },
+  {
+    id: 'plague_camp',
+    nameRu: 'Чумной лагерь',
+    nameEn: 'Plague Camp',
+    descriptionRu: 'Алхимики здесь экспериментируют со Скверной, будто её можно приручить. Судя по количеству могил — нет.',
+    descriptionEn: "Alchemists here experiment with the Blight as if it could be tamed. Judging by the number of graves — it cannot.",
+    icon: '🧪',
+    level: 7,
+    connections: ['shipwreck_graveyard', 'bone_cathedral'],
+  },
+  {
+    id: 'bone_cathedral',
+    nameRu: 'Костяной собор',
+    nameEn: 'Bone Cathedral',
+    descriptionRu: 'Храм, построенный из костей тех, кто не смог упокоиться. Здесь молятся не богам, а тишине.',
+    descriptionEn: "A cathedral built from the bones of those who could not rest. Here they pray not to gods, but to silence.",
+    icon: '⛪',
+    level: 7,
+    connections: ['plague_camp', 'plague_gate'],
+  },
+  {
+    id: 'plague_gate',
+    nameRu: 'Врата Мора',
+    nameEn: 'Plague Gate',
+    descriptionRu: 'Массовое захоронение — вход в Глубь. Здесь покоится тот, кто умер первым, когда мир раскололся.',
+    descriptionEn: 'A mass grave — an entrance to the Depths. Here rests the one who died first when the world broke.',
+    icon: '🪦',
+    level: 7,
+    connections: ['bone_cathedral'],
   },
 ];
 
@@ -275,6 +325,8 @@ export const ITEMS: Item[] = [
   { id: 'celestial_robe', nameRu: 'Небесная мантия', nameEn: 'Celestial Robe', type: 'armor', rarity: 'epic', stats: { defense: 4, intellect: 3, willpower: 2 }, descriptionRu: 'Мантия, благословлённая небесами.', descriptionEn: 'Robe blessed by the heavens.', icon: '✨', value: 700 },
   { id: 'crown_armor', nameRu: 'Броня Короны', nameEn: 'Crown Armor', type: 'armor', rarity: 'legendary', stats: { defense: 14, strength: 2, vitality: 3, willpower: 2 }, descriptionRu: 'Легендарная броня, носящая печать Короля.', descriptionEn: "Legendary armor bearing the King's seal.", icon: '👑', value: 2000 },
   { id: 'first_dragon_scale', nameRu: 'Чешуя Первого Дракона', nameEn: 'Scale of the First Dragon', type: 'armor', rarity: 'legendary', stats: { defense: 16, strength: 2, vitality: 3 }, descriptionRu: 'Чешуя дракона, выкованного самим Веларионом. Ещё хранит жар его безумия.', descriptionEn: 'A scale from the dragon forged by Velarion himself. It still holds the heat of his madness.', icon: '🐉', value: 2200 },
+  { id: 'first_fall_dust', nameRu: 'Пыль Первого Падения', nameEn: 'Dust of the First Fall', type: 'accessory', rarity: 'rare', stats: { willpower: 2, instinct: 2, hp: 15 }, descriptionRu: 'Горсть праха с того самого мгновения, когда мир раскололся. Ещё помнит, каким он был.', descriptionEn: 'A handful of dust from the very moment the world broke. It still remembers what it was.', icon: '⏳', value: 260 },
+  { id: 'first_risen_crown', nameRu: 'Корона Первого Восставшего', nameEn: 'Crown of the First Risen', type: 'accessory', rarity: 'legendary', stats: { willpower: 3, instinct: 3, hp: 25 }, descriptionRu: 'Корона того, кто умер вместе с миром и вернулся раньше всех остальных.', descriptionEn: 'The crown of the one who died with the world and returned before all others.', icon: '👑', value: 2400 },
 
   // === ACCESSORIES ===
   { id: 'copper_ring', nameRu: 'Медное кольцо', nameEn: 'Copper Ring', type: 'accessory', rarity: 'common', stats: { hp: 5 }, descriptionRu: 'Простое медное кольцо с защитным чаром.', descriptionEn: 'Simple copper ring with a ward charm.', icon: '💍', value: 10 },
@@ -313,17 +365,20 @@ export const ITEMS: Item[] = [
 // ===== ENEMIES =====
 // Акт 1: Пепельные Врата, уровни 1-3. Акт 2: Корневая Роща, уровни 3-4.
 // Акт 3: Каменный Чертог, уровни 4-5. Акт 4: Драконье Горнило, уровни 5-6.
+// Акт 5: Гнилые Топи, уровни 6-7.
 // У всех боссов по лору многофазные механики («Первый Свидетель» чередует физический
 // и магический облик каждые 3 хода и сливает их на 30% HP; «Эхо Айлет» самоисцеляется 5%
 // HP за ход, на фазе 2 обездвиживает корнями, на фазе 3 накладывает яд на весь бой;
 // «Сломанная Клятва» имеет щит, восстанавливающийся каждые 4 хода, а при сломанном щите
 // уходит в берсерк — +50% урона, -30% защиты; «Первый Дракон» накладывает «Горение»
 // каждый ход, а на фазе 2 гаснет — урон падает, но появляется Скверна, и игроку даётся
-// выбор добить его или попытаться исцелить) — ни одна из этих механик пока не
-// реализована в combat-engine (текущий движок работает с одиночным набором
-// hp/ac/attack/damage на врага без фаз, самоисцеления, щитов, ДоТ-эффектов или
-// ветвящихся исходов) и намеренно отложена как отдельная задача; все четыре босса
-// представлены усреднённым набором характеристик под сложность своего Акта.
+// выбор добить его или попытаться исцелить; «Первый Восставший» призывает скелетов
+// каждые 2 хода, на фазе 2 перестаёт призывать и начинает красть ХП, а перед смертью
+// предлагает информацию в обмен на пощаду) — ни одна из этих механик пока не реализована
+// в combat-engine (текущий движок работает с одиночным набором hp/ac/attack/damage на
+// врага без фаз, самоисцеления, щитов, ДоТ-эффектов, призыва существ или ветвящихся
+// исходов) и намеренно отложена как отдельная задача; все пять боссов представлены
+// усреднённым набором характеристик под сложность своего Акта.
 export interface EnemyTemplate {
   id: string;
   nameRu: string;
@@ -435,6 +490,29 @@ export const ENEMIES: EnemyTemplate[] = [
   // Колыбель Пламени (Level 6)
   { id: 'flame_wisp_swarm', nameRu: 'Рой огненных духов', nameEn: 'Flame Wisp Swarm', hp: 60, ac: 15, attack: 14, damage: '1d10+6', xp: 70, gold: 32, lootTable: [{ itemId: 'mana_potion', chance: 0.3 }], locationId: 'flame_cradle', isBoss: false, icon: '✨' },
   { id: 'first_dragon', nameRu: 'Первый Дракон', nameEn: 'The First Dragon', hp: 160, ac: 18, attack: 15, damage: '3d8+6', xp: 550, gold: 250, lootTable: [{ itemId: 'first_dragon_scale', chance: 0.15 }, { itemId: 'ignira_fang', chance: 0.25 }, { itemId: 'elixir_power', chance: 0.3 }], locationId: 'flame_cradle', isBoss: true, icon: '🐉' },
+
+  // Внешние топи (Level 6)
+  { id: 'marsh_zombie', nameRu: 'Болотный зомби', nameEn: 'Marsh Zombie', hp: 62, ac: 16, attack: 13, damage: '1d10+5', xp: 62, gold: 26, lootTable: [{ itemId: 'greater_health', chance: 0.3 }, { itemId: 'antidote', chance: 0.3 }], locationId: 'outer_marshes', isBoss: false, icon: '🧟' },
+  { id: 'bog_wraith', nameRu: 'Болотный призрак', nameEn: 'Bog Wraith', hp: 58, ac: 17, attack: 14, damage: '1d10+5', xp: 65, gold: 28, lootTable: [{ itemId: 'shadow_essence', chance: 0.35 }], locationId: 'outer_marshes', isBoss: false, icon: '👻' },
+  { id: 'venom_mist_spawn', nameRu: 'Порождение ядовитого тумана', nameEn: 'Venom Mist Spawn', hp: 54, ac: 15, attack: 13, damage: '1d10+5', xp: 60, gold: 24, lootTable: [{ itemId: 'antidote', chance: 0.4 }], locationId: 'outer_marshes', isBoss: false, icon: '☠️' },
+
+  // Кладбище кораблей (Level 6-7)
+  { id: 'drowned_sailor', nameRu: 'Утопленный моряк', nameEn: 'Drowned Sailor', hp: 60, ac: 16, attack: 14, damage: '1d10+5', xp: 64, gold: 28, lootTable: [{ itemId: 'chainmail', chance: 0.15 }, { itemId: 'shadow_cloak', chance: 0.08 }], locationId: 'shipwreck_graveyard', isBoss: false, icon: '⚓' },
+  { id: 'ghost_captain', nameRu: 'Призрачный капитан', nameEn: 'Ghost Captain', hp: 66, ac: 17, attack: 15, damage: '2d6+5', xp: 70, gold: 32, lootTable: [{ itemId: 'shadow_dagger', chance: 0.1 }, { itemId: 'first_fall_dust', chance: 0.1 }], locationId: 'shipwreck_graveyard', isBoss: false, icon: '🏴‍☠️' },
+  { id: 'hull_crawler', nameRu: 'Ползун обшивки', nameEn: 'Hull Crawler', hp: 58, ac: 16, attack: 13, damage: '1d10+5', xp: 62, gold: 26, lootTable: [{ itemId: 'iron_ore', chance: 0.3 }], locationId: 'shipwreck_graveyard', isBoss: false, icon: '🦀' },
+
+  // Чумной лагерь (Level 7)
+  { id: 'blight_alchemist', nameRu: 'Алхимик Скверны', nameEn: 'Blight Alchemist', hp: 64, ac: 16, attack: 15, damage: '1d10+6', xp: 70, gold: 32, lootTable: [{ itemId: 'scroll_fireball', chance: 0.15 }, { itemId: 'antidote', chance: 0.4 }], locationId: 'plague_camp', isBoss: false, icon: '🧪' },
+  { id: 'plague_hound', nameRu: 'Чумной пёс', nameEn: 'Plague Hound', hp: 60, ac: 16, attack: 15, damage: '1d10+6', xp: 68, gold: 30, lootTable: [{ itemId: 'antidote', chance: 0.35 }], locationId: 'plague_camp', isBoss: false, icon: '🐕' },
+  { id: 'toxic_experiment', nameRu: 'Токсичный эксперимент', nameEn: 'Toxic Experiment', hp: 70, ac: 17, attack: 16, damage: '2d6+6', xp: 75, gold: 34, lootTable: [{ itemId: 'greater_health', chance: 0.3 }, { itemId: 'void_crystal', chance: 0.08 }], locationId: 'plague_camp', isBoss: false, icon: '🧫' },
+
+  // Костяной собор (Level 7)
+  { id: 'bone_priest', nameRu: 'Костяной жрец', nameEn: 'Bone Priest', hp: 68, ac: 17, attack: 16, damage: '1d10+6', xp: 74, gold: 34, lootTable: [{ itemId: 'first_fall_dust', chance: 0.12 }, { itemId: 'mana_potion', chance: 0.4 }], locationId: 'bone_cathedral', isBoss: false, icon: '💀' },
+  { id: 'cathedral_guardian', nameRu: 'Страж собора', nameEn: 'Cathedral Guardian', hp: 75, ac: 18, attack: 16, damage: '2d8+5', xp: 80, gold: 36, lootTable: [{ itemId: 'dwarven_plate', chance: 0.1 }, { itemId: 'greater_health', chance: 0.3 }], locationId: 'bone_cathedral', isBoss: false, icon: '⛪' },
+
+  // Врата Мора (Level 7)
+  { id: 'mass_grave_horror', nameRu: 'Ужас братской могилы', nameEn: 'Mass Grave Horror', hp: 70, ac: 17, attack: 16, damage: '2d6+6', xp: 78, gold: 36, lootTable: [{ itemId: 'greater_health', chance: 0.3 }, { itemId: 'shadow_essence', chance: 0.3 }], locationId: 'plague_gate', isBoss: false, icon: '🪦' },
+  { id: 'first_risen', nameRu: 'Первый Восставший', nameEn: 'The First Risen', hp: 180, ac: 19, attack: 17, damage: '3d8+7', xp: 650, gold: 300, lootTable: [{ itemId: 'first_risen_crown', chance: 0.15 }, { itemId: 'first_fall_dust', chance: 0.3 }, { itemId: 'elixir_power', chance: 0.3 }], locationId: 'plague_gate', isBoss: true, icon: '💀' },
 ];
 
 // ===== CRAFTING RECIPES =====

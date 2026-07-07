@@ -1,7 +1,7 @@
 // ===== LOCATIONS =====
 // Акт 1: Пепельные Врата (Люди), уровни 1-3. Акт 2: Корневая Роща (Эльфы), уровни 3-4.
-// Акты 3-6 ещё не спроектированы под новый лор и намеренно не включены —
-// см. docs/cursed_depths_master.pdf, раздел 2.1.
+// Акт 3: Каменный Чертог (Гномы), уровни 4-5. Акты 4-6 ещё не спроектированы под новый
+// лор и намеренно не включены — см. docs/cursed_depths_master.pdf, раздел 2.1.
 export interface Location {
   id: string;
   nameRu: string;
@@ -132,7 +132,57 @@ export const LOCATIONS: Location[] = [
     descriptionEn: "The dead tree's roots plunge straight into the Depths. Here dwells what remains of the goddess of Life.",
     icon: '🥀',
     level: 4,
-    connections: ['shade_mycelium'],
+    connections: ['shade_mycelium', 'outer_mines'],
+  },
+  {
+    id: 'outer_mines',
+    nameRu: 'Внешние шахты',
+    nameEn: 'Outer Mines',
+    descriptionRu: 'Заброшенные тоннели на границе гномьих владений. Кирки всё ещё торчат из стен там, где их бросили шахтёры.',
+    descriptionEn: 'Abandoned tunnels on the edge of dwarven lands. Pickaxes still jut from the walls where miners dropped them.',
+    icon: '⛏️',
+    level: 4,
+    connections: ['abyss_root', 'rune_workshop'],
+  },
+  {
+    id: 'rune_workshop',
+    nameRu: 'Рунная мастерская',
+    nameEn: 'Rune Workshop',
+    descriptionRu: 'Мастерская, полная недоделанных рун и ловушек. Гномы верили, что руны защитят их основы — не защитили.',
+    descriptionEn: 'A workshop full of unfinished runes and traps. The dwarves believed runes would protect their foundations — they did not.',
+    icon: '✳️',
+    level: 4,
+    connections: ['outer_mines', 'oath_hall'],
+  },
+  {
+    id: 'oath_hall',
+    nameRu: 'Зал Клятв',
+    nameEn: 'Hall of Oaths',
+    descriptionRu: 'Бывший зал суда, теперь — арена. Здесь гномы когда-то клялись Торнаку. Клятвы остались, бог — нет.',
+    descriptionEn: 'A former hall of judgment, now an arena. Here dwarves once swore oaths to Tornak. The oaths remain — the god does not.',
+    icon: '🏛️',
+    level: 5,
+    connections: ['rune_workshop', 'great_forge'],
+  },
+  {
+    id: 'great_forge',
+    nameRu: 'Великая Кузница',
+    nameEn: 'Great Forge',
+    descriptionRu: 'Руины главной святыни Торнака. Горны остыли, но что-то в глубине них всё ещё пылает.',
+    descriptionEn: "Ruins of Tornak's central sanctuary. The furnaces have gone cold, but something deep within them still burns.",
+    icon: '🔥',
+    level: 5,
+    connections: ['oath_hall', 'foundation_rift'],
+  },
+  {
+    id: 'foundation_rift',
+    nameRu: 'Разлом Основы',
+    nameEn: 'Foundation Rift',
+    descriptionRu: 'Кузница рухнула прямо в Глубь. На дне разлома ждёт тот, кто когда-то клялся её защищать.',
+    descriptionEn: 'The forge collapsed straight into the Depths. At the bottom of the rift waits one who once swore to protect it.',
+    icon: '💔',
+    level: 5,
+    connections: ['great_forge'],
   },
 ];
 
@@ -162,6 +212,7 @@ export const ITEMS: Item[] = [
   { id: 'void_staff', nameRu: 'Посох Пустоты', nameEn: 'Void Staff', type: 'weapon', rarity: 'epic', stats: { attack: 8, intellect: 4, mp: 15 }, descriptionRu: 'Посох, черпающий силу из Пустоты.', descriptionEn: 'Staff drawing power from the Void.', icon: '🪄', value: 700 },
   { id: 'dragonslayer', nameRu: 'Драконоборец', nameEn: 'Dragonslayer', type: 'weapon', rarity: 'legendary', stats: { attack: 16, strength: 3, vitality: 2 }, descriptionRu: 'Легендарный меч, созданный для убийства драконов.', descriptionEn: 'Legendary sword forged to slay dragons.', icon: '⚔️', value: 1500 },
   { id: 'cursed_king_blade', nameRu: 'Клинок Проклятого Короля', nameEn: "Cursed King's Blade", type: 'weapon', rarity: 'mythic', stats: { attack: 25, strength: 5, dexterity: 3 }, descriptionRu: 'Мифический клинок, пропитанный проклятием Короля.', descriptionEn: "Mythic blade soaked in the King's curse.", icon: '👑', value: 5000 },
+  { id: 'broken_oath_hammer', nameRu: 'Молот Сломанной Клятвы', nameEn: 'Hammer of the Broken Oath', type: 'weapon', rarity: 'legendary', stats: { attack: 18, strength: 3, vitality: 2 }, descriptionRu: 'Молот гнома-титана, преданного своим богом. Каждый удар — эхо разбитой клятвы.', descriptionEn: 'The hammer of a dwarf-titan betrayed by his own god. Every blow echoes a broken vow.', icon: '🔨', value: 1800 },
 
   // === ARMOR ===
   { id: 'leather_armor', nameRu: 'Кожаная броня', nameEn: 'Leather Armor', type: 'armor', rarity: 'common', stats: { defense: 2 }, descriptionRu: 'Простая кожаная броня.', descriptionEn: 'Simple leather armor.', icon: '🦺', value: 15 },
@@ -183,6 +234,7 @@ export const ITEMS: Item[] = [
   { id: 'witness_eye', nameRu: 'Око Первого Свидетеля', nameEn: 'Eye of the First Witness', type: 'accessory', rarity: 'epic', stats: { instinct: 3, willpower: 2, hp: 20 }, descriptionRu: 'Застывшее око духа, видевшего Падение. Носитель иногда слышит его крик.', descriptionEn: 'The frozen eye of the spirit who witnessed the Fall. Its wearer sometimes hears its scream.', icon: '👁️', value: 650 },
   { id: 'ailet_tear', nameRu: 'Слеза Айлет', nameEn: 'Tear of Ailet', type: 'accessory', rarity: 'rare', stats: { willpower: 2, intellect: 1, hp: 10 }, descriptionRu: 'Застывшая слеза богини, всё ещё хранящая отголосок исцеления.', descriptionEn: "A frozen tear of the goddess, still echoing with healing.", icon: '💧', value: 230 },
   { id: 'echo_thorn_crown', nameRu: 'Терновый венец Эха', nameEn: "Echo's Thorn Crown", type: 'accessory', rarity: 'epic', stats: { willpower: 3, instinct: 2, hp: 20 }, descriptionRu: 'Венец из терний, что носила Эхо Айлет — прекрасный и ядовитый одновременно.', descriptionEn: 'A thorn crown worn by the Echo of Ailet — beautiful and poisonous at once.', icon: '🥀', value: 680 },
+  { id: 'oath_shield_shard', nameRu: 'Осколок Щита Клятвы', nameEn: 'Shard of the Oath Shield', type: 'accessory', rarity: 'rare', stats: { vitality: 2, hp: 15 }, descriptionRu: 'Обломок щита, что раскалывался и восстанавливался тысячи раз. Ещё хранит клятву.', descriptionEn: 'A shard of a shield shattered and reforged a thousand times. It still holds the oath.', icon: '🛡️', value: 240 },
 
   // === CONSUMABLES ===
   { id: 'health_potion', nameRu: 'Зелье здоровья', nameEn: 'Health Potion', type: 'consumable', rarity: 'common', stats: { healHp: 15 }, descriptionRu: 'Восстанавливает 15 HP.', descriptionEn: 'Restores 15 HP.', icon: '🧪', value: 15 },
@@ -207,13 +259,16 @@ export const ITEMS: Item[] = [
 
 // ===== ENEMIES =====
 // Акт 1: Пепельные Врата, уровни 1-3. Акт 2: Корневая Роща, уровни 3-4.
-// У обоих боссов по лору многофазные механики («Первый Свидетель» чередует физический и
-// магический облик каждые 3 хода и сливает их на 30% HP; «Эхо Айлет» самоисцеляется 5%
-// HP за ход, на фазе 2 обездвиживает корнями, на фазе 3 накладывает яд на весь бой) —
-// ни одна из этих механик пока не реализована в combat-engine (текущий движок работает
-// с одиночным набором hp/ac/attack/damage на врага без фаз, самоисцеления или ХоТ/ДоТ-
-// эффектов) и намеренно отложена как отдельная задача; оба босса представлены
-// усреднённым набором характеристик под сложность своего Акта.
+// Акт 3: Каменный Чертог, уровни 4-5.
+// У всех трёх боссов по лору многофазные механики («Первый Свидетель» чередует физический
+// и магический облик каждые 3 хода и сливает их на 30% HP; «Эхо Айлет» самоисцеляется 5%
+// HP за ход, на фазе 2 обездвиживает корнями, на фазе 3 накладывает яд на весь бой;
+// «Сломанная Клятва» имеет щит, восстанавливающийся каждые 4 хода, а при сломанном щите
+// уходит в берсерк — +50% урона, -30% защиты) — ни одна из этих механик пока не
+// реализована в combat-engine (текущий движок работает с одиночным набором
+// hp/ac/attack/damage на врага без фаз, самоисцеления, щитов или ХоТ/ДоТ-эффектов) и
+// намеренно отложена как отдельная задача; все три босса представлены усреднённым
+// набором характеристик под сложность своего Акта.
 export interface EnemyTemplate {
   id: string;
   nameRu: string;
@@ -278,6 +333,30 @@ export const ENEMIES: EnemyTemplate[] = [
   // Корень Бездны (Level 4)
   { id: 'root_horror', nameRu: 'Ужас корней', nameEn: 'Root Horror', hp: 40, ac: 13, attack: 9, damage: '1d10+3', xp: 45, gold: 20, lootTable: [{ itemId: 'greater_health', chance: 0.3 }, { itemId: 'iron_ore', chance: 0.3 }], locationId: 'abyss_root', isBoss: false, icon: '🌿' },
   { id: 'echo_of_ailet', nameRu: 'Эхо Айлет', nameEn: 'Echo of Ailet', hp: 110, ac: 15, attack: 11, damage: '2d8+6', xp: 350, gold: 150, lootTable: [{ itemId: 'echo_thorn_crown', chance: 0.2 }, { itemId: 'ailet_tear', chance: 0.3 }, { itemId: 'scroll_heal', chance: 0.3 }], locationId: 'abyss_root', isBoss: true, icon: '🥀' },
+
+  // Внешние шахты (Level 4)
+  { id: 'collapsed_miner', nameRu: 'Погребённый шахтёр', nameEn: 'Collapsed Miner', hp: 36, ac: 12, attack: 8, damage: '1d8+3', xp: 36, gold: 16, lootTable: [{ itemId: 'iron_ore', chance: 0.4 }, { itemId: 'health_potion', chance: 0.25 }], locationId: 'outer_mines', isBoss: false, icon: '⛏️' },
+  { id: 'rock_crawler', nameRu: 'Каменный ползун', nameEn: 'Rock Crawler', hp: 32, ac: 13, attack: 7, damage: '1d6+4', xp: 32, gold: 14, lootTable: [{ itemId: 'iron_ore', chance: 0.3 }], locationId: 'outer_mines', isBoss: false, icon: '🪨' },
+  { id: 'tunnel_wraith', nameRu: 'Туннельный призрак', nameEn: 'Tunnel Wraith', hp: 34, ac: 13, attack: 8, damage: '1d8+3', xp: 38, gold: 18, lootTable: [{ itemId: 'shadow_essence', chance: 0.3 }], locationId: 'outer_mines', isBoss: false, icon: '👻' },
+
+  // Рунная мастерская (Level 4-5)
+  { id: 'rune_construct', nameRu: 'Рунный страж', nameEn: 'Rune Construct', hp: 40, ac: 14, attack: 9, damage: '1d8+4', xp: 42, gold: 20, lootTable: [{ itemId: 'steel_sword', chance: 0.15 }, { itemId: 'iron_ore', chance: 0.3 }], locationId: 'rune_workshop', isBoss: false, icon: '🗿' },
+  { id: 'trapped_apprentice', nameRu: 'Пленённый подмастерье', nameEn: 'Trapped Apprentice', hp: 36, ac: 12, attack: 8, damage: '1d8+3', xp: 40, gold: 18, lootTable: [{ itemId: 'mana_potion', chance: 0.4 }, { itemId: 'scroll_fireball', chance: 0.1 }], locationId: 'rune_workshop', isBoss: false, icon: '🧙' },
+  { id: 'living_rune', nameRu: 'Ожившая руна', nameEn: 'Living Rune', hp: 38, ac: 13, attack: 9, damage: '1d10+3', xp: 44, gold: 20, lootTable: [{ itemId: 'arcane_pendant', chance: 0.1 }], locationId: 'rune_workshop', isBoss: false, icon: '✳️' },
+
+  // Зал Клятв (Level 5)
+  { id: 'oathbreaker_shade', nameRu: 'Тень клятвопреступника', nameEn: 'Oathbreaker Shade', hp: 44, ac: 14, attack: 10, damage: '1d10+4', xp: 48, gold: 22, lootTable: [{ itemId: 'shadow_essence', chance: 0.3 }, { itemId: 'chainmail', chance: 0.1 }], locationId: 'oath_hall', isBoss: false, icon: '🗡️' },
+  { id: 'arena_champion', nameRu: 'Чемпион арены', nameEn: 'Arena Champion', hp: 50, ac: 15, attack: 11, damage: '1d10+5', xp: 55, gold: 28, lootTable: [{ itemId: 'dwarven_plate', chance: 0.1 }, { itemId: 'steel_sword', chance: 0.15 }], locationId: 'oath_hall', isBoss: false, icon: '🪓' },
+  { id: 'betrayed_guardian', nameRu: 'Преданный страж', nameEn: 'Betrayed Guardian', hp: 46, ac: 15, attack: 10, damage: '2d6+3', xp: 50, gold: 24, lootTable: [{ itemId: 'oath_shield_shard', chance: 0.15 }, { itemId: 'greater_health', chance: 0.3 }], locationId: 'oath_hall', isBoss: false, icon: '🛡️' },
+
+  // Великая Кузница (Level 5)
+  { id: 'forge_wraith', nameRu: 'Дух Кузницы', nameEn: 'Forge Wraith', hp: 48, ac: 14, attack: 11, damage: '1d10+4', xp: 52, gold: 24, lootTable: [{ itemId: 'iron_ore', chance: 0.4 }, { itemId: 'shadow_essence', chance: 0.2 }], locationId: 'great_forge', isBoss: false, icon: '🔥' },
+  { id: 'molten_golem', nameRu: 'Расплавленный голем', nameEn: 'Molten Golem', hp: 55, ac: 16, attack: 12, damage: '2d6+4', xp: 58, gold: 28, lootTable: [{ itemId: 'dragon_scale', chance: 0.1 }, { itemId: 'iron_ore', chance: 0.4 }], locationId: 'great_forge', isBoss: false, icon: '🌋' },
+  { id: 'tornak_zealot', nameRu: 'Фанатик Торнака', nameEn: 'Tornak Zealot', hp: 45, ac: 13, attack: 11, damage: '1d10+4', xp: 54, gold: 26, lootTable: [{ itemId: 'greater_health', chance: 0.3 }, { itemId: 'steel_sword', chance: 0.15 }], locationId: 'great_forge', isBoss: false, icon: '⚒️' },
+
+  // Разлом Основы (Level 5)
+  { id: 'rift_collapse_horror', nameRu: 'Ужас обвала', nameEn: 'Rift Collapse Horror', hp: 50, ac: 15, attack: 11, damage: '1d10+5', xp: 56, gold: 26, lootTable: [{ itemId: 'greater_health', chance: 0.3 }, { itemId: 'dwarven_plate', chance: 0.08 }], locationId: 'foundation_rift', isBoss: false, icon: '🕳️' },
+  { id: 'broken_oath', nameRu: 'Сломанная Клятва', nameEn: 'The Broken Oath', hp: 140, ac: 17, attack: 13, damage: '2d10+6', xp: 450, gold: 200, lootTable: [{ itemId: 'broken_oath_hammer', chance: 0.15 }, { itemId: 'oath_shield_shard', chance: 0.3 }, { itemId: 'greater_health', chance: 0.3 }], locationId: 'foundation_rift', isBoss: true, icon: '💔' },
 ];
 
 // ===== CRAFTING RECIPES =====

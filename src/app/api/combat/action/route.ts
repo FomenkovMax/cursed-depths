@@ -23,6 +23,7 @@ import {
   type BossFightState,
 } from '@/lib/boss-mechanics';
 import { computeEquipmentBonuses } from '@/lib/equipment-stats';
+import { incrementQuestProgress } from '@/lib/quests';
 
 export async function POST(req: NextRequest) {
   const auth = validateTelegramRequest(req);
@@ -344,11 +345,15 @@ export async function POST(req: NextRequest) {
         }, tx);
       }
 
+      if (playerWon) {
+        await incrementQuestProgress(tx, player.id, 'kill');
+      }
+
       // Update player state
       return tx.player.update({
         where: { telegramId },
         data: updateData,
-        include: { inventory: true, race: true, class: { include: { abilities: true } } },
+        include: { inventory: true, quests: true, race: true, class: { include: { abilities: true } } },
       });
     });
 

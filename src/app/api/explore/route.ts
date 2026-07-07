@@ -6,6 +6,7 @@ import { validateTelegramRequest } from '@/lib/auth';
 import { getCached, setCached, CACHE_TTL } from '@/lib/cache';
 import { addItemToInventory } from '@/lib/inventory-utils';
 import { initBossState } from '@/lib/boss-mechanics';
+import { incrementQuestProgress } from '@/lib/quests';
 
 export async function POST(req: NextRequest) {
   const auth = validateTelegramRequest(req);
@@ -26,10 +27,13 @@ export async function POST(req: NextRequest) {
     if (player.locationId === 'town' || player.locationId === 'market') {
       // Safe locations - find items or nothing
       const goldFound = rollDice('1d4') * player.level;
-      const updated = await db.player.update({
-        where: { telegramId },
-        data: { gold: { increment: goldFound } },
-        include: { inventory: true, race: true, class: { include: { abilities: true } } },
+      const updated = await db.$transaction(async (tx) => {
+        await incrementQuestProgress(tx, player.id, 'explore');
+        return tx.player.update({
+          where: { telegramId },
+          data: { gold: { increment: goldFound } },
+          include: { inventory: true, quests: true, race: true, class: { include: { abilities: true } } },
+        });
       });
       return NextResponse.json({
         type: 'safe',
@@ -51,7 +55,15 @@ export async function POST(req: NextRequest) {
       }
 
       if (locationEnemies.length === 0) {
-        return NextResponse.json({ type: 'empty', message: 'Пусто... Никаких врагов не найдено.' });
+        const updated = await db.$transaction(async (tx) => {
+          await incrementQuestProgress(tx, player.id, 'explore');
+          return tx.player.update({
+            where: { telegramId },
+            data: {},
+            include: { inventory: true, quests: true, race: true, class: { include: { abilities: true } } },
+          });
+        });
+        return NextResponse.json({ type: 'empty', message: 'Пусто... Никаких врагов не найдено.', player: updated });
       }
 
       // Боссы встречаются редко (15%), обычные враги — в остальных случаях;
@@ -65,17 +77,20 @@ export async function POST(req: NextRequest) {
       const enemy = pool[Math.floor(Math.random() * pool.length)];
       const enemyHp = enemy.hp + Math.floor(Math.random() * 5);
 
-      const updated = await db.player.update({
-        where: { telegramId },
-        data: {
-          inCombat: true,
-          enemyId: enemy.id,
-          enemyHp,
-          enemyMaxHp: enemyHp,
-          combatLog: JSON.stringify([{ text: `${enemy.nameRu} появляется!`, turn: 0 }]),
-          bossState: JSON.stringify(initBossState(enemy.mechanics)),
-        },
-        include: { inventory: true, race: true, class: { include: { abilities: true } } },
+      const updated = await db.$transaction(async (tx) => {
+        await incrementQuestProgress(tx, player.id, 'explore');
+        return tx.player.update({
+          where: { telegramId },
+          data: {
+            inCombat: true,
+            enemyId: enemy.id,
+            enemyHp,
+            enemyMaxHp: enemyHp,
+            combatLog: JSON.stringify([{ text: `${enemy.nameRu} появляется!`, turn: 0 }]),
+            bossState: JSON.stringify(initBossState(enemy.mechanics)),
+          },
+          include: { inventory: true, quests: true, race: true, class: { include: { abilities: true } } },
+        });
       });
 
       return NextResponse.json({
@@ -93,7 +108,7 @@ export async function POST(req: NextRequest) {
     // Random item drop
     const commonItems = ITEMS.filter(i => i.rarity === 'common' && i.type !== 'quest');
 
-    // Wrap gold addition + item addition in a transaction
+    // Wrap gold addition + item addition + quest progress in a transaction
     const updated = await db.$transaction(async (tx) => {
       if (commonItems.length > 0 && Math.random() < 0.3) {
         const item = commonItems[Math.floor(Math.random() * commonItems.length)];
@@ -111,10 +126,12 @@ export async function POST(req: NextRequest) {
         }, tx);
       }
 
+      await incrementQuestProgress(tx, player.id, 'explore');
+
       return tx.player.update({
         where: { telegramId },
         data: { gold: { increment: goldFound } },
-        include: { inventory: true, race: true, class: { include: { abilities: true } } },
+        include: { inventory: true, quests: true, race: true, class: { include: { abilities: true } } },
       });
     });
 

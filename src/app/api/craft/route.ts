@@ -3,6 +3,7 @@ import { db } from '@/lib/db';
 import { CRAFTING_RECIPES, ITEMS } from '@/lib/game-data';
 import { validateTelegramRequest } from '@/lib/auth';
 import { addItemToInventory } from '@/lib/inventory-utils';
+import { incrementQuestProgress } from '@/lib/quests';
 
 export async function POST(req: NextRequest) {
   const auth = validateTelegramRequest(req);
@@ -64,6 +65,8 @@ export async function POST(req: NextRequest) {
         icon: resultItem.icon,
         quantity: recipe.result.quantity,
       }, tx);
+
+      await incrementQuestProgress(tx, player.id, 'craft');
     });
 
     return NextResponse.json({

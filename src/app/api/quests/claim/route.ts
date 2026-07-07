@@ -30,13 +30,35 @@ export async function POST(req: NextRequest) {
 
     if (!player) return NextResponse.json({ error: 'Персонаж не найден' }, { status: 404 });
 
+    // Level up if the XP reward pushes past the threshold (как в combat/action и daily)
+    let newXp = player.xp + (reward.xp || 0);
+    let newLevel = player.level;
+    let newXpToNext = player.xpToNext;
+    let newStatPoints = player.statPoints;
+    let leveledUp = false;
+    while (newXp >= newXpToNext) {
+      newXp -= newXpToNext;
+      newLevel++;
+      newXpToNext = newLevel * 100;
+      newStatPoints += 2;
+      leveledUp = true;
+    }
+
     // Wrap reward giving + item additions + quest claiming in a transaction
     await db.$transaction(async (tx) => {
       // Give gold/XP rewards
       const updateData: Record<string, unknown> = {
-        xp: { increment: reward.xp || 0 },
+        xp: newXp,
         gold: { increment: reward.gold || 0 },
       };
+      if (leveledUp) {
+        updateData.level = newLevel;
+        updateData.xpToNext = newXpToNext;
+        updateData.statPoints = newStatPoints;
+        const newMaxHp = player.maxHp + 10 * (newLevel - player.level);
+        updateData.maxHp = newMaxHp;
+        updateData.hp = newMaxHp; // Full heal on level up
+      }
 
       await tx.player.update({ where: { telegramId }, data: updateData });
 
@@ -63,7 +85,7 @@ export async function POST(req: NextRequest) {
       await tx.playerQuest.update({ where: { id: questId }, data: { claimed: true } });
     });
 
-    return NextResponse.json({ message: 'Награда получена!', reward });
+    return NextResponse.json({ message: 'Награда получена!', reward, leveledUp, newLevel });
   } catch (error) {
     console.error('[API] Route error:', error);
     if (error instanceof Error && error.message?.includes('connection')) {

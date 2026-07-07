@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
     const cacheKey = `enemies:id:${player.enemyId}`;
     let enemyTemplate = getCached<typeof ENEMIES[0]>(cacheKey);
     if (!enemyTemplate) {
-      enemyTemplate = ENEMIES.find(e => e.id === player.enemyId);
+      enemyTemplate = ENEMIES.find(e => e.id === player.enemyId) ?? null;
       if (enemyTemplate) {
         setCached(cacheKey, enemyTemplate, CACHE_TTL);
       }

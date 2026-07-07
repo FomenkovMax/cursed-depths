@@ -1,7 +1,8 @@
 // ===== LOCATIONS =====
 // Акт 1: Пепельные Врата (Люди), уровни 1-3. Акт 2: Корневая Роща (Эльфы), уровни 3-4.
-// Акт 3: Каменный Чертог (Гномы), уровни 4-5. Акты 4-6 ещё не спроектированы под новый
-// лор и намеренно не включены — см. docs/cursed_depths_master.pdf, раздел 2.1.
+// Акт 3: Каменный Чертог (Гномы), уровни 4-5. Акт 4: Драконье Горнило (Драконорождённые),
+// уровни 5-6. Акты 5-6 ещё не спроектированы под новый лор и намеренно не включены —
+// см. docs/cursed_depths_master.pdf, раздел 2.1.
 export interface Location {
   id: string;
   nameRu: string;
@@ -182,7 +183,57 @@ export const LOCATIONS: Location[] = [
     descriptionEn: 'The forge collapsed straight into the Depths. At the bottom of the rift waits one who once swore to protect it.',
     icon: '💔',
     level: 5,
-    connections: ['great_forge'],
+    connections: ['great_forge', 'ashen_wasteland'],
+  },
+  {
+    id: 'ashen_wasteland',
+    nameRu: 'Пепельная пустошь',
+    nameEn: 'Ashen Wasteland',
+    descriptionRu: 'Выжженная земля вокруг вулкана. Воздух дрожит от жара, а под ногами хрустит остывшая лава.',
+    descriptionEn: 'Scorched earth around the volcano. The air shimmers with heat, and cooled lava crunches underfoot.',
+    icon: '🌋',
+    level: 5,
+    connections: ['foundation_rift', 'dragon_nests'],
+  },
+  {
+    id: 'dragon_nests',
+    nameRu: 'Гнёзда',
+    nameEn: 'The Nests',
+    descriptionRu: 'Остатки драконьих поселений. Скорлупа хрустит под ногами — кладок здесь больше нет, а те, кто остался, одичали.',
+    descriptionEn: "Remains of dragonborn settlements. Eggshells crunch underfoot — the clutches are long gone, and what remains has gone feral.",
+    icon: '🥚',
+    level: 5,
+    connections: ['ashen_wasteland', 'obsidian_labyrinth'],
+  },
+  {
+    id: 'obsidian_labyrinth',
+    nameRu: 'Обсидиановый лабиринт',
+    nameEn: 'Obsidian Labyrinth',
+    descriptionRu: 'Застывшая лава сплелась в запутанные ходы. Легко потерять дорогу — и ещё легче потерять себя.',
+    descriptionEn: 'Cooled lava twisted into a maze of tunnels. Easy to lose the way — easier still to lose yourself.',
+    icon: '🗿',
+    level: 6,
+    connections: ['dragon_nests', 'ignira_maw'],
+  },
+  {
+    id: 'ignira_maw',
+    nameRu: 'Жерло Игниры',
+    nameEn: "Ignira's Maw",
+    descriptionRu: 'Вулкан, где Скверна горит в огне, а не гниёт во тьме. Даже проклятие здесь — пламя.',
+    descriptionEn: 'A volcano where the Blight burns in fire instead of rotting in darkness. Even the curse here is flame.',
+    icon: '🔥',
+    level: 6,
+    connections: ['obsidian_labyrinth', 'flame_cradle'],
+  },
+  {
+    id: 'flame_cradle',
+    nameRu: 'Колыбель Пламени',
+    nameEn: 'Cradle of Flame',
+    descriptionRu: 'Сердце вулкана. Здесь Веларион выковал первого из своих детей — и здесь тот обезумел от собственного огня.',
+    descriptionEn: 'The heart of the volcano. Here Velarion forged the first of his children — and here that child went mad with his own fire.',
+    icon: '🐉',
+    level: 6,
+    connections: ['ignira_maw'],
   },
 ];
 
@@ -213,6 +264,7 @@ export const ITEMS: Item[] = [
   { id: 'dragonslayer', nameRu: 'Драконоборец', nameEn: 'Dragonslayer', type: 'weapon', rarity: 'legendary', stats: { attack: 16, strength: 3, vitality: 2 }, descriptionRu: 'Легендарный меч, созданный для убийства драконов.', descriptionEn: 'Legendary sword forged to slay dragons.', icon: '⚔️', value: 1500 },
   { id: 'cursed_king_blade', nameRu: 'Клинок Проклятого Короля', nameEn: "Cursed King's Blade", type: 'weapon', rarity: 'mythic', stats: { attack: 25, strength: 5, dexterity: 3 }, descriptionRu: 'Мифический клинок, пропитанный проклятием Короля.', descriptionEn: "Mythic blade soaked in the King's curse.", icon: '👑', value: 5000 },
   { id: 'broken_oath_hammer', nameRu: 'Молот Сломанной Клятвы', nameEn: 'Hammer of the Broken Oath', type: 'weapon', rarity: 'legendary', stats: { attack: 18, strength: 3, vitality: 2 }, descriptionRu: 'Молот гнома-титана, преданного своим богом. Каждый удар — эхо разбитой клятвы.', descriptionEn: 'The hammer of a dwarf-titan betrayed by his own god. Every blow echoes a broken vow.', icon: '🔨', value: 1800 },
+  { id: 'ignira_fang', nameRu: 'Клык Игниры', nameEn: 'Fang of Ignira', type: 'weapon', rarity: 'epic', stats: { attack: 14, strength: 2, instinct: 1 }, descriptionRu: 'Клык, вырванный из пасти древнего огненного зверя.', descriptionEn: 'A fang torn from the maw of an ancient fire beast.', icon: '🦷', value: 750 },
 
   // === ARMOR ===
   { id: 'leather_armor', nameRu: 'Кожаная броня', nameEn: 'Leather Armor', type: 'armor', rarity: 'common', stats: { defense: 2 }, descriptionRu: 'Простая кожаная броня.', descriptionEn: 'Simple leather armor.', icon: '🦺', value: 15 },
@@ -222,6 +274,7 @@ export const ITEMS: Item[] = [
   { id: 'dragonscale_armor', nameRu: 'Драконья чешуя', nameEn: 'Dragonscale Armor', type: 'armor', rarity: 'epic', stats: { defense: 10, strength: 1, vitality: 2 }, descriptionRu: 'Броня из чешуи дракона.', descriptionEn: 'Armor made from dragon scales.', icon: '🐉', value: 800 },
   { id: 'celestial_robe', nameRu: 'Небесная мантия', nameEn: 'Celestial Robe', type: 'armor', rarity: 'epic', stats: { defense: 4, intellect: 3, willpower: 2 }, descriptionRu: 'Мантия, благословлённая небесами.', descriptionEn: 'Robe blessed by the heavens.', icon: '✨', value: 700 },
   { id: 'crown_armor', nameRu: 'Броня Короны', nameEn: 'Crown Armor', type: 'armor', rarity: 'legendary', stats: { defense: 14, strength: 2, vitality: 3, willpower: 2 }, descriptionRu: 'Легендарная броня, носящая печать Короля.', descriptionEn: "Legendary armor bearing the King's seal.", icon: '👑', value: 2000 },
+  { id: 'first_dragon_scale', nameRu: 'Чешуя Первого Дракона', nameEn: 'Scale of the First Dragon', type: 'armor', rarity: 'legendary', stats: { defense: 16, strength: 2, vitality: 3 }, descriptionRu: 'Чешуя дракона, выкованного самим Веларионом. Ещё хранит жар его безумия.', descriptionEn: 'A scale from the dragon forged by Velarion himself. It still holds the heat of his madness.', icon: '🐉', value: 2200 },
 
   // === ACCESSORIES ===
   { id: 'copper_ring', nameRu: 'Медное кольцо', nameEn: 'Copper Ring', type: 'accessory', rarity: 'common', stats: { hp: 5 }, descriptionRu: 'Простое медное кольцо с защитным чаром.', descriptionEn: 'Simple copper ring with a ward charm.', icon: '💍', value: 10 },
@@ -259,16 +312,18 @@ export const ITEMS: Item[] = [
 
 // ===== ENEMIES =====
 // Акт 1: Пепельные Врата, уровни 1-3. Акт 2: Корневая Роща, уровни 3-4.
-// Акт 3: Каменный Чертог, уровни 4-5.
-// У всех трёх боссов по лору многофазные механики («Первый Свидетель» чередует физический
+// Акт 3: Каменный Чертог, уровни 4-5. Акт 4: Драконье Горнило, уровни 5-6.
+// У всех боссов по лору многофазные механики («Первый Свидетель» чередует физический
 // и магический облик каждые 3 хода и сливает их на 30% HP; «Эхо Айлет» самоисцеляется 5%
 // HP за ход, на фазе 2 обездвиживает корнями, на фазе 3 накладывает яд на весь бой;
 // «Сломанная Клятва» имеет щит, восстанавливающийся каждые 4 хода, а при сломанном щите
-// уходит в берсерк — +50% урона, -30% защиты) — ни одна из этих механик пока не
+// уходит в берсерк — +50% урона, -30% защиты; «Первый Дракон» накладывает «Горение»
+// каждый ход, а на фазе 2 гаснет — урон падает, но появляется Скверна, и игроку даётся
+// выбор добить его или попытаться исцелить) — ни одна из этих механик пока не
 // реализована в combat-engine (текущий движок работает с одиночным набором
-// hp/ac/attack/damage на врага без фаз, самоисцеления, щитов или ХоТ/ДоТ-эффектов) и
-// намеренно отложена как отдельная задача; все три босса представлены усреднённым
-// набором характеристик под сложность своего Акта.
+// hp/ac/attack/damage на врага без фаз, самоисцеления, щитов, ДоТ-эффектов или
+// ветвящихся исходов) и намеренно отложена как отдельная задача; все четыре босса
+// представлены усреднённым набором характеристик под сложность своего Акта.
 export interface EnemyTemplate {
   id: string;
   nameRu: string;
@@ -357,6 +412,29 @@ export const ENEMIES: EnemyTemplate[] = [
   // Разлом Основы (Level 5)
   { id: 'rift_collapse_horror', nameRu: 'Ужас обвала', nameEn: 'Rift Collapse Horror', hp: 50, ac: 15, attack: 11, damage: '1d10+5', xp: 56, gold: 26, lootTable: [{ itemId: 'greater_health', chance: 0.3 }, { itemId: 'dwarven_plate', chance: 0.08 }], locationId: 'foundation_rift', isBoss: false, icon: '🕳️' },
   { id: 'broken_oath', nameRu: 'Сломанная Клятва', nameEn: 'The Broken Oath', hp: 140, ac: 17, attack: 13, damage: '2d10+6', xp: 450, gold: 200, lootTable: [{ itemId: 'broken_oath_hammer', chance: 0.15 }, { itemId: 'oath_shield_shard', chance: 0.3 }, { itemId: 'greater_health', chance: 0.3 }], locationId: 'foundation_rift', isBoss: true, icon: '💔' },
+
+  // Пепельная пустошь (Level 5)
+  { id: 'cinder_stalker', nameRu: 'Пепельный хищник', nameEn: 'Cinder Stalker', hp: 52, ac: 15, attack: 11, damage: '1d10+4', xp: 55, gold: 24, lootTable: [{ itemId: 'greater_health', chance: 0.25 }, { itemId: 'iron_ore', chance: 0.3 }], locationId: 'ashen_wasteland', isBoss: false, icon: '🔥' },
+  { id: 'ash_wyrmling', nameRu: 'Пепельный дракончик', nameEn: 'Ash Wyrmling', hp: 48, ac: 14, attack: 11, damage: '1d8+5', xp: 52, gold: 22, lootTable: [{ itemId: 'dragon_scale', chance: 0.15 }], locationId: 'ashen_wasteland', isBoss: false, icon: '🦎' },
+  { id: 'wasteland_marauder', nameRu: 'Мародёр пустоши', nameEn: 'Wasteland Marauder', hp: 50, ac: 14, attack: 12, damage: '1d10+4', xp: 56, gold: 26, lootTable: [{ itemId: 'steel_sword', chance: 0.15 }, { itemId: 'chainmail', chance: 0.1 }], locationId: 'ashen_wasteland', isBoss: false, icon: '⚔️' },
+
+  // Гнёзда (Level 5-6)
+  { id: 'nest_guardian', nameRu: 'Страж гнезда', nameEn: 'Nest Guardian', hp: 56, ac: 16, attack: 12, damage: '1d10+5', xp: 58, gold: 26, lootTable: [{ itemId: 'dragon_scale', chance: 0.2 }, { itemId: 'greater_health', chance: 0.3 }], locationId: 'dragon_nests', isBoss: false, icon: '🥚' },
+  { id: 'feral_hatchling', nameRu: 'Одичавший детёныш', nameEn: 'Feral Hatchling', hp: 44, ac: 13, attack: 11, damage: '1d8+5', xp: 50, gold: 20, lootTable: [{ itemId: 'dragon_scale', chance: 0.15 }], locationId: 'dragon_nests', isBoss: false, icon: '🐣' },
+  { id: 'broodmother_wyrm', nameRu: 'Матриарх выводка', nameEn: 'Broodmother Wyrm', hp: 62, ac: 16, attack: 13, damage: '2d6+5', xp: 65, gold: 30, lootTable: [{ itemId: 'dragon_scale', chance: 0.3 }, { itemId: 'ignira_fang', chance: 0.08 }], locationId: 'dragon_nests', isBoss: false, icon: '🐲' },
+
+  // Обсидиановый лабиринт (Level 6)
+  { id: 'obsidian_golem', nameRu: 'Обсидиановый голем', nameEn: 'Obsidian Golem', hp: 65, ac: 18, attack: 13, damage: '2d6+5', xp: 68, gold: 30, lootTable: [{ itemId: 'iron_ore', chance: 0.4 }, { itemId: 'void_crystal', chance: 0.08 }], locationId: 'obsidian_labyrinth', isBoss: false, icon: '🗿' },
+  { id: 'molten_shade', nameRu: 'Расплавленная тень', nameEn: 'Molten Shade', hp: 58, ac: 16, attack: 14, damage: '1d10+6', xp: 64, gold: 28, lootTable: [{ itemId: 'shadow_essence', chance: 0.3 }], locationId: 'obsidian_labyrinth', isBoss: false, icon: '👤' },
+  { id: 'labyrinth_stalker', nameRu: 'Хищник лабиринта', nameEn: 'Labyrinth Stalker', hp: 54, ac: 15, attack: 13, damage: '1d10+5', xp: 60, gold: 26, lootTable: [{ itemId: 'shadow_dagger', chance: 0.08 }], locationId: 'obsidian_labyrinth', isBoss: false, icon: '🦂' },
+
+  // Жерло Игниры (Level 6)
+  { id: 'ignira_zealot', nameRu: 'Фанатик Игниры', nameEn: 'Ignira Zealot', hp: 58, ac: 16, attack: 14, damage: '1d10+6', xp: 66, gold: 30, lootTable: [{ itemId: 'greater_health', chance: 0.3 }, { itemId: 'scroll_fireball', chance: 0.15 }], locationId: 'ignira_maw', isBoss: false, icon: '🔥' },
+  { id: 'magma_elemental', nameRu: 'Магмовый элементаль', nameEn: 'Magma Elemental', hp: 70, ac: 17, attack: 15, damage: '2d8+5', xp: 75, gold: 34, lootTable: [{ itemId: 'dragon_scale', chance: 0.25 }, { itemId: 'ignira_fang', chance: 0.1 }], locationId: 'ignira_maw', isBoss: false, icon: '🌋' },
+
+  // Колыбель Пламени (Level 6)
+  { id: 'flame_wisp_swarm', nameRu: 'Рой огненных духов', nameEn: 'Flame Wisp Swarm', hp: 60, ac: 15, attack: 14, damage: '1d10+6', xp: 70, gold: 32, lootTable: [{ itemId: 'mana_potion', chance: 0.3 }], locationId: 'flame_cradle', isBoss: false, icon: '✨' },
+  { id: 'first_dragon', nameRu: 'Первый Дракон', nameEn: 'The First Dragon', hp: 160, ac: 18, attack: 15, damage: '3d8+6', xp: 550, gold: 250, lootTable: [{ itemId: 'first_dragon_scale', chance: 0.15 }, { itemId: 'ignira_fang', chance: 0.25 }, { itemId: 'elixir_power', chance: 0.3 }], locationId: 'flame_cradle', isBoss: true, icon: '🐉' },
 ];
 
 // ===== CRAFTING RECIPES =====

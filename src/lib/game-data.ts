@@ -1,8 +1,12 @@
 // ===== LOCATIONS =====
 // Акт 1: Пепельные Врата (Люди), уровни 1-3. Акт 2: Корневая Роща (Эльфы), уровни 3-4.
 // Акт 3: Каменный Чертог (Гномы), уровни 4-5. Акт 4: Драконье Горнило (Драконорождённые),
-// уровни 5-6. Акт 5: Гнилые Топи (Нежить), уровни 6-7. Акт 6 ещё не спроектирован под
-// новый лор и намеренно не включён — см. docs/cursed_depths_master.pdf, раздел 2.1.
+// уровни 5-6. Акт 5: Гнилые Топи (Нежить), уровни 6-7. Акт 6: Хребет Грумгара (Орки),
+// уровни 7-8 — последний из 6 поверхностных Актов кампании (раздел 2.1 мастер-документа).
+// Дальше в документе идёт «Глубь» — отдельная вертикальная PvE-кампания (Акты 7-12,
+// разделы 2.2+) с совсем другой структурой (уровни глубины вместо линейной карты,
+// привязка к падшим Столпам), это самостоятельная большая задача и сюда сознательно
+// не включена.
 export interface Location {
   id: string;
   nameRu: string;
@@ -283,7 +287,57 @@ export const LOCATIONS: Location[] = [
     descriptionEn: 'A mass grave — an entrance to the Depths. Here rests the one who died first when the world broke.',
     icon: '🪦',
     level: 7,
-    connections: ['bone_cathedral'],
+    connections: ['bone_cathedral', 'borderlands'],
+  },
+  {
+    id: 'borderlands',
+    nameRu: 'Пограничье',
+    nameEn: 'Borderlands',
+    descriptionRu: 'Нейтральная земля между кланами. Здесь не воюют — но лишь потому, что ещё не решили, с кем.',
+    descriptionEn: "Neutral ground between clans. No one fights here — but only because they haven't decided who to fight yet.",
+    icon: '🏕️',
+    level: 7,
+    connections: ['plague_gate', 'blood_arena'],
+  },
+  {
+    id: 'blood_arena',
+    nameRu: 'Арена Крови',
+    nameEn: 'Blood Arena',
+    descriptionRu: 'Гладиаторские бои для чужаков. Честь через кровь — здесь это не метафора.',
+    descriptionEn: 'Gladiator fights for outsiders. Honor through blood — here that is not a metaphor.',
+    icon: '🩸',
+    level: 7,
+    connections: ['borderlands', 'grumgar_fortress'],
+  },
+  {
+    id: 'grumgar_fortress',
+    nameRu: 'Крепость Грумгара',
+    nameEn: 'Grumgar Fortress',
+    descriptionRu: 'Столица орков. Стены помнят вождя, который должен был объединить кланы — и не смог.',
+    descriptionEn: 'The orc capital. Its walls remember the chieftain who was meant to unite the clans — and could not.',
+    icon: '🏯',
+    level: 8,
+    connections: ['blood_arena', 'skull_trail'],
+  },
+  {
+    id: 'skull_trail',
+    nameRu: 'Тропа Черепов',
+    nameEn: 'Trail of Skulls',
+    descriptionRu: 'Ритуальный путь к Глуби, выложенный черепами павших вождей. Каждый шаг — напоминание о цене власти.',
+    descriptionEn: 'A ritual path to the Depths, paved with the skulls of fallen chieftains. Every step a reminder of the price of power.',
+    icon: '💀',
+    level: 8,
+    connections: ['grumgar_fortress', 'abyss_maw'],
+  },
+  {
+    id: 'abyss_maw',
+    nameRu: 'Зев Бездны',
+    nameEn: 'Maw of the Abyss',
+    descriptionRu: 'Самый большой разлом из всех. Здесь ждёт дух вождя, убитого предательством собственного клана.',
+    descriptionEn: "The largest rift of all. Here waits the spirit of a chieftain slain by his own clan's betrayal.",
+    icon: '👹',
+    level: 8,
+    connections: ['skull_trail'],
   },
 ];
 
@@ -315,6 +369,7 @@ export const ITEMS: Item[] = [
   { id: 'cursed_king_blade', nameRu: 'Клинок Проклятого Короля', nameEn: "Cursed King's Blade", type: 'weapon', rarity: 'mythic', stats: { attack: 25, strength: 5, dexterity: 3 }, descriptionRu: 'Мифический клинок, пропитанный проклятием Короля.', descriptionEn: "Mythic blade soaked in the King's curse.", icon: '👑', value: 5000 },
   { id: 'broken_oath_hammer', nameRu: 'Молот Сломанной Клятвы', nameEn: 'Hammer of the Broken Oath', type: 'weapon', rarity: 'legendary', stats: { attack: 18, strength: 3, vitality: 2 }, descriptionRu: 'Молот гнома-титана, преданного своим богом. Каждый удар — эхо разбитой клятвы.', descriptionEn: 'The hammer of a dwarf-titan betrayed by his own god. Every blow echoes a broken vow.', icon: '🔨', value: 1800 },
   { id: 'ignira_fang', nameRu: 'Клык Игниры', nameEn: 'Fang of Ignira', type: 'weapon', rarity: 'epic', stats: { attack: 14, strength: 2, instinct: 1 }, descriptionRu: 'Клык, вырванный из пасти древнего огненного зверя.', descriptionEn: 'A fang torn from the maw of an ancient fire beast.', icon: '🦷', value: 750 },
+  { id: 'grumgar_fang', nameRu: 'Клык Грумгара', nameEn: 'Fang of Grumgar', type: 'weapon', rarity: 'legendary', stats: { attack: 20, strength: 4, instinct: 2 }, descriptionRu: 'Клык духа вождя, что должен был объединить кланы, но пал от предательства.', descriptionEn: "The fang of the chieftain-spirit who should have united the clans, but fell to betrayal.", icon: '🪓', value: 2000 },
 
   // === ARMOR ===
   { id: 'leather_armor', nameRu: 'Кожаная броня', nameEn: 'Leather Armor', type: 'armor', rarity: 'common', stats: { defense: 2 }, descriptionRu: 'Простая кожаная броня.', descriptionEn: 'Simple leather armor.', icon: '🦺', value: 15 },
@@ -327,6 +382,7 @@ export const ITEMS: Item[] = [
   { id: 'first_dragon_scale', nameRu: 'Чешуя Первого Дракона', nameEn: 'Scale of the First Dragon', type: 'armor', rarity: 'legendary', stats: { defense: 16, strength: 2, vitality: 3 }, descriptionRu: 'Чешуя дракона, выкованного самим Веларионом. Ещё хранит жар его безумия.', descriptionEn: 'A scale from the dragon forged by Velarion himself. It still holds the heat of his madness.', icon: '🐉', value: 2200 },
   { id: 'first_fall_dust', nameRu: 'Пыль Первого Падения', nameEn: 'Dust of the First Fall', type: 'accessory', rarity: 'rare', stats: { willpower: 2, instinct: 2, hp: 15 }, descriptionRu: 'Горсть праха с того самого мгновения, когда мир раскололся. Ещё помнит, каким он был.', descriptionEn: 'A handful of dust from the very moment the world broke. It still remembers what it was.', icon: '⏳', value: 260 },
   { id: 'first_risen_crown', nameRu: 'Корона Первого Восставшего', nameEn: 'Crown of the First Risen', type: 'accessory', rarity: 'legendary', stats: { willpower: 3, instinct: 3, hp: 25 }, descriptionRu: 'Корона того, кто умер вместе с миром и вернулся раньше всех остальных.', descriptionEn: 'The crown of the one who died with the world and returned before all others.', icon: '👑', value: 2400 },
+  { id: 'unborn_chieftain_seal', nameRu: 'Печать Нерождённого Вождя', nameEn: 'Seal of the Unborn Chieftain', type: 'accessory', rarity: 'legendary', stats: { strength: 3, instinct: 3, hp: 30 }, descriptionRu: 'Печать вождя, чьё объединение кланов так и не состоялось. Тяжёлая, как несбывшаяся клятва.', descriptionEn: "The seal of a chieftain whose unification of the clans never came to pass. Heavy as an unfulfilled oath.", icon: '🩸', value: 2600 },
 
   // === ACCESSORIES ===
   { id: 'copper_ring', nameRu: 'Медное кольцо', nameEn: 'Copper Ring', type: 'accessory', rarity: 'common', stats: { hp: 5 }, descriptionRu: 'Простое медное кольцо с защитным чаром.', descriptionEn: 'Simple copper ring with a ward charm.', icon: '💍', value: 10 },
@@ -365,7 +421,8 @@ export const ITEMS: Item[] = [
 // ===== ENEMIES =====
 // Акт 1: Пепельные Врата, уровни 1-3. Акт 2: Корневая Роща, уровни 3-4.
 // Акт 3: Каменный Чертог, уровни 4-5. Акт 4: Драконье Горнило, уровни 5-6.
-// Акт 5: Гнилые Топи, уровни 6-7.
+// Акт 5: Гнилые Топи, уровни 6-7. Акт 6: Хребет Грумгара, уровни 7-8 (последний
+// поверхностный Акт — см. комментарий у LOCATIONS про «Глубь»).
 // У всех боссов по лору многофазные механики («Первый Свидетель» чередует физический
 // и магический облик каждые 3 хода и сливает их на 30% HP; «Эхо Айлет» самоисцеляется 5%
 // HP за ход, на фазе 2 обездвиживает корнями, на фазе 3 накладывает яд на весь бой;
@@ -374,11 +431,14 @@ export const ITEMS: Item[] = [
 // каждый ход, а на фазе 2 гаснет — урон падает, но появляется Скверна, и игроку даётся
 // выбор добить его или попытаться исцелить; «Первый Восставший» призывает скелетов
 // каждые 2 хода, на фазе 2 перестаёт призывать и начинает красть ХП, а перед смертью
-// предлагает информацию в обмен на пощаду) — ни одна из этих механик пока не реализована
-// в combat-engine (текущий движок работает с одиночным набором hp/ac/attack/damage на
-// врага без фаз, самоисцеления, щитов, ДоТ-эффектов, призыва существ или ветвящихся
-// исходов) и намеренно отложена как отдельная задача; все пять боссов представлены
-// усреднённым набором характеристик под сложность своего Акта.
+// предлагает информацию в обмен на пощаду; «Грумгар Нерождённый» — самый агрессивный
+// босс, каждые 2 хода наносит Ответный удар, требуя чередовать атаку с защитой, а на
+// фазе 2 призывает духов воинов клана, усиливающих его урон на 15% каждый) — ни одна из
+// этих механик пока не реализована в combat-engine (текущий движок работает с одиночным
+// набором hp/ac/attack/damage на врага без фаз, самоисцеления, щитов, ДоТ-эффектов,
+// призыва существ, состояний защиты или ветвящихся исходов) и намеренно отложена как
+// отдельная задача; все шесть боссов представлены усреднённым набором характеристик под
+// сложность своего Акта.
 export interface EnemyTemplate {
   id: string;
   nameRu: string;
@@ -513,6 +573,29 @@ export const ENEMIES: EnemyTemplate[] = [
   // Врата Мора (Level 7)
   { id: 'mass_grave_horror', nameRu: 'Ужас братской могилы', nameEn: 'Mass Grave Horror', hp: 70, ac: 17, attack: 16, damage: '2d6+6', xp: 78, gold: 36, lootTable: [{ itemId: 'greater_health', chance: 0.3 }, { itemId: 'shadow_essence', chance: 0.3 }], locationId: 'plague_gate', isBoss: false, icon: '🪦' },
   { id: 'first_risen', nameRu: 'Первый Восставший', nameEn: 'The First Risen', hp: 180, ac: 19, attack: 17, damage: '3d8+7', xp: 650, gold: 300, lootTable: [{ itemId: 'first_risen_crown', chance: 0.15 }, { itemId: 'first_fall_dust', chance: 0.3 }, { itemId: 'elixir_power', chance: 0.3 }], locationId: 'plague_gate', isBoss: true, icon: '💀' },
+
+  // Пограничье (Level 7)
+  { id: 'border_raider', nameRu: 'Пограничный налётчик', nameEn: 'Border Raider', hp: 72, ac: 17, attack: 16, damage: '1d10+6', xp: 75, gold: 34, lootTable: [{ itemId: 'steel_sword', chance: 0.2 }, { itemId: 'greater_health', chance: 0.3 }], locationId: 'borderlands', isBoss: false, icon: '🪓' },
+  { id: 'clan_scout', nameRu: 'Клановый разведчик', nameEn: 'Clan Scout', hp: 66, ac: 16, attack: 15, damage: '1d10+6', xp: 70, gold: 30, lootTable: [{ itemId: 'elven_bow', chance: 0.1 }], locationId: 'borderlands', isBoss: false, icon: '👁️' },
+  { id: 'war_hound', nameRu: 'Боевой пёс', nameEn: 'War Hound', hp: 64, ac: 16, attack: 15, damage: '1d10+6', xp: 68, gold: 28, lootTable: [{ itemId: 'antidote', chance: 0.3 }], locationId: 'borderlands', isBoss: false, icon: '🐺' },
+
+  // Арена Крови (Level 7-8)
+  { id: 'arena_slave', nameRu: 'Раб арены', nameEn: 'Arena Slave', hp: 70, ac: 17, attack: 16, damage: '1d10+6', xp: 74, gold: 32, lootTable: [{ itemId: 'greater_health', chance: 0.3 }, { itemId: 'chainmail', chance: 0.15 }], locationId: 'blood_arena', isBoss: false, icon: '⛓️' },
+  { id: 'gladiator_champion', nameRu: 'Чемпион-гладиатор', nameEn: 'Gladiator Champion', hp: 80, ac: 18, attack: 17, damage: '2d6+6', xp: 85, gold: 38, lootTable: [{ itemId: 'dwarven_plate', chance: 0.12 }, { itemId: 'grumgar_fang', chance: 0.05 }], locationId: 'blood_arena', isBoss: false, icon: '🏆' },
+  { id: 'blood_priest', nameRu: 'Кровавый жрец', nameEn: 'Blood Priest', hp: 74, ac: 17, attack: 17, damage: '1d10+7', xp: 82, gold: 36, lootTable: [{ itemId: 'unborn_chieftain_seal', chance: 0.05 }, { itemId: 'mana_potion', chance: 0.4 }], locationId: 'blood_arena', isBoss: false, icon: '🩸' },
+
+  // Крепость Грумгара (Level 8)
+  { id: 'fortress_warrior', nameRu: 'Воин крепости', nameEn: 'Fortress Warrior', hp: 78, ac: 18, attack: 17, damage: '1d10+7', xp: 84, gold: 38, lootTable: [{ itemId: 'dwarven_plate', chance: 0.15 }, { itemId: 'greater_health', chance: 0.3 }], locationId: 'grumgar_fortress', isBoss: false, icon: '🛡️' },
+  { id: 'clan_shaman', nameRu: 'Клановый шаман', nameEn: 'Clan Shaman', hp: 72, ac: 17, attack: 17, damage: '1d10+7', xp: 82, gold: 36, lootTable: [{ itemId: 'arcane_pendant', chance: 0.15 }, { itemId: 'mana_potion', chance: 0.4 }], locationId: 'grumgar_fortress', isBoss: false, icon: '🔮' },
+  { id: 'horde_captain', nameRu: 'Капитан орды', nameEn: 'Horde Captain', hp: 85, ac: 19, attack: 18, damage: '2d8+6', xp: 90, gold: 42, lootTable: [{ itemId: 'grumgar_fang', chance: 0.06 }, { itemId: 'greater_health', chance: 0.3 }], locationId: 'grumgar_fortress', isBoss: false, icon: '📯' },
+
+  // Тропа Черепов (Level 8)
+  { id: 'skull_zealot', nameRu: 'Фанатик черепов', nameEn: 'Skull Zealot', hp: 80, ac: 18, attack: 18, damage: '2d6+7', xp: 88, gold: 40, lootTable: [{ itemId: 'unborn_chieftain_seal', chance: 0.06 }, { itemId: 'greater_health', chance: 0.3 }], locationId: 'skull_trail', isBoss: false, icon: '💀' },
+  { id: 'ritual_guardian', nameRu: 'Страж ритуала', nameEn: 'Ritual Guardian', hp: 88, ac: 19, attack: 18, damage: '2d8+6', xp: 92, gold: 42, lootTable: [{ itemId: 'void_crystal', chance: 0.1 }], locationId: 'skull_trail', isBoss: false, icon: '🗿' },
+
+  // Зев Бездны (Level 8)
+  { id: 'abyss_maw_horror', nameRu: 'Ужас Зева', nameEn: 'Maw Horror', hp: 85, ac: 19, attack: 18, damage: '2d8+7', xp: 95, gold: 44, lootTable: [{ itemId: 'greater_health', chance: 0.3 }, { itemId: 'void_crystal', chance: 0.1 }], locationId: 'abyss_maw', isBoss: false, icon: '🕳️' },
+  { id: 'grumgar_unborn', nameRu: 'Грумгар Нерождённый', nameEn: 'Grumgar the Unborn', hp: 200, ac: 20, attack: 19, damage: '3d10+8', xp: 800, gold: 400, lootTable: [{ itemId: 'grumgar_fang', chance: 0.15 }, { itemId: 'unborn_chieftain_seal', chance: 0.15 }, { itemId: 'elixir_power', chance: 0.3 }], locationId: 'abyss_maw', isBoss: true, icon: '👹' },
 ];
 
 // ===== CRAFTING RECIPES =====

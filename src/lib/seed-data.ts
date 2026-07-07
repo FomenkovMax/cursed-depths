@@ -1,15 +1,149 @@
 import { db } from './db';
+import type { Prisma } from '@prisma/client';
+
+// Идемпотентные upsert-хелперы по уникальному slug — повторный запуск
+// seedDatabase() обновляет существующие записи вместо создания дублей.
+async function upsertRace(args: { data: Prisma.RaceCreateInput }) {
+  return db.race.upsert({ where: { slug: args.data.slug }, create: args.data, update: args.data });
+}
+
+async function upsertClass(args: { data: Prisma.GameClassUncheckedCreateInput }) {
+  return db.gameClass.upsert({ where: { slug: args.data.slug }, create: args.data, update: args.data });
+}
+
+async function upsertAbility(args: { data: Prisma.AbilityUncheckedCreateInput }) {
+  return db.ability.upsert({ where: { slug: args.data.slug }, create: args.data, update: args.data });
+}
+
+// Модели Location в schema.prisma пока нет (вне скоупа задач 1 и 3) — данные
+// сохранены как есть для будущей задачи, в БД сейчас не пишутся.
+export const LOCATIONS_SEED = [
+  {
+    name: 'Пепельные Равнины',
+    slug: 'ash-plains',
+    description: 'Бескрайние выжженные земли, где дует вечный пепельный ветер. Когда-то здесь цвели сады, но Катаклизм превратил всё в серую пустошь.',
+    icon: '🏜️',
+    type: 'wild',
+    dangerLevel: 3,
+    parentLocId: null,
+    races: 'ashborn-humans',
+    lore: 'Пепельные Равнины — шрам мира, напоминание о Великом Катаклизме. Под слоем пепла лежат руины древних городов, а выжившие Люди Пепла строят новые поселения из обломков прошлого.',
+    features: 'добыча пепла,руины,странствующие торговцы',
+  },
+  {
+    name: 'Подземный Город Дроу',
+    slug: 'drow-city',
+    description: 'Величественный лабиринт из обсидиана и кристаллов, освещённый бледным свечением подземных грибов.',
+    icon: '🏛️',
+    type: 'town',
+    dangerLevel: 4,
+    parentLocId: null,
+    races: 'dark-elves',
+    lore: 'Подземный Город Дроу — чудо архитектуры глубин. Дома из обсидиана парят над бездонными провалами, а кристальные мосты соединяют уровни города. Интриги здесь — искусство, а предательство — добродетель.',
+    features: 'торговля магией,интриги,кристальные сады',
+  },
+  {
+    name: 'Кузнечные Горны',
+    slug: 'forge-mountains',
+    description: 'Вулканические шахты, где вечный огонь питает великие кузни гномов. Жар и грохот — музыка этого места.',
+    icon: '🌋',
+    type: 'town',
+    dangerLevel: 5,
+    parentLocId: null,
+    races: 'forge-dwarves',
+    lore: 'Кузнечные Горны — сердце индустрии мира. Раскалённые лавой кузни гномов никогда не остывают. Здесь рождаются легендарные клинки и механизмы, а горный хребет дрожит от ударов молотов.',
+    features: 'кузни,вулканические шахты,торговля оружием',
+  },
+  {
+    name: 'Теневой Лес',
+    slug: 'shadow-forest',
+    description: 'Мрачный лес, где деревья шепчутся во тьме, а лунный свет едва пробивается сквозь крону. Обиталище дриад и оборотней.',
+    icon: '🌲',
+    type: 'wild',
+    dangerLevel: 6,
+    parentLocId: null,
+    races: 'shadow-dryads,skinwalkers',
+    lore: 'Теневой Лес — живой организм, впитавший Скверну и превративший её в новую форму жизни. Деревья здесь ходят, корни опутывают путников, а шёпот листвы сводит с ума. Дриады и Оборотни — хозяева этого места.',
+    features: 'ночные охотники,живые деревья,лунные ритуалы',
+  },
+  {
+    name: 'Глубинные Тоннели',
+    slug: 'depth-tunnels',
+    description: 'Бесконечные катакомбы, уходящие в самые недра мира. Мрак здесь абсолютен, а обитатели — ужасающи.',
+    icon: '🕳️',
+    type: 'dungeon',
+    dangerLevel: 8,
+    parentLocId: null,
+    races: 'deepspawn',
+    lore: 'Глубинные Тоннели — лабиринт без начала и конца. Здесь обитают существа, которых не должен видеть свет. Дети Глубин адаптировались к этому безумию, но даже они боятся того, что лежит в самых глубоких туннелях.',
+    features: 'мутанты,подземные реки,забытые святилища',
+  },
+  {
+    name: 'Руины Старого Мира',
+    slug: 'old-world-ruins',
+    description: 'Останки великой цивилизации до Катаклизма. Развалины хранят тайны и опасности.',
+    icon: '🏚️',
+    type: 'dungeon',
+    dangerLevel: 7,
+    parentLocId: null,
+    races: '',
+    lore: 'Руины Старого Мира — молчаливые свидетели эпохи, предшествовавшей Катаклизму. Древние механизмы ещё работают, ловушки всё ещё смертоносны, а сокровища — всё ещё ждут смельчаков.',
+    features: 'древние ловушки,артефакты,стражи руин',
+  },
+  {
+    name: 'Оазис Пелла',
+    slug: 'pell-oasis',
+    description: 'Единственное место, где сила Пелла течёт свободно. Святая земля, защищённая от Скверны.',
+    icon: '🌟',
+    type: 'sanctuary',
+    dangerLevel: 1,
+    parentLocId: null,
+    races: '',
+    lore: 'Оазис Пелла — луч света во тьме. Здесь река Пелла выходит на поверхность, неся исцеление и надежду. Это нейтральная территория, где запрещено насилие, и даже враги могут найти здесь приют.',
+    features: 'исцеление,медитация,святилище,торговля',
+  },
+  {
+    name: 'Разлом Скверны',
+    slug: 'blight-rift',
+    description: 'Зияющая рана в ткани реальности, из которой сочится чистая Скверна. Место невыразимого ужаса.',
+    icon: '👹',
+    type: 'rift',
+    dangerLevel: 10,
+    parentLocId: null,
+    races: '',
+    lore: 'Разлом Скверны — источник всего зла в мире. Из этой раны в реальности изливается чистая порча, мутирующая и уничтожающая всё живое. Только безумцы или герои осмелятся подойти к нему.',
+    features: 'порча,мутации,боссы Скверны,артефакты тьмы',
+  },
+  {
+    name: 'Перекрёсток Судеб',
+    slug: 'fate-crossroads',
+    description: 'Нейтральная зона торговли и переговоров. Здесь сходятся пути всех рас.',
+    icon: '⛩️',
+    type: 'town',
+    dangerLevel: 2,
+    parentLocId: null,
+    races: 'dark-elves,forge-dwarves,skinwalkers,ashborn-humans,shadow-dryads,deepspawn',
+    lore: 'Перекрёсток Судеб — единственное место, где представители всех рас могут встретиться без страха. Древний договор запрещает насилие здесь, но интриги и шпионаж процветают.',
+    features: 'торговля,переговоры,наёмники,аукцион',
+  },
+  {
+    name: 'Башня Равновесия',
+    slug: 'balance-tower',
+    description: 'Величественная башня, устремлённая в небо. Центр баланса между Пеллом и Скверной.',
+    icon: '🗼',
+    type: 'sanctuary',
+    dangerLevel: 3,
+    parentLocId: null,
+    races: '',
+    lore: 'Башня Равновесия — древнее сооружение, построенное для поддержания баланса сил. Жрецы Равновесия неусыпно следят, чтобы ни свет, ни тьма не возобладали. Говорят, на вершине башни хранится артефакт, способный изменить мир.',
+    features: 'медитация,обучение,хранилище артефактов,смотрители',
+  },
+];
 
 export async function seedDatabase() {
-  // Check if already seeded
-  const raceCount = await db.race.count();
-  if (raceCount > 0) {
-    return { message: 'Database already seeded', raceCount };
-  }
-
   // ===== RACES =====
   const races = await Promise.all([
-    db.race.create({
+    upsertRace({
       data: {
         name: 'Тёмные Эльфы',
         slug: 'dark-elves',
@@ -25,7 +159,7 @@ export async function seedDatabase() {
         baseCon: 9,
       },
     }),
-    db.race.create({
+    upsertRace({
       data: {
         name: 'Гномы-Кузнецы',
         slug: 'forge-dwarves',
@@ -41,7 +175,7 @@ export async function seedDatabase() {
         baseCon: 16,
       },
     }),
-    db.race.create({
+    upsertRace({
       data: {
         name: 'Оборотни',
         slug: 'skinwalkers',
@@ -57,7 +191,7 @@ export async function seedDatabase() {
         baseCon: 13,
       },
     }),
-    db.race.create({
+    upsertRace({
       data: {
         name: 'Люди Пепла',
         slug: 'ashborn-humans',
@@ -73,7 +207,7 @@ export async function seedDatabase() {
         baseCon: 12,
       },
     }),
-    db.race.create({
+    upsertRace({
       data: {
         name: 'Дриады Теней',
         slug: 'shadow-dryads',
@@ -89,7 +223,7 @@ export async function seedDatabase() {
         baseCon: 8,
       },
     }),
-    db.race.create({
+    upsertRace({
       data: {
         name: 'Дети Глубин',
         slug: 'deepspawn',
@@ -111,7 +245,7 @@ export async function seedDatabase() {
 
   // ===== RACE-SPECIFIC CLASSES =====
   const darkElfClasses = await Promise.all([
-    db.gameClass.create({
+    upsertClass({
       data: {
         name: 'Тёмный Жрец',
         slug: 'dark-priest',
@@ -129,7 +263,7 @@ export async function seedDatabase() {
         conMod: 0.8,
       },
     }),
-    db.gameClass.create({
+    upsertClass({
       data: {
         name: 'Теневой Клинок',
         slug: 'shadow-blade',
@@ -147,7 +281,7 @@ export async function seedDatabase() {
         conMod: 0.85,
       },
     }),
-    db.gameClass.create({
+    upsertClass({
       data: {
         name: 'Плетущий Чары',
         slug: 'charm-weaver',
@@ -168,7 +302,7 @@ export async function seedDatabase() {
   ]);
 
   const forgeDwarfClasses = await Promise.all([
-    db.gameClass.create({
+    upsertClass({
       data: {
         name: 'Огненный Кузнец',
         slug: 'fire-smith',
@@ -186,7 +320,7 @@ export async function seedDatabase() {
         conMod: 1.3,
       },
     }),
-    db.gameClass.create({
+    upsertClass({
       data: {
         name: 'Механист',
         slug: 'mechanist',
@@ -204,7 +338,7 @@ export async function seedDatabase() {
         conMod: 1.0,
       },
     }),
-    db.gameClass.create({
+    upsertClass({
       data: {
         name: 'Каменный Страж',
         slug: 'stone-guardian',
@@ -225,7 +359,7 @@ export async function seedDatabase() {
   ]);
 
   const skinwalkerClasses = await Promise.all([
-    db.gameClass.create({
+    upsertClass({
       data: {
         name: 'Кровавый Охотник',
         slug: 'blood-hunter',
@@ -243,7 +377,7 @@ export async function seedDatabase() {
         conMod: 1.1,
       },
     }),
-    db.gameClass.create({
+    upsertClass({
       data: {
         name: 'Дикий Оборотень',
         slug: 'wild-werewolf',
@@ -261,7 +395,7 @@ export async function seedDatabase() {
         conMod: 1.4,
       },
     }),
-    db.gameClass.create({
+    upsertClass({
       data: {
         name: 'Тотемный Шаман',
         slug: 'totem-shaman',
@@ -282,7 +416,7 @@ export async function seedDatabase() {
   ]);
 
   const ashbornClasses = await Promise.all([
-    db.gameClass.create({
+    upsertClass({
       data: {
         name: 'Пепельный Рыцарь',
         slug: 'ash-knight',
@@ -300,7 +434,7 @@ export async function seedDatabase() {
         conMod: 1.4,
       },
     }),
-    db.gameClass.create({
+    upsertClass({
       data: {
         name: 'Огненный Маг',
         slug: 'fire-mage',
@@ -318,7 +452,7 @@ export async function seedDatabase() {
         conMod: 0.8,
       },
     }),
-    db.gameClass.create({
+    upsertClass({
       data: {
         name: 'Бродячий Целитель',
         slug: 'wandering-healer',
@@ -339,7 +473,7 @@ export async function seedDatabase() {
   ]);
 
   const shadowDryadClasses = await Promise.all([
-    db.gameClass.create({
+    upsertClass({
       data: {
         name: 'Ткач Снов',
         slug: 'dream-weaver',
@@ -357,7 +491,7 @@ export async function seedDatabase() {
         conMod: 0.7,
       },
     }),
-    db.gameClass.create({
+    upsertClass({
       data: {
         name: 'Колючий Страж',
         slug: 'thorn-guardian',
@@ -375,7 +509,7 @@ export async function seedDatabase() {
         conMod: 1.5,
       },
     }),
-    db.gameClass.create({
+    upsertClass({
       data: {
         name: 'Ядочарница',
         slug: 'venom-charmer',
@@ -396,7 +530,7 @@ export async function seedDatabase() {
   ]);
 
   const deepspawnClasses = await Promise.all([
-    db.gameClass.create({
+    upsertClass({
       data: {
         name: 'Глубинный Сталкер',
         slug: 'depth-stalker',
@@ -414,7 +548,7 @@ export async function seedDatabase() {
         conMod: 1.0,
       },
     }),
-    db.gameClass.create({
+    upsertClass({
       data: {
         name: 'Кислотный Плеватель',
         slug: 'acid-spitter',
@@ -432,7 +566,7 @@ export async function seedDatabase() {
         conMod: 0.9,
       },
     }),
-    db.gameClass.create({
+    upsertClass({
       data: {
         name: 'Туннельный Берсерк',
         slug: 'tunnel-berserker',
@@ -454,7 +588,7 @@ export async function seedDatabase() {
 
   // ===== UNIVERSAL CLASSES =====
   const universalClasses = await Promise.all([
-    db.gameClass.create({
+    upsertClass({
       data: {
         name: 'Некромант',
         slug: 'necromancer',
@@ -472,7 +606,7 @@ export async function seedDatabase() {
         conMod: 0.7,
       },
     }),
-    db.gameClass.create({
+    upsertClass({
       data: {
         name: 'Бард Скверны',
         slug: 'blight-bard',
@@ -490,7 +624,7 @@ export async function seedDatabase() {
         conMod: 0.8,
       },
     }),
-    db.gameClass.create({
+    upsertClass({
       data: {
         name: 'Мистик Пелла',
         slug: 'pell-mystic',
@@ -508,7 +642,7 @@ export async function seedDatabase() {
         conMod: 0.8,
       },
     }),
-    db.gameClass.create({
+    upsertClass({
       data: {
         name: 'Охотник за Головами',
         slug: 'bounty-hunter',
@@ -526,7 +660,7 @@ export async function seedDatabase() {
         conMod: 1.0,
       },
     }),
-    db.gameClass.create({
+    upsertClass({
       data: {
         name: 'Торговец Теней',
         slug: 'shadow-merchant',
@@ -544,7 +678,7 @@ export async function seedDatabase() {
         conMod: 0.85,
       },
     }),
-    db.gameClass.create({
+    upsertClass({
       data: {
         name: 'Странствующий Мечник',
         slug: 'wandering-swordsman',
@@ -562,7 +696,7 @@ export async function seedDatabase() {
         conMod: 1.1,
       },
     }),
-    db.gameClass.create({
+    upsertClass({
       data: {
         name: 'Жрец Равновесия',
         slug: 'balance-priest',
@@ -580,7 +714,7 @@ export async function seedDatabase() {
         conMod: 0.85,
       },
     }),
-    db.gameClass.create({
+    upsertClass({
       data: {
         name: 'Алхимик Бездны',
         slug: 'abyss-alchemist',
@@ -842,7 +976,7 @@ export async function seedDatabase() {
   for (const ab of abilityData) {
     const cls = allClasses.find(c => c.slug === ab.classSlug);
     if (!cls) continue;
-    await db.ability.create({
+    await upsertAbility({
       data: {
         name: ab.name,
         slug: ab.slug,
@@ -861,154 +995,10 @@ export async function seedDatabase() {
     });
   }
 
-  // ===== LOCATIONS =====
-  const locations = await Promise.all([
-    db.location.create({
-      data: {
-        name: 'Пепельные Равнины',
-        slug: 'ash-plains',
-        description: 'Бескрайние выжженные земли, где дует вечный пепельный ветер. Когда-то здесь цвели сады, но Катаклизм превратил всё в серую пустошь.',
-        icon: '🏜️',
-        type: 'wild',
-        dangerLevel: 3,
-        parentLocId: null,
-        races: 'ashborn-humans',
-        lore: 'Пепельные Равнины — шрам мира, напоминание о Великом Катаклизме. Под слоем пепла лежат руины древних городов, а выжившие Люди Пепла строят новые поселения из обломков прошлого.',
-        features: 'добыча пепла,руины,странствующие торговцы',
-      },
-    }),
-    db.location.create({
-      data: {
-        name: 'Подземный Город Дроу',
-        slug: 'drow-city',
-        description: 'Величественный лабиринт из обсидиана и кристаллов, освещённый бледным свечением подземных грибов.',
-        icon: '🏛️',
-        type: 'town',
-        dangerLevel: 4,
-        parentLocId: null,
-        races: 'dark-elves',
-        lore: 'Подземный Город Дроу — чудо архитектуры глубин. Дома из обсидиана парят над бездонными провалами, а кристальные мосты соединяют уровни города. Интриги здесь — искусство, а предательство — добродетель.',
-        features: 'торговля магией,интриги,кристальные сады',
-      },
-    }),
-    db.location.create({
-      data: {
-        name: 'Кузнечные Горны',
-        slug: 'forge-mountains',
-        description: 'Вулканические шахты, где вечный огонь питает великие кузни гномов. Жар и грохот — музыка этого места.',
-        icon: '🌋',
-        type: 'town',
-        dangerLevel: 5,
-        parentLocId: null,
-        races: 'forge-dwarves',
-        lore: 'Кузнечные Горны — сердце индустрии мира. Раскалённые лавой кузни гномов никогда не остывают. Здесь рождаются легендарные клинки и механизмы, а горный хребет дрожит от ударов молотов.',
-        features: 'кузни,вулканические шахты,торговля оружием',
-      },
-    }),
-    db.location.create({
-      data: {
-        name: 'Теневой Лес',
-        slug: 'shadow-forest',
-        description: 'Мрачный лес, где деревья шепчутся во тьме, а лунный свет едва пробивается сквозь крону. Обиталище дриад и оборотней.',
-        icon: '🌲',
-        type: 'wild',
-        dangerLevel: 6,
-        parentLocId: null,
-        races: 'shadow-dryads,skinwalkers',
-        lore: 'Теневой Лес — живой организм, впитавший Скверну и превративший её в новую форму жизни. Деревья здесь ходят, корни опутывают путников, а шёпот листвы сводит с ума. Дриады и Оборотни — хозяева этого места.',
-        features: 'ночные охотники,живые деревья,лунные ритуалы',
-      },
-    }),
-    db.location.create({
-      data: {
-        name: 'Глубинные Тоннели',
-        slug: 'depth-tunnels',
-        description: 'Бесконечные катакомбы, уходящие в самые недра мира. Мрак здесь абсолютен, а обитатели — ужасающи.',
-        icon: '🕳️',
-        type: 'dungeon',
-        dangerLevel: 8,
-        parentLocId: null,
-        races: 'deepspawn',
-        lore: 'Глубинные Тоннели — лабиринт без начала и конца. Здесь обитают существа, которых не должен видеть свет. Дети Глубин адаптировались к этому безумию, но даже они боятся того, что лежит в самых глубоких туннелях.',
-        features: 'мутанты,подземные реки,забытые святилища',
-      },
-    }),
-    db.location.create({
-      data: {
-        name: 'Руины Старого Мира',
-        slug: 'old-world-ruins',
-        description: 'Останки великой цивилизации до Катаклизма. Развалины хранят тайны и опасности.',
-        icon: '🏚️',
-        type: 'dungeon',
-        dangerLevel: 7,
-        parentLocId: null,
-        races: '',
-        lore: 'Руины Старого Мира — молчаливые свидетели эпохи, предшествовавшей Катаклизму. Древние механизмы ещё работают, ловушки всё ещё смертоносны, а сокровища — всё ещё ждут смельчаков.',
-        features: 'древние ловушки,артефакты,стражи руин',
-      },
-    }),
-    db.location.create({
-      data: {
-        name: 'Оазис Пелла',
-        slug: 'pell-oasis',
-        description: 'Единственное место, где сила Пелла течёт свободно. Святая земля, защищённая от Скверны.',
-        icon: '🌟',
-        type: 'sanctuary',
-        dangerLevel: 1,
-        parentLocId: null,
-        races: '',
-        lore: 'Оазис Пелла — луч света во тьме. Здесь река Пелла выходит на поверхность, неся исцеление и надежду. Это нейтральная территория, где запрещено насилие, и даже враги могут найти здесь приют.',
-        features: 'исцеление,медитация,святилище,торговля',
-      },
-    }),
-    db.location.create({
-      data: {
-        name: 'Разлом Скверны',
-        slug: 'blight-rift',
-        description: 'Зияющая рана в ткани реальности, из которой сочится чистая Скверна. Место невыразимого ужаса.',
-        icon: '👹',
-        type: 'rift',
-        dangerLevel: 10,
-        parentLocId: null,
-        races: '',
-        lore: 'Разлом Скверны — источник всего зла в мире. Из этой раны в реальности изливается чистая порча, мутирующая и уничтожающая всё живое. Только безумцы или герои осмелятся подойти к нему.',
-        features: 'порча,мутации,боссы Скверны,артефакты тьмы',
-      },
-    }),
-    db.location.create({
-      data: {
-        name: 'Перекрёсток Судеб',
-        slug: 'fate-crossroads',
-        description: 'Нейтральная зона торговли и переговоров. Здесь сходятся пути всех рас.',
-        icon: '⛩️',
-        type: 'town',
-        dangerLevel: 2,
-        parentLocId: null,
-        races: 'dark-elves,forge-dwarves,skinwalkers,ashborn-humans,shadow-dryads,deepspawn',
-        lore: 'Перекрёсток Судеб — единственное место, где представители всех рас могут встретиться без страха. Древний договор запрещает насилие здесь, но интриги и шпионаж процветают.',
-        features: 'торговля,переговоры,наёмники,аукцион',
-      },
-    }),
-    db.location.create({
-      data: {
-        name: 'Башня Равновесия',
-        slug: 'balance-tower',
-        description: 'Величественная башня, устремлённая в небо. Центр баланса между Пеллом и Скверной.',
-        icon: '🗼',
-        type: 'sanctuary',
-        dangerLevel: 3,
-        parentLocId: null,
-        races: '',
-        lore: 'Башня Равновесия — древнее сооружение, построенное для поддержания баланса сил. Жрецы Равновесия неусыпно следят, чтобы ни свет, ни тьма не возобладали. Говорят, на вершине башни хранится артефакт, способный изменить мир.',
-        features: 'медитация,обучение,хранилище артефактов,смотрители',
-      },
-    }),
-  ]);
-
   return {
     message: 'Database seeded successfully',
     raceCount: races.length,
     classCount: allClasses.length,
-    locationCount: locations.length,
+    abilityCount: abilityData.length,
   };
 }

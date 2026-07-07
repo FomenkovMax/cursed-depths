@@ -22,26 +22,6 @@ import { NextRequest } from 'next/server';
 const MAX_AUTH_AGE_SECONDS = 24 * 60 * 60;
 
 /**
- * Extracts user ID from initData WITHOUT full HMAC verification.
- * Used as a "best effort" fallback when HMAC fails but we still want
- * to identify the user (better than trusting x-telegram-id header).
- */
-function extractUserFromInitData(
-  initData: string,
-): { id: number; first_name: string; username?: string } | null {
-  try {
-    const params = new URLSearchParams(initData);
-    const userStr = params.get('user');
-    if (!userStr) return null;
-    const user = JSON.parse(userStr);
-    if (!user.id) return null;
-    return { id: user.id, first_name: user.first_name || '', username: user.username };
-  } catch {
-    return null;
-  }
-}
-
-/**
  * Validates Telegram WebApp initData using HMAC-SHA256.
  *
  * @param initData - The raw initData string from Telegram WebApp SDK
@@ -145,14 +125,15 @@ export function verifyTelegramAuth(
 /**
  * Validates a Telegram WebApp request.
  *
- * Authentication strategy (in order of priority):
- * 1. `X-Telegram-Init-Data` header — validated with HMAC-SHA256 (most secure)
- * 2. `X-Telegram-Init-Data` header — extract user ID from initData without HMAC (semi-secure fallback)
- * 3. `x-telegram-id` header — last resort fallback (least secure, but functional)
- *
- * This layered approach ensures the app works even if HMAC fails for unexpected reasons
- * (e.g., bot token rotation, clock skew, encoding issues) while still preferring
- * the most secure method.
+ * Authentication strategy:
+ * 1. `X-Telegram-Init-Data` header — validated with HMAC-SHA256. This is the
+ *    only method trusted to identify a user, since it's the only one that
+ *    proves the data actually came from Telegram. If the header is present
+ *    but fails verification, the request is rejected outright — falling back
+ *    to reading the unverified `user` field would let anyone impersonate any
+ *    player by sending a forged initData string with a bogus hash.
+ * 2. `x-telegram-id` header — dev-only convenience fallback (never trusted in
+ *    production), matching the frontend's `test_dev_123` local-dev path.
  *
  * @param req - The incoming NextRequest
  * @returns `{ telegramId: string }` if authentication succeeds, `null` otherwise
@@ -166,37 +147,28 @@ export function validateTelegramRequest(
     return null;
   }
 
-  // Strategy 1: Validate X-Telegram-Init-Data header with full HMAC (most secure)
   const initDataHeader = req.headers.get('X-Telegram-Init-Data');
   if (initDataHeader) {
     // Strip "Bearer " prefix if present
     const initData = initDataHeader.replace(/^Bearer\s+/, '');
 
-    // Try full HMAC verification first
     const user = verifyTelegramAuth(initData, botToken);
     if (user) {
       return { telegramId: String(user.id) };
     }
 
-    // Strategy 2: HMAC failed, but extract user from initData (better than x-telegram-id)
-    const extractedUser = extractUserFromInitData(initData);
-    if (extractedUser) {
-      console.warn('[Auth] HMAC verification failed, but extracted user ID from initData:', extractedUser.id, '(semi-secure mode)');
-      return { telegramId: String(extractedUser.id) };
-    }
-
-    console.warn('[Auth] initData present but both HMAC and user extraction failed');
+    console.warn('[Auth] initData present but HMAC verification failed — rejecting request');
+    return null;
   }
 
-  // Strategy 3: Fallback to x-telegram-id header (least secure)
-  const fallbackId = req.headers.get('x-telegram-id');
-  if (fallbackId) {
-    if (process.env.NODE_ENV === 'production') {
-      console.warn('[Auth] Using insecure x-telegram-id fallback in production for id:', fallbackId);
-    } else {
+  // Dev-only fallback: x-telegram-id header, no cryptographic proof of identity.
+  // Must never be trusted in production — it would let anyone impersonate any player.
+  if (process.env.NODE_ENV !== 'production') {
+    const fallbackId = req.headers.get('x-telegram-id');
+    if (fallbackId) {
       console.log('[Auth] Using x-telegram-id fallback (dev mode):', fallbackId);
+      return { telegramId: fallbackId };
     }
-    return { telegramId: fallbackId };
   }
 
   console.warn('[Auth] No valid authentication provided');

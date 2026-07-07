@@ -70,6 +70,7 @@ export interface PlayerData {
   enemyHp: number | null;
   enemyMaxHp: number | null;
   combatLog: string | null;
+  bossState: string | null;
   lastDailyReward: string | null;
   inventory: InventoryItem[];
   quests: QuestData[];

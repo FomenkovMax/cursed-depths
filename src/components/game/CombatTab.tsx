@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { ENEMIES } from '@/lib/game-data';
 import { manaCostForStage } from '@/lib/combat-engine';
+import type { BossFightState } from '@/lib/boss-mechanics';
 import { PlayerData, AbilityData, CombatLogEntry, parseStats } from '@/lib/game-types';
 
 interface CombatTabProps {
@@ -31,6 +32,11 @@ export function CombatTab({
   onGoToOverview,
 }: CombatTabProps) {
   const playerInventory = player?.inventory || [];
+
+  let bossState: BossFightState | null = null;
+  if (enemy?.mechanics && player?.bossState) {
+    try { bossState = JSON.parse(player.bossState); } catch { bossState = null; }
+  }
 
   return (
     <TabsContent value="combat" className="flex-1 overflow-y-auto p-4 space-y-4 m-0">
@@ -74,6 +80,27 @@ export function CombatTab({
                   {player.enemyHp}/{player.enemyMaxHp}
                 </span>
               </div>
+              {/* Boss shield bar */}
+              {enemy.mechanics?.shieldMax && bossState && (
+                <div className="flex items-center gap-2 mt-1.5">
+                  <span className="text-xs text-primary font-bold w-6">🛡️</span>
+                  <div className="flex-1 h-2 bg-secondary rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-primary rounded-full transition-all duration-500"
+                      style={{ width: `${Math.max(0, (bossState.shieldHp / enemy.mechanics.shieldMax) * 100)}%` }}
+                    />
+                  </div>
+                  <span className="text-xs text-muted-foreground w-16 text-right">
+                    {bossState.shieldBroken ? 'берсерк!' : `${bossState.shieldHp}/${enemy.mechanics.shieldMax}`}
+                  </span>
+                </div>
+              )}
+              {/* Boss phase indicator */}
+              {enemy.mechanics && bossState && bossState.phase > 1 && (
+                <Badge className="mt-2 text-[10px] h-4 bg-destructive/20 text-destructive">
+                  Фаза {bossState.phase}
+                </Badge>
+              )}
             </CardContent>
           </Card>
 
@@ -116,6 +143,14 @@ export function CombatTab({
                 <Button
                   variant="outline"
                   className="h-12 border-border"
+                  onClick={() => onCombatAction('defend')}
+                  disabled={loading}
+                >
+                  🛡️ Защита
+                </Button>
+                <Button
+                  variant="outline"
+                  className="h-12 border-border col-span-2"
                   onClick={() => onCombatAction('flee')}
                   disabled={loading}
                 >

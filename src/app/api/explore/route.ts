@@ -5,6 +5,7 @@ import { rollDice, rollLoot } from '@/lib/dice';
 import { validateTelegramRequest } from '@/lib/auth';
 import { getCached, setCached, CACHE_TTL } from '@/lib/cache';
 import { addItemToInventory } from '@/lib/inventory-utils';
+import { initBossState } from '@/lib/boss-mechanics';
 
 export async function POST(req: NextRequest) {
   const auth = validateTelegramRequest(req);
@@ -72,6 +73,7 @@ export async function POST(req: NextRequest) {
           enemyHp,
           enemyMaxHp: enemyHp,
           combatLog: JSON.stringify([{ text: `${enemy.nameRu} появляется!`, turn: 0 }]),
+          bossState: JSON.stringify(initBossState(enemy.mechanics)),
         },
         include: { inventory: true, race: true, class: { include: { abilities: true } } },
       });

@@ -11,6 +11,7 @@ import {
   manaCostForStage,
   stageUnlockLevel,
   resolveAbility,
+  extractBossOverridePercent,
   EFFECT_DURATION_TURNS,
   type PlayerCombatStats,
 } from '@/lib/combat-engine';
@@ -313,13 +314,18 @@ export async function POST(req: NextRequest) {
         const executeSpec = parseExecute(ability.description);
         const immediateSelfBuff = parseImmediateSelfBuff(ability.description);
 
+        // Ability.bossNote — авторский боссовый овверайд процента (см. combat-engine.ts
+        // extractBossOverridePercent) для тех "заряженных"/активированных эффектов, что
+        // тоже разрешаются здесь, а не через resolveAbility().
+        const bossOverridePercent = enemyTemplate.isBoss ? extractBossOverridePercent(ability.bossNote) : null;
+
         if (playerMp < manaCost) {
           combatLog.push({ text: `Нужно ${manaCost} маны!`, turn: currentTurn });
         } else if (armedSpecs.length > 0) {
           // "Заряженные" одноразовые эффекты (снижает урон следующего удара, следующая атака усилена
           // и т.п.) — не применяются сейчас, а ждут следующего relevant события.
           playerMp -= manaCost;
-          for (const spec of armedSpecs) armEffect(bossState, spec.kind, spec.percent);
+          for (const spec of armedSpecs) armEffect(bossState, spec.kind, bossOverridePercent ?? spec.percent);
           combatLog.push({ text: `${ability.icon} ${ability.name}! Способность заряжена и сработает при следующем ударе.`, turn: currentTurn });
         } else if (onBlockCounterSpec) {
           // "После блокировки/блока наносит контрудар" — активированная на несколько ходов стойка,
@@ -330,8 +336,9 @@ export async function POST(req: NextRequest) {
         } else if (debuffAmplifySpec) {
           // "Все последующие дебаффы сильнее" — активированный на несколько ходов усилитель дебаффов.
           playerMp -= manaCost;
-          addActiveEffect(bossState, 'debuff_amplify', debuffAmplifySpec.percent, EFFECT_DURATION_TURNS);
-          combatLog.push({ text: `${ability.icon} ${ability.name}! Последующие дебаффы усилены на ${Math.round(debuffAmplifySpec.percent * 100)}% на ${EFFECT_DURATION_TURNS} х.`, turn: currentTurn });
+          const amplifyPercent = bossOverridePercent ?? debuffAmplifySpec.percent;
+          addActiveEffect(bossState, 'debuff_amplify', amplifyPercent, EFFECT_DURATION_TURNS);
+          combatLog.push({ text: `${ability.icon} ${ability.name}! Последующие дебаффы усилены на ${Math.round(amplifyPercent * 100)}% на ${EFFECT_DURATION_TURNS} х.`, turn: currentTurn });
         } else if (executeSpec && !enemyTemplate.isBoss && enemyMaxHp > 0 && enemyHp / enemyMaxHp < executeSpec.thresholdPercent) {
           // "Мгновенная казнь" — PvE-порог, боссов сама способность не касается (см. её описание).
           playerMp -= manaCost;
@@ -350,7 +357,7 @@ export async function POST(req: NextRequest) {
           // с заряженным эффектом от предыдущего каста, если оба почему-то активны одновременно.
           const pendingIgnoreDefense = Math.min(0.9, peekArmedEffectPercent(bossState, 'next_attack_ignore_defense') + (immediateSelfBuff?.ignoreDefensePercent ?? 0));
           const abilityAc = pendingIgnoreDefense > 0 ? Math.max(1, Math.round(effectiveAc * (1 - pendingIgnoreDefense))) : effectiveAc;
-          const resolution = resolveAbility(ability.description, combatStats, abilityAc);
+          const resolution = resolveAbility(ability.description, combatStats, abilityAc, { isBoss: enemyTemplate.isBoss, bossNote: ability.bossNote });
 
           let damageAbsorbed = false;
           if (resolution.damage > 0) {

@@ -82,10 +82,28 @@ export function extractEffectPercent(description: string): number {
   return match ? parseInt(match[1], 10) / 100 : 0.3;
 }
 
+/**
+ * Ability.bossNote — авторский баланс-текст ("Боссы: 15% вместо 25%.", "Боссы: 15%
+ * на боссах.") на 35 способностях, который до этой функции нигде не читался: против
+ * боссов все дебаффы/баффы били с полной PvE-силой, хотя дизайн explicitly требовал
+ * ослабленную версию. Формат везде единообразен — новое значение указано ПЕРВЫМ
+ * числом с "%" в самой заметке, поэтому та же простая эвристика, что и
+ * extractEffectPercent(), здесь безопасна (в отличие от описаний способностей, где
+ * первый процент не всегда релевантен).
+ */
+export function extractBossOverridePercent(bossNote: string | null | undefined): number | null {
+  if (!bossNote) return null;
+  const match = bossNote.match(PERCENT_RE);
+  return match ? parseInt(match[1], 10) / 100 : null;
+}
+
 /** Грубая классификация эффекта способности по ключевым словам описания. */
 export function classifyEffect(description: string): EffectKind {
   if (/восстанавлив|исцел|реген/i.test(description)) return 'heal';
-  if (/щит|поглощ/i.test(description)) return 'shield';
+  // Негативный lookbehind на "за" — иначе "снижает ЗАЩИТу врага" ложно матчился бы
+  // по "щит" внутри "защиту" и способность превращалась в щит ИГРОКУ вместо
+  // дебаффа на врага (напр. battle-roar).
+  if (/(?<!за)щит|поглощ/i.test(description)) return 'shield';
   if (/снижа|блокир|замедл|обездвиж|\bяд\b|дебафф|молчани|заглуш/i.test(description)) return 'debuff';
   // "+N% к урону"/"усиливает урон" с длительностью ("на N ход") — бафф урона на
   // несколько ходов, а не разовая атака. Без этой проверки жадный /урон/i ниже
@@ -131,11 +149,18 @@ export interface AbilityResolution {
 export function resolveAbility(
   description: string,
   attacker: PlayerCombatStats,
-  defenderVitality: number
+  defenderVitality: number,
+  bossContext?: { isBoss: boolean; bossNote?: string | null }
 ): AbilityResolution {
   const percent = extractEffectPercent(description);
   const kind = classifyEffect(description);
   const base = basicAttackDamage(attacker);
+  // См. extractBossOverridePercent() — применяется только к debuff/armor, т.к. это
+  // единственные кейсы в 35 bossNote-способностях, где базовый эффект уже реально
+  // работает через этот резолвер (остальные — саммоны/блок скиллов/ДоТ на враге —
+  // либо не реализованы вообще, либо разрешаются в conditional-ability-engine.ts).
+  const bossOverride = bossContext?.isBoss ? extractBossOverridePercent(bossContext.bossNote) : null;
+  const effectivePercent = bossOverride ?? percent;
 
   const result: AbilityResolution = {
     kind, damage: 0, heal: 0, shield: 0, enemyDamageReduction: 0, playerDamageBonus: 0, effectTurns: 0,
@@ -152,7 +177,7 @@ export function resolveAbility(
       result.shield = Math.round(base * (0.5 + percent));
       break;
     case 'debuff':
-      result.enemyDamageReduction = Math.min(0.75, percent);
+      result.enemyDamageReduction = Math.min(0.75, effectivePercent);
       result.effectTurns = EFFECT_DURATION_TURNS;
       // дебафф почти всегда сопровождается небольшим прямым уроном от самой атаки
       result.damage = mitigateDamage(Math.round(base * 0.5), defenderVitality);
@@ -171,7 +196,7 @@ export function resolveAbility(
     case 'armor':
       // Защитная стойка: снижает входящий урон врага, как дебафф, но без
       // сопутствующего "разового" урона от атаки — это не атака, а стойка.
-      result.enemyDamageReduction = Math.min(0.75, percent);
+      result.enemyDamageReduction = Math.min(0.75, effectivePercent);
       result.effectTurns = EFFECT_DURATION_TURNS;
       break;
     default:

@@ -45,12 +45,25 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Нельзя вложить более 60% очков в одну характеристику' }, { status: 400 });
     }
 
+    // maxHp/maxMp считаются от Стойкости/Воли только один раз, при создании персонажа
+    // (player/create/route.ts: maxHp = 50 + vitality*5, maxMp = 100 + willpower*2) — вложение
+    // очка в эти статы должно давать тот же прирост пулов, иначе "выживаемость" через
+    // распределение очков перестаёт работать, хотя сам стат продолжает считаться в бою.
+    const updateData: Record<string, unknown> = {
+      [stat as StatField]: { increment: 1 },
+      statPoints: { decrement: 1 },
+    };
+    if (stat === 'vitality') {
+      updateData.maxHp = { increment: 5 };
+      updateData.hp = { increment: 5 };
+    } else if (stat === 'willpower') {
+      updateData.maxMp = { increment: 2 };
+      updateData.mp = { increment: 2 };
+    }
+
     const updated = await db.player.update({
       where: { telegramId },
-      data: {
-        [stat as StatField]: { increment: 1 },
-        statPoints: { decrement: 1 },
-      },
+      data: updateData,
       include: { inventory: true, quests: true, race: true, class: { include: { abilities: true } } },
     });
 

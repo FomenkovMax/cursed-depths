@@ -397,6 +397,10 @@ export default function CursedDepths() {
       } else {
         setPlayer(data.player);
         setMessage({ text: data.message, type: 'success' });
+        if (data.leveledUp) {
+          setLevelUpAnimation(true);
+          setTimeout(() => setLevelUpAnimation(false), 1500);
+        }
       }
     } catch {
       setMessage({ text: 'Ошибка получения награды', type: 'error' });

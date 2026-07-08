@@ -30,7 +30,7 @@ export function QuestsTab({ player, loading, onClaimQuest }: QuestsTabProps) {
           </CardContent>
         </Card>
       ) : (
-        <ScrollArea className="max-h-[70vh]">
+        <ScrollArea className="h-[70vh]">
           <div className="space-y-2 pr-2">
             {playerQuests.map(quest => {
               const reward = parseStats(quest.reward);

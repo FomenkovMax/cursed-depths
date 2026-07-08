@@ -78,7 +78,7 @@ export function InventoryTab({ player, loading, onEquip, onUseItem }: InventoryT
           {playerInventory.filter(i => !i.equipped).length === 0 ? (
             <p className="text-xs text-muted-foreground text-center py-2">Инвентарь пуст</p>
           ) : (
-            <ScrollArea className="max-h-96">
+            <ScrollArea className="h-96">
               <div className="space-y-2 pr-2">
                 {playerInventory.filter(i => !i.equipped).map(item => {
                   const stats = parseStats(item.stats);

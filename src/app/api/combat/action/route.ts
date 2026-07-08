@@ -22,8 +22,9 @@ import {
   playerDamageMultiplier,
   type BossFightState,
 } from '@/lib/boss-mechanics';
-import { addActiveEffect, activeEffectBonus, tickActiveEffects, applyDamageToPlayerShield } from '@/lib/combat-effects';
+import { addActiveEffect, activeEffectBonus, tickActiveEffects, applyDamageToPlayerShield, armEffect, consumeArmedEffects, peekArmedEffectPercent } from '@/lib/combat-effects';
 import { parsePassiveEffect, type PassiveEffect } from '@/lib/passive-engine';
+import { parseDeathWard, parseArmedEffects, type DeathWardEffect } from '@/lib/conditional-ability-engine';
 import {
   PASSIVE_CRIT_MULTIPLIER,
   hpThresholdBonuses,
@@ -140,21 +141,32 @@ export async function POST(req: NextRequest) {
     const uncondBonus = unconditionalBonuses(playerPassives);
     const totalHealingBonus = thresholdBonus.healingBonusPercent + uncondBonus.healingBonusPercent;
 
-    /** Инкрементирует счётчик ударов и считает множитель от "каждый N-й удар"/"раз в N ударов" пассивок. */
-    function applyPassiveOffenseBonuses(): { mult: number; messages: string[] } {
+    /**
+     * Инкрементирует счётчик ударов и считает множитель от "каждый N-й удар"/"раз в N ударов"
+     * пассивок + снимает "заряженные" одноразовые эффекты (см. lib/conditional-ability-engine.ts),
+     * ждавшие следующей результативной атаки/способности игрока.
+     */
+    function applyPassiveOffenseBonuses(): { mult: number; messages: string[]; lifestealPercent: number; ignoreDefensePercent: number } {
       bossState.playerAttackCount += 1;
       const critN = critEveryNHits(playerPassives);
       const firstAttackCrit = bossState.playerAttackCount === 1 && hasFirstAttackCrit(playerPassives);
-      const isCrit = firstAttackCrit || (critN !== null && bossState.playerAttackCount % critN === 0);
+      const armedCrit = consumeArmedEffects(bossState, 'next_attack_crit').count > 0;
+      const isCrit = firstAttackCrit || armedCrit || (critN !== null && bossState.playerAttackCount % critN === 0);
       let intervalBonus = 0;
       for (const iv of turnIntervalEmpowered(playerPassives)) {
         if (bossState.playerAttackCount % iv.everyTurns === 0) intervalBonus += iv.damageMultBonus;
       }
+      const armedBoost = consumeArmedEffects(bossState, 'boost_next_outgoing').percent;
+      const lifestealPercent = consumeArmedEffects(bossState, 'next_attack_lifesteal').percent;
+      const ignoreDefensePercent = consumeArmedEffects(bossState, 'next_attack_ignore_defense').percent;
+
       const messages: string[] = [];
       if (isCrit) messages.push('Критический удар!');
       if (intervalBonus > 0) messages.push('Способность усилена нарастающей мощью!');
-      const mult = (isCrit ? PASSIVE_CRIT_MULTIPLIER : 1) * (1 + intervalBonus);
-      return { mult, messages };
+      if (armedBoost > 0) messages.push('Заряженная атака усилена!');
+      else if (armedBoost < 0) messages.push('Заряженная атака ослаблена побочным эффектом!');
+      const mult = Math.max(0, (isCrit ? PASSIVE_CRIT_MULTIPLIER : 1) * (1 + intervalBonus + armedBoost));
+      return { mult, messages, lifestealPercent, ignoreDefensePercent };
     }
 
     /** Шанс снять стак проклятия (лечение-с-проклятием боссов) при собственном лечении — fiery-sermon. */
@@ -216,14 +228,22 @@ export async function POST(req: NextRequest) {
       combatLog.push({ text: 'Вы приняли защитную стойку.', turn: currentTurn });
     } else if (action === 'attack') {
       const resist = adaptiveResistMultiplier(enemyTemplate.mechanics, bossState, 'attack');
-      const { mult: offenseMult, messages: offenseMsgs } = applyPassiveOffenseBonuses();
-      const rawDamage = Math.round(mitigateDamage(basicAttackDamage(combatStats) + weaponBonus, effectiveAc) * curseMult * resist * passiveDamageMult * offenseMult);
+      const { mult: offenseMult, messages: offenseMsgs, lifestealPercent, ignoreDefensePercent } = applyPassiveOffenseBonuses();
+      const attackAc = ignoreDefensePercent > 0 ? Math.max(1, Math.round(effectiveAc * (1 - ignoreDefensePercent))) : effectiveAc;
+      const rawDamage = Math.round(mitigateDamage(basicAttackDamage(combatStats) + weaponBonus, attackAc) * curseMult * resist * passiveDamageMult * offenseMult);
       const { hpDamage, messages } = applyDamageToBoss(enemyTemplate.mechanics, bossState, rawDamage);
       enemyHp = Math.max(0, enemyHp - hpDamage);
       const absorbed = rawDamage > 0 && hpDamage === 0;
       combatLog.push({ text: absorbed ? 'Вы атакуете! Урон поглощён щитом.' : `Вы атакуете! Урон: ${hpDamage}`, turn: currentTurn });
       if (resist < 1) combatLog.push({ text: 'Враг адаптировался к этому типу урона!', turn: currentTurn });
       for (const m of [...offenseMsgs, ...messages]) combatLog.push({ text: m, turn: currentTurn });
+      if (lifestealPercent > 0 && hpDamage > 0) {
+        const stolen = Math.round(hpDamage * lifestealPercent);
+        if (stolen > 0) {
+          playerHp = Math.min(effectiveMaxHp, playerHp + stolen);
+          combatLog.push({ text: `Заряженная атака исцеляет вас на ${stolen} ХП!`, turn: currentTurn });
+        }
+      }
     } else if (action === 'use_item') {
       const item = player.inventory.find(i => i.itemId === itemId && i.type === 'consumable');
       if (!item) {
@@ -258,24 +278,48 @@ export async function POST(req: NextRequest) {
         combatLog.push({ text: 'Эта способность пассивна и не используется в бою напрямую!', turn: currentTurn });
       } else if (player.level < stageUnlockLevel(ability.stage)) {
         combatLog.push({ text: `Нужен уровень ${stageUnlockLevel(ability.stage)}!`, turn: currentTurn });
+      } else if (parseDeathWard(ability.description)) {
+        // "Обереги от смерти" (Последняя воля, Несокрушимый и т.п.) срабатывают САМИ при смертельном
+        // ударе — их нельзя скастовать вручную, см. lib/conditional-ability-engine.ts.
+        combatLog.push({ text: 'Эта способность срабатывает автоматически при смертельном ударе — использовать её вручную нельзя.', turn: currentTurn });
       } else {
         const manaCost = manaCostForStage(ability.stage);
+        const armedSpecs = parseArmedEffects(ability.description);
         if (playerMp < manaCost) {
           combatLog.push({ text: `Нужно ${manaCost} маны!`, turn: currentTurn });
+        } else if (armedSpecs.length > 0) {
+          // "Заряженные" одноразовые эффекты (снижает урон следующего удара, следующая атака усилена
+          // и т.п.) — не применяются сейчас, а ждут следующего relevant события.
+          playerMp -= manaCost;
+          for (const spec of armedSpecs) armEffect(bossState, spec.kind, spec.percent);
+          combatLog.push({ text: `${ability.icon} ${ability.name}! Способность заряжена и сработает при следующем ударе.`, turn: currentTurn });
         } else {
           playerMp -= manaCost;
-          const resolution = resolveAbility(ability.description, combatStats, effectiveAc);
+          // "Следующая атака игнорирует N% брони" может относиться и к способности, не только к
+          // обычной атаке — подсматриваем заранее (не снимая), чтобы передать скорректированный AC;
+          // реально снимается ниже в applyPassiveOffenseBonuses(), только если способность и правда
+          // нанесла урон (иначе заряд не тратится впустую на лечение/щит/бафф/дебафф).
+          const pendingIgnoreDefense = peekArmedEffectPercent(bossState, 'next_attack_ignore_defense');
+          const abilityAc = pendingIgnoreDefense > 0 ? Math.max(1, Math.round(effectiveAc * (1 - pendingIgnoreDefense))) : effectiveAc;
+          const resolution = resolveAbility(ability.description, combatStats, abilityAc);
 
           let damageAbsorbed = false;
           if (resolution.damage > 0) {
             const resist = adaptiveResistMultiplier(enemyTemplate.mechanics, bossState, 'ability');
-            const { mult: offenseMult, messages: offenseMsgs } = applyPassiveOffenseBonuses();
+            const { mult: offenseMult, messages: offenseMsgs, lifestealPercent } = applyPassiveOffenseBonuses();
             const abilityDamage = Math.round(resolution.damage * curseMult * resist * passiveDamageMult * offenseMult);
             const { hpDamage, messages } = applyDamageToBoss(enemyTemplate.mechanics, bossState, abilityDamage);
             enemyHp = Math.max(0, enemyHp - hpDamage);
             damageAbsorbed = hpDamage === 0;
             resolution.damage = hpDamage;
             if (resist < 1) messages.push('Враг адаптировался к этому типу урона!');
+            if (lifestealPercent > 0 && hpDamage > 0) {
+              const stolen = Math.round(hpDamage * lifestealPercent);
+              if (stolen > 0) {
+                playerHp = Math.min(effectiveMaxHp, playerHp + stolen);
+                messages.push(`Заряженная атака исцеляет вас на ${stolen} ХП!`);
+              }
+            }
             for (const m of [...offenseMsgs, ...messages]) combatLog.push({ text: m, turn: currentTurn });
           }
           let cleanseMsg: string | null = null;
@@ -373,12 +417,19 @@ export async function POST(req: NextRequest) {
     if (!combatOver && !playerFled) {
       const armorBonus = equipBonuses.defense;
       const isDefending = action === 'defend' && !actionNegated;
+      // "Заряженный" эффект "снижает/блокирует урон следующего удара" (last-line, shield-of-faith
+      // и т.п., см. lib/conditional-ability-engine.ts) — снимается ровно на этот удар врага.
+      // percent >= 1 означает полную блокировку ("Блокирует следующую атаку") — обрабатывается
+      // отдельно ниже как fullyBlocked, а не через обычный 0.9-капped totalReduction.
+      const armedBlock = consumeArmedEffects(bossState, 'reduce_next_incoming');
+      const fullyBlocked = armedBlock.percent >= 1;
       // Дебафф от способностей игрока (многоходовой, см. combat-effects.ts) + пороговые/безусловные пассивки защиты
       // + бонус брони, пока игрок в защитной стойке (last-bastion и аналоги).
       const enemyDamageReduction = Math.min(0.9, activeEffectBonus(bossState, 'enemy_damage_debuff'));
       const passiveIncomingReduction = Math.min(0.9,
         thresholdBonus.incomingReductionPercent + thresholdBonus.defenseMultBonus + uncondBonus.defenseMultBonus
-        + (isDefending ? onDefendDefenseBonus(playerPassives) : 0));
+        + (isDefending ? onDefendDefenseBonus(playerPassives) : 0)
+        + (fullyBlocked ? 0 : armedBlock.percent));
       const totalReduction = Math.min(0.9, enemyDamageReduction + passiveIncomingReduction);
       const rawDamage = rollDice(enemyTemplate.damage) * (1 - totalReduction);
       const baseEnemyDamage = Math.max(1, Math.round(mitigateDamage(rawDamage, effectiveVitality) - armorBonus));
@@ -401,9 +452,14 @@ export async function POST(req: NextRequest) {
           incomingDamage = Math.round(incomingDamage * 0.5);
         }
 
-        const dodged = Math.random() < dodgeChancePercent(playerPassives);
+        const dodged = fullyBlocked || Math.random() < dodgeChancePercent(playerPassives);
         if (dodged) {
-          combatLog.push({ text: `${enemyTemplate.nameRu} атакует! Вы полностью уклонились!`, turn: currentTurn + 1 });
+          combatLog.push({
+            text: fullyBlocked
+              ? `${enemyTemplate.nameRu} атакует! Заряженная защита полностью блокирует удар!`
+              : `${enemyTemplate.nameRu} атакует! Вы полностью уклонились!`,
+            turn: currentTurn + 1,
+          });
         } else {
           const reflected = Math.random() < reflectChancePercent(playerPassives);
           if (reflected) {
@@ -487,10 +543,23 @@ export async function POST(req: NextRequest) {
       playerMp = Math.min(effectiveMaxMp, playerMp + 10);
     }
 
-    // Check if player is dead (с учётом одноразового воскрешения — Феникс и аналоги)
+    // Check if player is dead (с учётом одноразового воскрешения — Феникс-пассивка ИЛИ активный
+    // оберег от смерти вроде "Последней воли"/"Несокрушимого", см. lib/conditional-ability-engine.ts —
+    // оба делят один и тот же bossState.deathSaveUsed: одно "последнее слово" за бой на персонажа).
     if (playerHp <= 0) {
       const reviveHealPercent = deathSaveHealPercent(playerPassives);
-      if (reviveHealPercent !== null && !bossState.deathSaveUsed) {
+      const activeWard: DeathWardEffect | undefined = player.class.abilities
+        .filter(a => a.type === 'active' && player.level >= stageUnlockLevel(a.stage))
+        .map(a => parseDeathWard(a.description))
+        .find((w): w is DeathWardEffect => w !== null) ?? undefined;
+
+      if (!bossState.deathSaveUsed && activeWard) {
+        bossState.deathSaveUsed = true;
+        playerHp = 1;
+        if (activeWard.healPercent > 0) playerHp = Math.min(effectiveMaxHp, playerHp + Math.round(effectiveMaxHp * activeWard.healPercent));
+        if (activeWard.shieldPercent > 0) bossState.playerShieldHp += Math.round(effectiveMaxHp * activeWard.shieldPercent);
+        combatLog.push({ text: `Вы выживаете на грани смерти с ${playerHp} ХП!`, turn: currentTurn + 2 });
+      } else if (!bossState.deathSaveUsed && reviveHealPercent !== null) {
         bossState.deathSaveUsed = true;
         playerHp = Math.max(1, Math.round(effectiveMaxHp * reviveHealPercent));
         combatLog.push({ text: `Вы возрождаетесь из пепла с ${playerHp} ХП!`, turn: currentTurn + 2 });

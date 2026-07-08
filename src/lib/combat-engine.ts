@@ -21,7 +21,7 @@
  * combat/action/route.ts.
  */
 
-export type EffectKind = 'damage' | 'heal' | 'shield' | 'debuff' | 'buff' | 'utility';
+export type EffectKind = 'damage' | 'heal' | 'shield' | 'debuff' | 'buff' | 'armor' | 'utility';
 
 export interface PlayerCombatStats {
   strength: number;
@@ -87,7 +87,16 @@ export function classifyEffect(description: string): EffectKind {
   if (/восстанавлив|исцел|реген/i.test(description)) return 'heal';
   if (/щит|поглощ/i.test(description)) return 'shield';
   if (/снижа|блокир|замедл|обездвиж|\bяд\b|дебафф|молчани|заглуш/i.test(description)) return 'debuff';
+  // "+N% к урону"/"усиливает урон" с длительностью ("на N ход") — бафф урона на
+  // несколько ходов, а не разовая атака. Без этой проверки жадный /урон/i ниже
+  // ловил бы такие способности (напр. "+25% к урону на 2 хода") как обычный урон.
+  if (/\+\d+%\s*(к\s*)?урон|усилив.*урон/i.test(description) && /на\s*\d+\s*ход/i.test(description) && !/следующ|каждые|цел[ьи]/i.test(description)) return 'buff';
   if (/урон/i.test(description)) return 'damage';
+  // Собственная броня ("+X% брони", "усиливает свою броню") на несколько ходов —
+  // защитная стойка: снижает входящий урон, а не увеличивает исходящий (в отличие
+  // от generic buff-паттерна ниже). "Игнорирует X% брони цели" — дебафф на броню
+  // ВРАГА, отдельный случай (разрешается как armed-эффект в conditional-ability-engine.ts).
+  if (/брон/i.test(description) && !/игнориру/i.test(description)) return 'armor';
   if (/\+\d+%|усилив|бафф/i.test(description)) return 'buff';
   return 'utility';
 }
@@ -148,8 +157,21 @@ export function resolveAbility(
       // дебафф почти всегда сопровождается небольшим прямым уроном от самой атаки
       result.damage = mitigateDamage(Math.round(base * 0.5), defenderVitality);
       break;
-    case 'buff':
-      result.playerDamageBonus = Math.min(0.75, percent);
+    case 'buff': {
+      // extractEffectPercent() берёт ПЕРВЫЙ процент в тексте — для "Поджигает себя
+      // на 2 хода (3% ХП/ход), но атаки наносят +50% урона." это 3% (урон самоподжога),
+      // а не заявленные +50% бонуса. Если рядом с "урон" есть число с явным "+",
+      // предпочитаем его — это и есть величина самого баффа урона.
+      const buffMatch = description.match(/\+(\d+)%\s*(к\s*)?[а-яё]*урон/i);
+      const buffPercent = buffMatch ? parseInt(buffMatch[1], 10) / 100 : percent;
+      result.playerDamageBonus = Math.min(0.75, buffPercent);
+      result.effectTurns = EFFECT_DURATION_TURNS;
+      break;
+    }
+    case 'armor':
+      // Защитная стойка: снижает входящий урон врага, как дебафф, но без
+      // сопутствующего "разового" урона от атаки — это не атака, а стойка.
+      result.enemyDamageReduction = Math.min(0.75, percent);
       result.effectTurns = EFFECT_DURATION_TURNS;
       break;
     default:

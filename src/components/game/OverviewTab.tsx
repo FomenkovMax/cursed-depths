@@ -7,6 +7,7 @@ import { PlayerData, STAT_SHORT_RU, SLOT_RU, ITEM_TYPE_RU, parseStats } from '@/
 import { computeEquipmentBonuses } from '@/lib/equipment-stats';
 import { stageUnlockLevel } from '@/lib/combat-engine';
 import { parsePassiveEffect } from '@/lib/passive-engine';
+import { MarketPanel } from './MarketPanel';
 
 interface OverviewTabProps {
   player: PlayerData | null;
@@ -19,6 +20,8 @@ interface OverviewTabProps {
   canClaimDaily: boolean;
   onGoToCombat: () => void;
   onAllocateStat: (stat: string) => void;
+  onBuyItem: (itemId: string) => void;
+  onSellItem: (inventoryId: string) => void;
 }
 
 export function OverviewTab({
@@ -32,6 +35,8 @@ export function OverviewTab({
   canClaimDaily,
   onGoToCombat,
   onAllocateStat,
+  onBuyItem,
+  onSellItem,
 }: OverviewTabProps) {
   const playerInventory = player?.inventory || [];
   const gearBonuses = computeEquipmentBonuses(playerInventory);
@@ -96,6 +101,11 @@ export function OverviewTab({
           </div>
         </CardContent>
       </Card>
+
+      {/* Market — только в Торговом дворе (см. lib/shop.ts) */}
+      {player && player.locationId === 'market' && (
+        <MarketPanel player={player} loading={loading} onBuy={onBuyItem} onSell={onSellItem} />
+      )}
 
       {/* Character stats */}
       <Card className="border-border">

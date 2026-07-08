@@ -458,6 +458,41 @@ export default function CursedDepths() {
     setLoading(false);
   };
 
+  // ===== SHOP (Торговый двор) =====
+  const handleBuyItem = async (itemId: string) => {
+    if (!player) return;
+    setLoading(true);
+    try {
+      const data = await apiCall('/api/shop/buy', 'POST', { itemId });
+      if (data.error) {
+        setMessage({ text: data.error, type: 'error' });
+      } else {
+        setPlayer(data.player);
+        setMessage({ text: data.message, type: 'success' });
+      }
+    } catch {
+      setMessage({ text: 'Ошибка покупки', type: 'error' });
+    }
+    setLoading(false);
+  };
+
+  const handleSellItem = async (inventoryId: string) => {
+    if (!player) return;
+    setLoading(true);
+    try {
+      const data = await apiCall('/api/shop/sell', 'POST', { inventoryId });
+      if (data.error) {
+        setMessage({ text: data.error, type: 'error' });
+      } else {
+        setPlayer(data.player);
+        setMessage({ text: data.message, type: 'success' });
+      }
+    } catch {
+      setMessage({ text: 'Ошибка продажи', type: 'error' });
+    }
+    setLoading(false);
+  };
+
   // ===== CRAFT =====
   const handleCraft = async (recipeId: string) => {
     if (!player) return;
@@ -651,6 +686,8 @@ export default function CursedDepths() {
             canClaimDaily={canClaimDaily()}
             onGoToCombat={() => setTab('combat')}
             onAllocateStat={handleAllocateStat}
+            onBuyItem={handleBuyItem}
+            onSellItem={handleSellItem}
           />
 
           <CombatTab

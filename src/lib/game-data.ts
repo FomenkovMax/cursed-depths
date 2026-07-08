@@ -479,7 +479,7 @@ export const ITEMS: Item[] = [
   { id: 'shadow_essence', nameRu: 'Эссенция Тени', nameEn: 'Shadow Essence', type: 'material', rarity: 'uncommon', stats: {}, descriptionRu: 'Сгусток тёмной энергии. Для зачарования.', descriptionEn: 'Dark energy clump. For enchanting.', icon: '🌑', value: 30 },
   { id: 'dragon_scale', nameRu: 'Чешуя дракона', nameEn: 'Dragon Scale', type: 'material', rarity: 'rare', stats: {}, descriptionRu: 'Прочная чешуя дракона. Редкий материал.', descriptionEn: 'Tough dragon scale. Rare material.', icon: '🐲', value: 100 },
   { id: 'void_crystal', nameRu: 'Кристалл Пустоты', nameEn: 'Void Crystal', type: 'material', rarity: 'epic', stats: {}, descriptionRu: 'Кристалл чистой энергии Пустоты.', descriptionEn: 'Crystal of pure Void energy.', icon: '💎', value: 300 },
-  { id: 'crown_shard', nameRu: 'Осколок Короны', nameEn: 'Crown Shard', type: 'material', rarity: 'legendary', stats: {}, descriptionRu: 'Магический осколок проклятой Короны.', descriptionEn: 'Magical shard of the cursed Crown.', icon: '💠', value: 800 },
+  { id: 'crown_shard', nameRu: 'Необработанный осколок Короны', nameEn: 'Raw Crown Shard', type: 'material', rarity: 'legendary', stats: {}, descriptionRu: 'Магический осколок проклятой Короны, ещё не огранённый и не пригодный для ношения — только для ковки.', descriptionEn: 'Magical shard of the cursed Crown, not yet cut — good only for forging.', icon: '💠', value: 800 },
 
   // === QUEST ITEMS ===
   { id: 'ancient_map', nameRu: 'Древняя карта', nameEn: 'Ancient Map', type: 'quest', rarity: 'uncommon', stats: {}, descriptionRu: 'Карта, указывающая путь к сокровищу.', descriptionEn: 'Map showing the way to treasure.', icon: '🗺️', value: 0 },
@@ -524,7 +524,7 @@ export const ENEMIES: EnemyTemplate[] = [
   // Храм Велариона (Level 1-2)
   { id: 'corrupted_acolyte', nameRu: 'Осквернённый послушник', nameEn: 'Corrupted Acolyte', hp: 18, ac: 9, attack: 4, damage: '1d6+1', xp: 18, gold: 8, lootTable: [{ itemId: 'mana_potion', chance: 0.3 }, { itemId: 'antidote', chance: 0.2 }], locationId: 'velarion_temple', isBoss: false, icon: '🕯️' },
   { id: 'ashen_guardian', nameRu: 'Пепельный страж', nameEn: 'Ashen Guardian', hp: 24, ac: 11, attack: 5, damage: '1d6+2', xp: 24, gold: 10, lootTable: [{ itemId: 'iron_sword', chance: 0.15 }, { itemId: 'iron_ore', chance: 0.3 }], locationId: 'velarion_temple', isBoss: false, icon: '🗿' },
-  { id: 'keeper_of_ashes', nameRu: 'Хранитель Пепла', nameEn: 'Keeper of Ashes', hp: 42, ac: 12, attack: 7, damage: '1d8+3', xp: 70, gold: 30, lootTable: [{ itemId: 'ashen_amulet', chance: 0.4 }, { itemId: 'greater_health', chance: 0.3 }], locationId: 'velarion_temple', isBoss: true, icon: '⚱️' },
+  { id: 'keeper_of_ashes', nameRu: 'Хранитель Пепла', nameEn: 'Keeper of Ashes', hp: 42, ac: 12, attack: 7, damage: '1d8+3', xp: 70, gold: 30, lootTable: [{ itemId: 'ashen_amulet', chance: 0.4 }, { itemId: 'greater_health', chance: 0.3 }, { itemId: 'celestial_robe', chance: 0.1 }], locationId: 'velarion_temple', isBoss: true, icon: '⚱️' },
 
   // Тракт Скорби (Level 2)
   { id: 'road_bandit', nameRu: 'Разбойник Тракта', nameEn: 'Road Bandit', hp: 20, ac: 9, attack: 5, damage: '1d6+2', xp: 20, gold: 15, lootTable: [{ itemId: 'iron_sword', chance: 0.2 }, { itemId: 'chainmail', chance: 0.1 }], locationId: 'sorrow_road', isBoss: false, icon: '🗡️' },
@@ -597,7 +597,7 @@ export const ENEMIES: EnemyTemplate[] = [
 
   // Зал Клятв (Level 5)
   { id: 'oathbreaker_shade', nameRu: 'Тень клятвопреступника', nameEn: 'Oathbreaker Shade', hp: 44, ac: 14, attack: 10, damage: '1d10+4', xp: 48, gold: 22, lootTable: [{ itemId: 'shadow_essence', chance: 0.3 }, { itemId: 'chainmail', chance: 0.1 }], locationId: 'oath_hall', isBoss: false, icon: '🗡️' },
-  { id: 'arena_champion', nameRu: 'Чемпион арены', nameEn: 'Arena Champion', hp: 50, ac: 15, attack: 11, damage: '1d10+5', xp: 55, gold: 28, lootTable: [{ itemId: 'dwarven_plate', chance: 0.1 }, { itemId: 'steel_sword', chance: 0.15 }], locationId: 'oath_hall', isBoss: false, icon: '🪓' },
+  { id: 'arena_champion', nameRu: 'Чемпион арены', nameEn: 'Arena Champion', hp: 50, ac: 15, attack: 11, damage: '1d10+5', xp: 55, gold: 28, lootTable: [{ itemId: 'dwarven_plate', chance: 0.1 }, { itemId: 'steel_sword', chance: 0.15 }, { itemId: 'ring_power', chance: 0.08 }], locationId: 'oath_hall', isBoss: false, icon: '🪓' },
   { id: 'betrayed_guardian', nameRu: 'Преданный страж', nameEn: 'Betrayed Guardian', hp: 46, ac: 15, attack: 10, damage: '2d6+3', xp: 50, gold: 24, lootTable: [{ itemId: 'oath_shield_shard', chance: 0.15 }, { itemId: 'greater_health', chance: 0.3 }], locationId: 'oath_hall', isBoss: false, icon: '🛡️' },
 
   // Великая Кузница (Level 5)
@@ -640,7 +640,7 @@ export const ENEMIES: EnemyTemplate[] = [
   { id: 'flame_wisp_swarm', nameRu: 'Рой огненных духов', nameEn: 'Flame Wisp Swarm', hp: 60, ac: 15, attack: 14, damage: '1d10+6', xp: 70, gold: 32, lootTable: [{ itemId: 'mana_potion', chance: 0.3 }], locationId: 'flame_cradle', isBoss: false, icon: '✨' },
   {
     id: 'first_dragon', nameRu: 'Первый Дракон', nameEn: 'The First Dragon', hp: 160, ac: 18, attack: 15, damage: '3d8+6', xp: 550, gold: 250,
-    lootTable: [{ itemId: 'first_dragon_scale', chance: 0.15 }, { itemId: 'ignira_fang', chance: 0.25 }, { itemId: 'elixir_power', chance: 0.3 }],
+    lootTable: [{ itemId: 'first_dragon_scale', chance: 0.15 }, { itemId: 'ignira_fang', chance: 0.25 }, { itemId: 'elixir_power', chance: 0.3 }, { itemId: 'dragonslayer', chance: 0.08 }],
     locationId: 'flame_cradle', isBoss: true, icon: '🐉',
     mechanics: {
       playerDotPercent: 0.04, // Горение каждый ход
@@ -688,7 +688,7 @@ export const ENEMIES: EnemyTemplate[] = [
 
   // Арена Крови (Level 7-8)
   { id: 'arena_slave', nameRu: 'Раб арены', nameEn: 'Arena Slave', hp: 70, ac: 17, attack: 16, damage: '1d10+6', xp: 74, gold: 32, lootTable: [{ itemId: 'greater_health', chance: 0.3 }, { itemId: 'chainmail', chance: 0.15 }], locationId: 'blood_arena', isBoss: false, icon: '⛓️' },
-  { id: 'gladiator_champion', nameRu: 'Чемпион-гладиатор', nameEn: 'Gladiator Champion', hp: 80, ac: 18, attack: 17, damage: '2d6+6', xp: 85, gold: 38, lootTable: [{ itemId: 'dwarven_plate', chance: 0.12 }, { itemId: 'grumgar_fang', chance: 0.05 }], locationId: 'blood_arena', isBoss: false, icon: '🏆' },
+  { id: 'gladiator_champion', nameRu: 'Чемпион-гладиатор', nameEn: 'Gladiator Champion', hp: 80, ac: 18, attack: 17, damage: '2d6+6', xp: 85, gold: 38, lootTable: [{ itemId: 'dwarven_plate', chance: 0.12 }, { itemId: 'grumgar_fang', chance: 0.05 }, { itemId: 'lucky_charm', chance: 0.06 }], locationId: 'blood_arena', isBoss: false, icon: '🏆' },
   { id: 'blood_priest', nameRu: 'Кровавый жрец', nameEn: 'Blood Priest', hp: 74, ac: 17, attack: 17, damage: '1d10+7', xp: 82, gold: 36, lootTable: [{ itemId: 'unborn_chieftain_seal', chance: 0.05 }, { itemId: 'mana_potion', chance: 0.4 }], locationId: 'blood_arena', isBoss: false, icon: '🩸' },
 
   // Крепость Грумгара (Level 8)
@@ -806,8 +806,16 @@ export const CRAFTING_RECIPES: CraftingRecipe[] = [
   { id: 'craft_void_staff', nameRu: 'Создать Посох Пустоты', nameEn: 'Create Void Staff', materials: [{ itemId: 'void_crystal', quantity: 2 }, { itemId: 'shadow_essence', quantity: 3 }], result: { itemId: 'void_staff', quantity: 1 }, icon: '🪄' },
   { id: 'craft_greater_health', nameRu: 'Варить Сильное зелье', nameEn: 'Brew Greater Health Potion', materials: [{ itemId: 'health_potion', quantity: 2 }, { itemId: 'shadow_essence', quantity: 1 }], result: { itemId: 'greater_health', quantity: 1 }, icon: '🧪' },
   { id: 'craft_frost_axe', nameRu: 'Ковать Ледяной топор', nameEn: 'Forge Frost Axe', materials: [{ itemId: 'dragon_scale', quantity: 2 }, { itemId: 'void_crystal', quantity: 1 }], result: { itemId: 'frost_axe', quantity: 1 }, icon: '🪓' },
-  { id: 'craft_crown_shard', nameRu: 'Собрать Осколок Короны', nameEn: 'Assemble Crown Shard', materials: [{ itemId: 'void_crystal', quantity: 3 }, { itemId: 'shadow_essence', quantity: 5 }], result: { itemId: 'crown_shard', quantity: 1 }, icon: '💠' },
+  { id: 'craft_crown_shard', nameRu: 'Собрать необработанный осколок Короны', nameEn: 'Assemble Raw Crown Shard', materials: [{ itemId: 'void_crystal', quantity: 3 }, { itemId: 'shadow_essence', quantity: 5 }], result: { itemId: 'crown_shard', quantity: 1 }, icon: '💠' },
   { id: 'craft_elixir', nameRu: 'Варить Эликсир Мощи', nameEn: 'Brew Elixir of Power', materials: [{ itemId: 'shadow_essence', quantity: 2 }, { itemId: 'health_potion', quantity: 1 }], result: { itemId: 'elixir_power', quantity: 1 }, icon: '⚗️' },
+  // Осколок Короны (craft_crown_shard выше) до этих трёх рецептов был тупиковым
+  // материалом — крафтился, но никуда не тратился, а cursed_king_blade/crown_armor/
+  // crown_fragment (весь сюжетный сет Проклятого Короля) были при этом недостижимы
+  // в принципе: ни одно существо их не роняет. Осколок теперь капстоун-ингредиент
+  // топ-тира снаряжения игры.
+  { id: 'craft_cursed_king_blade', nameRu: 'Сковать Клинок Проклятого Короля', nameEn: "Forge the Cursed King's Blade", materials: [{ itemId: 'crown_shard', quantity: 1 }, { itemId: 'dragon_scale', quantity: 2 }, { itemId: 'void_crystal', quantity: 2 }], result: { itemId: 'cursed_king_blade', quantity: 1 }, icon: '👑' },
+  { id: 'craft_crown_armor', nameRu: 'Сковать Броню Короны', nameEn: 'Forge Crown Armor', materials: [{ itemId: 'crown_shard', quantity: 1 }, { itemId: 'iron_ore', quantity: 5 }, { itemId: 'dragon_scale', quantity: 2 }], result: { itemId: 'crown_armor', quantity: 1 }, icon: '👑' },
+  { id: 'craft_crown_fragment', nameRu: 'Огранить Осколок Короны', nameEn: 'Cut the Crown Fragment', materials: [{ itemId: 'crown_shard', quantity: 1 }, { itemId: 'void_crystal', quantity: 2 }], result: { itemId: 'crown_fragment', quantity: 1 }, icon: '👑' },
 ];
 
 // ===== RARITY COLORS =====

@@ -120,6 +120,8 @@ export async function POST(req: NextRequest) {
     // Track deferred DB operations for transaction
     let itemToConsume: { id: string; delete: boolean } | null = null;
     const lootItems: { itemData: typeof ITEMS[0]; quantity: number }[] = [];
+    // Эликсир Мощи и аналоги — устанавливается при использовании, применяется к updateData ниже.
+    let consumableBuffUpdate: { attackBonus: number; fightsLeft: number } | null = null;
 
     // Бонусы экипировки (оружие/броня/аксессуары) — единая точка подсчёта, см. lib/equipment-stats.ts
     const equipBonuses = computeEquipmentBonuses(player.inventory);
@@ -138,7 +140,8 @@ export async function POST(req: NextRequest) {
       primaryStat: player.class.primaryStat,
     };
 
-    const weaponBonus = equipBonuses.attack;
+    // + временный бонус атаки от Эликсира Мощи (elixir_power) — действует пока consumableFightsLeft > 0.
+    const weaponBonus = equipBonuses.attack + (player.consumableFightsLeft > 0 ? player.consumableAttackBonus : 0);
 
     // Пассивки игрока (открытые по уровню) — разобраны эвристически, см. lib/passive-engine.ts.
     const playerPassives: PassiveEffect[] = player.class.abilities
@@ -265,6 +268,9 @@ export async function POST(req: NextRequest) {
           combatLog.push({ text: `Вы использовали ${item.name}. Восстановлено ${healAmount} HP.`, turn: currentTurn });
           const cleanseMsg = tryCleanseCurseOnHeal();
           if (cleanseMsg) combatLog.push({ text: cleanseMsg, turn: currentTurn });
+        } else if (stats.healMp) {
+          playerMp = Math.min(effectiveMaxMp, playerMp + stats.healMp);
+          combatLog.push({ text: `Вы использовали ${item.name}. Восстановлено ${stats.healMp} MP.`, turn: currentTurn });
         } else if (stats.damage) {
           const itemDamage = Math.round(stats.damage * curseMult);
           const { hpDamage, messages } = applyDamageToBoss(enemyTemplate.mechanics, bossState, itemDamage);
@@ -272,6 +278,12 @@ export async function POST(req: NextRequest) {
           const absorbed = itemDamage > 0 && hpDamage === 0;
           combatLog.push({ text: absorbed ? `Вы использовали ${item.name}. Урон поглощён щитом.` : `Вы использовали ${item.name}. Урон: ${hpDamage}`, turn: currentTurn });
           for (const m of messages) combatLog.push({ text: m, turn: currentTurn });
+        } else if (stats.curePoison) {
+          bossState.poisonCured = true;
+          combatLog.push({ text: `Вы использовали ${item.name}. Продолжающийся урон (яд/горение) больше не действует в этом бою.`, turn: currentTurn });
+        } else if (stats.attack && stats.duration) {
+          consumableBuffUpdate = { attackBonus: stats.attack, fightsLeft: stats.duration };
+          combatLog.push({ text: `Вы использовали ${item.name}. Урон усилен на +${stats.attack} на ${stats.duration} боёв.`, turn: currentTurn });
         }
 
         // Defer item consumption for transaction
@@ -570,7 +582,7 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      if (turnResult.dotDamageToPlayer > 0) {
+      if (turnResult.dotDamageToPlayer > 0 && !bossState.poisonCured) {
         const { hpDamage: dotShielded } = applyDamageToPlayerShield(bossState, turnResult.dotDamageToPlayer);
         playerHp = Math.max(0, playerHp - dotShielded);
         combatLog.push({ text: `Вы получаете ${dotShielded} урона от продолжающегося эффекта!`, turn: currentTurn + 1 });
@@ -659,6 +671,21 @@ export async function POST(req: NextRequest) {
       }
     } else {
       updateData.enemyHp = enemyHp;
+    }
+
+    // Эликсир Мощи и аналоги: если использован в этом запросе — записываем новые значения; если бой
+    // при этом заканчивается — сразу списываем один бой (считая и тот, что только что завершился).
+    if (consumableBuffUpdate) {
+      updateData.consumableAttackBonus = consumableBuffUpdate.attackBonus;
+      updateData.consumableFightsLeft = consumableBuffUpdate.fightsLeft;
+    }
+    if (combatOver) {
+      const currentFightsLeft = consumableBuffUpdate ? consumableBuffUpdate.fightsLeft : player.consumableFightsLeft;
+      if (currentFightsLeft > 0) {
+        const remaining = currentFightsLeft - 1;
+        updateData.consumableFightsLeft = remaining;
+        if (remaining <= 0) updateData.consumableAttackBonus = 0;
+      }
     }
 
     // Wrap all DB writes in a transaction

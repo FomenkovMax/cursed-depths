@@ -99,11 +99,18 @@ export function OverviewTab({
 
       {/* Character stats */}
       <Card className="border-border">
-        <CardHeader className="pb-2 pt-3 px-4 flex flex-row items-center justify-between">
+        <CardHeader className="pb-2 pt-3 px-4 flex flex-row items-center justify-between flex-wrap gap-1">
           <CardTitle className="text-sm">Характеристики</CardTitle>
-          {!!player?.statPoints && (
-            <Badge className="text-[10px] h-5 bg-gold/20 text-gold">+{player.statPoints} очков</Badge>
-          )}
+          <div className="flex items-center gap-1.5">
+            {!!player?.consumableFightsLeft && (
+              <Badge className="text-[10px] h-5 bg-uncommon/20 text-uncommon">
+                ⚗️ +{player.consumableAttackBonus} атаки ({player.consumableFightsLeft} {player.consumableFightsLeft === 1 ? 'бой' : 'боёв'})
+              </Badge>
+            )}
+            {!!player?.statPoints && (
+              <Badge className="text-[10px] h-5 bg-gold/20 text-gold">+{player.statPoints} очков</Badge>
+            )}
+          </div>
         </CardHeader>
         <CardContent className="px-4 pb-3">
           <div className="grid grid-cols-3 gap-2">

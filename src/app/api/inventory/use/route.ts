@@ -26,21 +26,41 @@ export async function POST(req: NextRequest) {
     if (item.type !== 'consumable') return NextResponse.json({ error: 'Это не расходуемый предмет' }, { status: 400 });
 
     const stats = item.stats ? JSON.parse(item.stats) : {};
+
+    // Боевые предметы (наносят урон/лечат отравление) вне боя не имеют цели — раньше они тихо
+    // тратились без всякого эффекта с ложным сообщением об успехе. Честно отклоняем каст здесь;
+    // combat/action/route.ts обрабатывает их отдельно через action: 'use_item' во время боя.
+    if (stats.damage || stats.curePoison) {
+      return NextResponse.json({ error: `${item.name} можно использовать только в бою` }, { status: 400 });
+    }
+
     const updateData: Record<string, unknown> = {};
     const bonuses = computeEquipmentBonuses(player.inventory);
+    let applied = false;
 
     if (stats.healHp) {
       updateData.hp = Math.min(player.maxHp + bonuses.hp, player.hp + stats.healHp);
+      applied = true;
     }
     if (stats.healMp) {
       updateData.mp = Math.min(player.maxMp + bonuses.mp, player.mp + stats.healMp);
+      applied = true;
+    }
+    if (stats.attack && stats.duration) {
+      // Эликсир Мощи и аналоги: временный бонус к атаке на N будущих боёв (не складывается —
+      // повторное использование просто обновляет счётчик боёв до заявленного значения).
+      updateData.consumableAttackBonus = stats.attack;
+      updateData.consumableFightsLeft = stats.duration;
+      applied = true;
+    }
+
+    if (!applied) {
+      return NextResponse.json({ error: `${item.name} не имеет эффекта вне боя` }, { status: 400 });
     }
 
     // Wrap HP/MP restoration + item consumption in a transaction
     await db.$transaction(async (tx) => {
-      if (Object.keys(updateData).length > 0) {
-        await tx.player.update({ where: { telegramId }, data: updateData });
-      }
+      await tx.player.update({ where: { telegramId }, data: updateData });
 
       // Remove or reduce item
       if (item.quantity > 1) {

@@ -110,7 +110,7 @@ export interface CombatLogEntry {
 }
 
 export type GameScreen = 'loading' | 'creation' | 'game';
-export type GameTab = 'overview' | 'combat' | 'map' | 'inventory' | 'quests' | 'craft';
+export type GameTab = 'overview' | 'combat' | 'map' | 'inventory' | 'quests' | 'craft' | 'leaderboard';
 
 export type GameMessage = { text: string; type: 'info' | 'success' | 'error' } | null;
 

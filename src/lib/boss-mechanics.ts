@@ -123,8 +123,8 @@ export interface BossFightState {
   vulnerableNextTurn: boolean;
 
   // ===== Общие для любого боя поля (не боссовые механики) — см. lib/combat-effects.ts =====
-  /** Активные баффы/дебаффы от способностей игрока и контр-ДоТы от пассивок, тикающие по ходам. */
-  activeEffects: { kind: 'player_damage_buff' | 'enemy_damage_debuff' | 'enemy_dot'; percent: number; turnsRemaining: number }[];
+  /** Активные баффы/дебаффы от способностей игрока, контр-ДоТы от пассивок и "активированные" стойки (контрудар после блока, усиление дебаффов), тикающие по ходам. */
+  activeEffects: { kind: 'player_damage_buff' | 'enemy_damage_debuff' | 'enemy_dot' | 'on_block_counter_active' | 'debuff_amplify'; percent: number; turnsRemaining: number }[];
   /** Щит игрока от способностей — поглощает входящий урон раньше ХП. */
   playerShieldHp: number;
   /** Счётчик результативных атак/способностей игрока за бой — для пассивок "каждый N-й удар". */
@@ -135,6 +135,8 @@ export interface BossFightState {
   deathSaveUsed: boolean;
   /** "Заряженные" одноразовые эффекты активных способностей — см. combat-effects.ts ArmedEffectKind. */
   armedEffects: { kind: 'reduce_next_incoming' | 'boost_next_outgoing' | 'next_attack_crit' | 'next_attack_lifesteal' | 'next_attack_ignore_defense'; percent: number }[];
+  /** Кулдауны активных способностей с явным "КД N ходов" — slug способности → ходов до готовности. */
+  abilityCooldowns: Record<string, number>;
 }
 
 export function initBossState(mechanics: BossMechanics | undefined): BossFightState {
@@ -157,6 +159,7 @@ export function initBossState(mechanics: BossMechanics | undefined): BossFightSt
     playerHitsTakenCount: 0,
     deathSaveUsed: false,
     armedEffects: [],
+    abilityCooldowns: {},
   };
 }
 

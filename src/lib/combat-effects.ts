@@ -14,7 +14,7 @@
 
 import type { BossFightState } from './boss-mechanics';
 
-type ActiveEffectKind = 'player_damage_buff' | 'enemy_damage_debuff' | 'enemy_dot';
+type ActiveEffectKind = 'player_damage_buff' | 'enemy_damage_debuff' | 'enemy_dot' | 'on_block_counter_active' | 'debuff_amplify';
 
 /**
  * "Заряженные" одноразовые эффекты от способностей вроде "Снижает урон
@@ -70,6 +70,18 @@ export function tickActiveEffects(state: BossFightState): void {
   state.activeEffects = state.activeEffects
     .map(e => ({ ...e, turnsRemaining: e.turnsRemaining - 1 }))
     .filter(e => e.turnsRemaining > 0);
+}
+
+/**
+ * Кулдауны активных способностей с явным "КД N ходов" в тексте — slug способности → сколько ходов
+ * игрока осталось до готовности. Уменьшается на 1 раз в ход врага, вместе с tickActiveEffects.
+ */
+export function tickCooldowns(state: BossFightState): void {
+  for (const slug of Object.keys(state.abilityCooldowns)) {
+    const remaining = state.abilityCooldowns[slug] - 1;
+    if (remaining <= 0) delete state.abilityCooldowns[slug];
+    else state.abilityCooldowns[slug] = remaining;
+  }
 }
 
 /**

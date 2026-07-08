@@ -8,6 +8,22 @@ import { manaCostForStage } from '@/lib/combat-engine';
 import type { BossFightState } from '@/lib/boss-mechanics';
 import { PlayerData, AbilityData, CombatLogEntry, parseStats } from '@/lib/game-types';
 
+const ACTIVE_EFFECT_LABELS: Record<string, string> = {
+  player_damage_buff: 'Урон усилен',
+  enemy_damage_debuff: 'Враг ослаблен',
+  enemy_dot: 'Враг горит',
+  on_block_counter_active: 'Контрудар после блока',
+  debuff_amplify: 'Дебаффы усилены',
+};
+
+const ARMED_EFFECT_LABELS: Record<string, string> = {
+  reduce_next_incoming: 'Снижает след. удар',
+  boost_next_outgoing: 'След. атака изменена',
+  next_attack_crit: 'След. атака — крит',
+  next_attack_lifesteal: 'След. атака лечит',
+  next_attack_ignore_defense: 'След. атака игнорирует броню',
+};
+
 interface CombatTabProps {
   player: PlayerData | null;
   enemy: typeof ENEMIES[0] | null;
@@ -33,8 +49,11 @@ export function CombatTab({
 }: CombatTabProps) {
   const playerInventory = player?.inventory || [];
 
+  // bossState — общий стейт ЛЮБОГО боя (не только боссового, несмотря на название, см.
+  // lib/boss-mechanics.ts), поэтому парсим его всегда, когда он есть, а не только для боссов —
+  // иначе баффы/дебаффы/щит/кулдауны/заряды для обычных врагов нигде бы не отображались.
   let bossState: BossFightState | null = null;
-  if (enemy?.mechanics && player?.bossState) {
+  if (player?.bossState) {
     try { bossState = JSON.parse(player.bossState); } catch { bossState = null; }
   }
 
@@ -103,6 +122,31 @@ export function CombatTab({
               )}
             </CardContent>
           </Card>
+
+          {/* Player active effects: щит, баффы/дебаффы, активированные стойки, заряженные эффекты */}
+          {bossState && (bossState.playerShieldHp > 0 || bossState.activeEffects.length > 0 || bossState.armedEffects.length > 0) && (
+            <Card className="border-border">
+              <CardContent className="p-3">
+                <div className="flex flex-wrap gap-1.5">
+                  {bossState.playerShieldHp > 0 && (
+                    <Badge className="text-[10px] h-5 bg-primary/20 text-primary">
+                      🛡️ Щит: {bossState.playerShieldHp} ХП
+                    </Badge>
+                  )}
+                  {bossState.activeEffects.map((e, i) => (
+                    <Badge key={`ae-${i}`} variant="outline" className="text-[10px] h-5 border-border">
+                      {ACTIVE_EFFECT_LABELS[e.kind] ?? e.kind} {Math.round(e.percent * 100)}% ({e.turnsRemaining} х.)
+                    </Badge>
+                  ))}
+                  {bossState.armedEffects.map((e, i) => (
+                    <Badge key={`arm-${i}`} variant="outline" className="text-[10px] h-5 border-gold/50 text-gold">
+                      ⚡ {ARMED_EFFECT_LABELS[e.kind] ?? e.kind}
+                    </Badge>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Combat log */}
           <Card className="border-border">
@@ -190,7 +234,8 @@ export function CombatTab({
                     <div className="grid grid-cols-2 gap-1.5">
                       {availableAbilities.map((ability: AbilityData) => {
                         const manaCost = manaCostForStage(ability.stage);
-                        const canUse = !loading && player.inCombat && player.mp >= manaCost;
+                        const cooldown = bossState?.abilityCooldowns?.[ability.slug] ?? 0;
+                        const canUse = !loading && player.inCombat && player.mp >= manaCost && cooldown <= 0;
                         return (
                           <Button
                             key={ability.id}
@@ -202,7 +247,9 @@ export function CombatTab({
                           >
                             <div className="text-left">
                               <div className="font-medium">{ability.icon} {ability.name}</div>
-                              <div className="text-[10px] text-muted-foreground">{manaCost} маны</div>
+                              <div className="text-[10px] text-muted-foreground">
+                                {cooldown > 0 ? `КД: ${cooldown} х.` : `${manaCost} маны`}
+                              </div>
                             </div>
                           </Button>
                         );

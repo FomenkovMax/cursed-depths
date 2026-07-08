@@ -131,8 +131,10 @@ export interface BossFightState {
   playerAttackCount: number;
   /** Счётчик полученных игроком ударов за бой — для пассивок "каждый N-й полученный удар". */
   playerHitsTakenCount: number;
-  /** Одноразовое воскрешение за бой (Феникс и аналоги) уже использовано. */
+  /** Одноразовое воскрешение за бой (Феникс, "Последняя воля" и аналоги) уже использовано. */
   deathSaveUsed: boolean;
+  /** "Заряженные" одноразовые эффекты активных способностей — см. combat-effects.ts ArmedEffectKind. */
+  armedEffects: { kind: 'reduce_next_incoming' | 'boost_next_outgoing' | 'next_attack_crit' | 'next_attack_lifesteal' | 'next_attack_ignore_defense'; percent: number }[];
 }
 
 export function initBossState(mechanics: BossMechanics | undefined): BossFightState {
@@ -154,6 +156,7 @@ export function initBossState(mechanics: BossMechanics | undefined): BossFightSt
     playerAttackCount: 0,
     playerHitsTakenCount: 0,
     deathSaveUsed: false,
+    armedEffects: [],
   };
 }
 

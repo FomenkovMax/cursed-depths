@@ -1,5 +1,6 @@
 /**
- * Многоходовые баффы/дебаффы/щиты от активных способностей игрока.
+ * Многоходовые баффы/дебаффы/щиты от активных способностей игрока, и
+ * "заряженные" одноразовые эффекты (см. ArmedEffectKind ниже).
  *
  * Раньше "бафф"-способность превращалась в разовый усиленный удар в тот же
  * ход, "дебафф" ослаблял только ответный удар врага в том же раунде, а
@@ -14,6 +15,42 @@
 import type { BossFightState } from './boss-mechanics';
 
 type ActiveEffectKind = 'player_damage_buff' | 'enemy_damage_debuff' | 'enemy_dot';
+
+/**
+ * "Заряженные" одноразовые эффекты от способностей вроде "Снижает урон
+ * следующего удара врага на 40%" — в отличие от ActiveEffectKind выше, не
+ * тикают по ходам, а ждут ОДНОГО relevant события (следующий входящий удар
+ * врага или следующая атака/способность игрока) и снимаются им, сколько бы
+ * ходов оно ни заняло. См. lib/conditional-ability-engine.ts.
+ */
+export type ArmedEffectKind =
+  | 'reduce_next_incoming'
+  | 'boost_next_outgoing'
+  | 'next_attack_crit'
+  | 'next_attack_lifesteal'
+  | 'next_attack_ignore_defense';
+
+/** Ставит один "заряженный" одноразовый эффект — ждёт следующего relevant события. */
+export function armEffect(state: BossFightState, kind: ArmedEffectKind, percent: number): void {
+  state.armedEffects.push({ kind, percent });
+}
+
+export function hasArmedEffect(state: BossFightState, kind: ArmedEffectKind): boolean {
+  return state.armedEffects.some(e => e.kind === kind);
+}
+
+/** Сумма заряженных эффектов данного вида БЕЗ снятия — для случаев, когда нужно знать величину заранее, до того как известно, будет ли событие потреблено (см. combat/action/route.ts, ветка ability). */
+export function peekArmedEffectPercent(state: BossFightState, kind: ArmedEffectKind): number {
+  return state.armedEffects.filter(e => e.kind === kind).reduce((sum, e) => sum + e.percent, 0);
+}
+
+/** Снимает и возвращает ВСЕ заряженные эффекты данного вида (обычно 0 или 1, но на случай нескольких — складываются). */
+export function consumeArmedEffects(state: BossFightState, kind: ArmedEffectKind): { count: number; percent: number } {
+  const matching = state.armedEffects.filter(e => e.kind === kind);
+  if (matching.length === 0) return { count: 0, percent: 0 };
+  state.armedEffects = state.armedEffects.filter(e => e.kind !== kind);
+  return { count: matching.length, percent: matching.reduce((sum, e) => sum + e.percent, 0) };
+}
 
 /** Добавляет новый бафф/дебафф в список активных эффектов боя. */
 export function addActiveEffect(state: BossFightState, kind: ActiveEffectKind, percent: number, turns: number): void {

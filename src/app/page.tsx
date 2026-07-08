@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { LOCATIONS, ENEMIES, CRAFTING_RECIPES } from '@/lib/game-data';
 import { stageUnlockLevel } from '@/lib/combat-engine';
+import { parseDeathWard } from '@/lib/conditional-ability-engine';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   PlayerData,
@@ -496,7 +497,9 @@ export default function CursedDepths() {
   const getAvailableAbilities = () => {
     if (!player) return [];
     return (player.class.abilities ?? []).filter(
-      a => a.type === 'active' && player.level >= stageUnlockLevel(a.stage)
+      // Обереги от смерти (Последняя воля, Несокрушимый и т.п.) срабатывают сами при смертельном
+      // ударе — их нельзя скастовать вручную, см. lib/conditional-ability-engine.ts.
+      a => a.type === 'active' && player.level >= stageUnlockLevel(a.stage) && parseDeathWard(a.description) === null
     );
   };
 

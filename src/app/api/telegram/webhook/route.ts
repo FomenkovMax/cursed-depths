@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
       };
 
       const welcomeText = text === '/start'
-        ? `⚔️ Добро пожаловать в **Cursed Depths**!\n\n Dungeon crawler по правилам D&D 5e.\n\n🗡️ 9 рас • ⚔️ 5 классов • 🏰 9 локаций\n🐲 23 монстра • 📦 38+ предметов\n\nНажмите кнопку ниже, чтобы начать!`
+        ? `⚔️ Добро пожаловать в **Cursed Depths**!\n\n Dungeon crawler по правилам D&D 5e.\n\n🗡️ 6 рас • ⚔️ 26 классов • 🏰 37 локаций\n🐲 97 монстров • 📦 54 предмета\n\nНажмите кнопку ниже, чтобы начать!`
         : `🎮 Откройте Cursed Depths для игры!`;
 
       await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {

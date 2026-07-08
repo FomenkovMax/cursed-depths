@@ -11,6 +11,7 @@ import {
   manaCostForStage,
   stageUnlockLevel,
   resolveAbility,
+  EFFECT_DURATION_TURNS,
   type PlayerCombatStats,
 } from '@/lib/combat-engine';
 import {
@@ -22,9 +23,17 @@ import {
   playerDamageMultiplier,
   type BossFightState,
 } from '@/lib/boss-mechanics';
-import { addActiveEffect, activeEffectBonus, tickActiveEffects, applyDamageToPlayerShield, armEffect, consumeArmedEffects, peekArmedEffectPercent } from '@/lib/combat-effects';
+import { addActiveEffect, activeEffectBonus, tickActiveEffects, tickCooldowns, applyDamageToPlayerShield, armEffect, consumeArmedEffects, peekArmedEffectPercent } from '@/lib/combat-effects';
 import { parsePassiveEffect, type PassiveEffect } from '@/lib/passive-engine';
-import { parseDeathWard, parseArmedEffects, type DeathWardEffect } from '@/lib/conditional-ability-engine';
+import {
+  parseDeathWard,
+  parseArmedEffects,
+  parseImmediateSelfBuff,
+  parseExecute,
+  parseActivatedOnBlockCounter,
+  parseDebuffAmplify,
+  type DeathWardEffect,
+} from '@/lib/conditional-ability-engine';
 import {
   PASSIVE_CRIT_MULTIPLIER,
   hpThresholdBonuses,
@@ -146,12 +155,12 @@ export async function POST(req: NextRequest) {
      * пассивок + снимает "заряженные" одноразовые эффекты (см. lib/conditional-ability-engine.ts),
      * ждавшие следующей результативной атаки/способности игрока.
      */
-    function applyPassiveOffenseBonuses(): { mult: number; messages: string[]; lifestealPercent: number; ignoreDefensePercent: number } {
+    function applyPassiveOffenseBonuses(forceCrit = false): { mult: number; messages: string[]; lifestealPercent: number; ignoreDefensePercent: number } {
       bossState.playerAttackCount += 1;
       const critN = critEveryNHits(playerPassives);
       const firstAttackCrit = bossState.playerAttackCount === 1 && hasFirstAttackCrit(playerPassives);
       const armedCrit = consumeArmedEffects(bossState, 'next_attack_crit').count > 0;
-      const isCrit = firstAttackCrit || armedCrit || (critN !== null && bossState.playerAttackCount % critN === 0);
+      const isCrit = forceCrit || firstAttackCrit || armedCrit || (critN !== null && bossState.playerAttackCount % critN === 0);
       let intervalBonus = 0;
       for (const iv of turnIntervalEmpowered(playerPassives)) {
         if (bossState.playerAttackCount % iv.everyTurns === 0) intervalBonus += iv.damageMultBonus;
@@ -282,9 +291,16 @@ export async function POST(req: NextRequest) {
         // "Обереги от смерти" (Последняя воля, Несокрушимый и т.п.) срабатывают САМИ при смертельном
         // ударе — их нельзя скастовать вручную, см. lib/conditional-ability-engine.ts.
         combatLog.push({ text: 'Эта способность срабатывает автоматически при смертельном ударе — использовать её вручную нельзя.', turn: currentTurn });
+      } else if ((bossState.abilityCooldowns[ability.slug] ?? 0) > 0) {
+        combatLog.push({ text: `${ability.icon} ${ability.name} ещё перезаряжается: осталось ${bossState.abilityCooldowns[ability.slug]} х.`, turn: currentTurn });
       } else {
         const manaCost = manaCostForStage(ability.stage);
         const armedSpecs = parseArmedEffects(ability.description);
+        const onBlockCounterSpec = parseActivatedOnBlockCounter(ability.description);
+        const debuffAmplifySpec = parseDebuffAmplify(ability.description);
+        const executeSpec = parseExecute(ability.description);
+        const immediateSelfBuff = parseImmediateSelfBuff(ability.description);
+
         if (playerMp < manaCost) {
           combatLog.push({ text: `Нужно ${manaCost} маны!`, turn: currentTurn });
         } else if (armedSpecs.length > 0) {
@@ -293,20 +309,41 @@ export async function POST(req: NextRequest) {
           playerMp -= manaCost;
           for (const spec of armedSpecs) armEffect(bossState, spec.kind, spec.percent);
           combatLog.push({ text: `${ability.icon} ${ability.name}! Способность заряжена и сработает при следующем ударе.`, turn: currentTurn });
+        } else if (onBlockCounterSpec) {
+          // "После блокировки/блока наносит контрудар" — активированная на несколько ходов стойка,
+          // в отличие от одноимённых ПАССИВОК (tornak-foundation/bone-spike), которые всегда включены.
+          playerMp -= manaCost;
+          addActiveEffect(bossState, 'on_block_counter_active', onBlockCounterSpec.percent, EFFECT_DURATION_TURNS);
+          combatLog.push({ text: `${ability.icon} ${ability.name}! Контрудар после блока активирован на ${EFFECT_DURATION_TURNS} х.`, turn: currentTurn });
+        } else if (debuffAmplifySpec) {
+          // "Все последующие дебаффы сильнее" — активированный на несколько ходов усилитель дебаффов.
+          playerMp -= manaCost;
+          addActiveEffect(bossState, 'debuff_amplify', debuffAmplifySpec.percent, EFFECT_DURATION_TURNS);
+          combatLog.push({ text: `${ability.icon} ${ability.name}! Последующие дебаффы усилены на ${Math.round(debuffAmplifySpec.percent * 100)}% на ${EFFECT_DURATION_TURNS} х.`, turn: currentTurn });
+        } else if (executeSpec && !enemyTemplate.isBoss && enemyMaxHp > 0 && enemyHp / enemyMaxHp < executeSpec.thresholdPercent) {
+          // "Мгновенная казнь" — PvE-порог, боссов сама способность не касается (см. её описание).
+          playerMp -= manaCost;
+          enemyHp = 0;
+          combatLog.push({ text: `${ability.icon} ${ability.name}! Мгновенная казнь!`, turn: currentTurn });
         } else {
           playerMp -= manaCost;
+          if (immediateSelfBuff && immediateSelfBuff.cooldownTurns > 0) {
+            bossState.abilityCooldowns[ability.slug] = immediateSelfBuff.cooldownTurns;
+          }
           // "Следующая атака игнорирует N% брони" может относиться и к способности, не только к
           // обычной атаке — подсматриваем заранее (не снимая), чтобы передать скорректированный AC;
           // реально снимается ниже в applyPassiveOffenseBonuses(), только если способность и правда
-          // нанесла урон (иначе заряд не тратится впустую на лечение/щит/бафф/дебафф).
-          const pendingIgnoreDefense = peekArmedEffectPercent(bossState, 'next_attack_ignore_defense');
+          // нанесла урон (иначе заряд не тратится впустую на лечение/щит/бафф/дебафф). "Мгновенный
+          // самобафф" (immediateSelfBuff, напр. piercing-blow) относится к ЭТОМУ касту — складывается
+          // с заряженным эффектом от предыдущего каста, если оба почему-то активны одновременно.
+          const pendingIgnoreDefense = Math.min(0.9, peekArmedEffectPercent(bossState, 'next_attack_ignore_defense') + (immediateSelfBuff?.ignoreDefensePercent ?? 0));
           const abilityAc = pendingIgnoreDefense > 0 ? Math.max(1, Math.round(effectiveAc * (1 - pendingIgnoreDefense))) : effectiveAc;
           const resolution = resolveAbility(ability.description, combatStats, abilityAc);
 
           let damageAbsorbed = false;
           if (resolution.damage > 0) {
             const resist = adaptiveResistMultiplier(enemyTemplate.mechanics, bossState, 'ability');
-            const { mult: offenseMult, messages: offenseMsgs, lifestealPercent } = applyPassiveOffenseBonuses();
+            const { mult: offenseMult, messages: offenseMsgs, lifestealPercent } = applyPassiveOffenseBonuses(immediateSelfBuff?.guaranteedCrit ?? false);
             const abilityDamage = Math.round(resolution.damage * curseMult * resist * passiveDamageMult * offenseMult);
             const { hpDamage, messages } = applyDamageToBoss(enemyTemplate.mechanics, bossState, abilityDamage);
             enemyHp = Math.max(0, enemyHp - hpDamage);
@@ -332,7 +369,11 @@ export async function POST(req: NextRequest) {
             bossState.playerShieldHp += resolution.shield;
           }
           if (resolution.enemyDamageReduction > 0 && resolution.effectTurns > 0) {
-            addActiveEffect(bossState, 'enemy_damage_debuff', resolution.enemyDamageReduction, resolution.effectTurns);
+            // "Гниющий знак" и аналоги — активированный усилитель последующих дебаффов (см. выше).
+            const debuffAmp = activeEffectBonus(bossState, 'debuff_amplify');
+            const amplifiedReduction = debuffAmp > 0 ? Math.min(0.9, resolution.enemyDamageReduction * (1 + debuffAmp)) : resolution.enemyDamageReduction;
+            addActiveEffect(bossState, 'enemy_damage_debuff', amplifiedReduction, resolution.effectTurns);
+            resolution.enemyDamageReduction = amplifiedReduction;
           }
           if (resolution.playerDamageBonus > 0 && resolution.effectTurns > 0) {
             addActiveEffect(bossState, 'player_damage_buff', resolution.playerDamageBonus, resolution.effectTurns);
@@ -512,7 +553,9 @@ export async function POST(req: NextRequest) {
                 playerHp = Math.min(effectiveMaxHp, playerHp + healAmount);
                 combatLog.push({ text: `Блокирование восстанавливает вам ${healAmount} ХП!`, turn: currentTurn + 1 });
               }
-              const blockCounterPercent = onBlockCounterPercent(playerPassives);
+              // Пассивный контрудар после блока (tornak-foundation, bone-spike) + активированный кастом
+              // (retaliation-hammer, counter-blow, см. lib/conditional-ability-engine.ts) складываются.
+              const blockCounterPercent = onBlockCounterPercent(playerPassives) + activeEffectBonus(bossState, 'on_block_counter_active');
               if (blockCounterPercent > 0) {
                 const counterDmg = Math.round(incomingDamage * blockCounterPercent);
                 if (counterDmg > 0) {
@@ -536,6 +579,7 @@ export async function POST(req: NextRequest) {
       for (const m of turnResult.messages) combatLog.push({ text: m, turn: currentTurn + 1 });
 
       tickActiveEffects(bossState);
+      tickCooldowns(bossState);
     }
 
     // Mana regen each round (Фаза 1.3: +10 маны за ход)

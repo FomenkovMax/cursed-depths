@@ -22,6 +22,7 @@ import { MapTab } from '@/components/game/MapTab';
 import { InventoryTab } from '@/components/game/InventoryTab';
 import { QuestsTab } from '@/components/game/QuestsTab';
 import { CraftTab } from '@/components/game/CraftTab';
+import { LeaderboardTab, type LeaderboardEntry } from '@/components/game/LeaderboardTab';
 
 // ===== MAIN COMPONENT =====
 export default function CursedDepths() {
@@ -35,6 +36,8 @@ export default function CursedDepths() {
   const [shaking, setShaking] = useState(false);
   const [levelUpAnimation, setLevelUpAnimation] = useState(false);
   const [floatingDamage, setFloatingDamage] = useState<{ id: number; text: string; color: string }[]>([]);
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
+  const [leaderboardLoading, setLeaderboardLoading] = useState(false);
 
   // Character creation state
   const [creationStep, setCreationStep] = useState(0);
@@ -213,6 +216,17 @@ export default function CursedDepths() {
     }
     return data;
   }, []);
+
+  // ===== LEADERBOARD =====
+  useEffect(() => {
+    if (tab !== 'leaderboard') return;
+    setLeaderboardLoading(true);
+    fetch('/api/leaderboard')
+      .then(res => res.json())
+      .then(data => setLeaderboard(data.leaderboard || []))
+      .catch(() => setMessage({ text: 'Не удалось загрузить таблицу лидеров', type: 'error' }))
+      .finally(() => setLeaderboardLoading(false));
+  }, [tab]);
 
   // ===== FLOATING DAMAGE HELPER =====
   const addFloatingDamage = useCallback((text: string, color: string) => {
@@ -599,7 +613,7 @@ export default function CursedDepths() {
       {/* Main content */}
       <main className="flex-1 overflow-hidden">
         <Tabs value={tab} onValueChange={v => setTab(v as GameTab)} className="h-full flex flex-col">
-          <TabsList className="grid w-full grid-cols-6 bg-card rounded-none border-b border-border h-10 p-0">
+          <TabsList className="grid w-full grid-cols-7 bg-card rounded-none border-b border-border h-10 p-0">
             <TabsTrigger value="overview" className="text-xs py-2 data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
               🏠
             </TabsTrigger>
@@ -620,6 +634,9 @@ export default function CursedDepths() {
             </TabsTrigger>
             <TabsTrigger value="craft" className="text-xs py-2 data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
               ⚒️
+            </TabsTrigger>
+            <TabsTrigger value="leaderboard" className="text-xs py-2 data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
+              🏆
             </TabsTrigger>
           </TabsList>
 
@@ -655,6 +672,8 @@ export default function CursedDepths() {
           <QuestsTab player={player} loading={loading} onClaimQuest={handleClaimQuest} />
 
           <CraftTab player={player} loading={loading} hasMaterials={hasMaterials} onCraft={handleCraft} />
+
+          <LeaderboardTab player={player} leaderboard={leaderboard} loading={leaderboardLoading} />
         </Tabs>
       </main>
 

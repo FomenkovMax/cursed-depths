@@ -1,10 +1,28 @@
 import { PlayerData } from '@/lib/game-types';
 import { computeEquipmentBonuses } from '@/lib/equipment-stats';
+import { stageUnlockLevel } from '@/lib/combat-engine';
 
 interface GameHeaderProps {
   player: PlayerData | null;
   locationIcon: string | undefined;
   locationName: string | undefined;
+}
+
+/**
+ * Лорное название текущего открытого тира эволюции класса (напр. "Страж Предела") — stageName
+ * заполнен в БД для каждой способности, но нигде не отображался игроку. Для стадии 1 stageName
+ * всегда совпадает с названием класса (см. seed-data.ts), поэтому её не показываем отдельно —
+ * только реальную эволюцию (стадия 2+).
+ */
+function getEvolvedStageName(player: PlayerData): string | null {
+  const abilities = player.class.abilities || [];
+  let best: { stage: number; stageName: string } | null = null;
+  for (const a of abilities) {
+    if (a.stage > 1 && player.level >= stageUnlockLevel(a.stage) && (!best || a.stage > best.stage)) {
+      best = { stage: a.stage, stageName: a.stageName };
+    }
+  }
+  return best?.stageName ?? null;
 }
 
 export function GameHeader({ player, locationIcon, locationName }: GameHeaderProps) {
@@ -13,7 +31,8 @@ export function GameHeader({ player, locationIcon, locationName }: GameHeaderPro
   const effectiveMaxMp = (player?.maxMp || 0) + gearBonuses.mp;
   const hpPercent = player ? Math.max(0, (player.hp / effectiveMaxHp) * 100) : 0;
   const mpPercent = player ? Math.max(0, (player.mp / effectiveMaxMp) * 100) : 0;
-  const xpPercent = player ? Math.max(0, (player.xp / player.xpToNext) * 100) : 0;
+  const xpPercent = player ? Math.min(100, Math.max(0, (player.xp / player.xpToNext) * 100)) : 0;
+  const evolvedStageName = player ? getEvolvedStageName(player) : null;
 
   return (
     <header className="sticky top-0 z-50 bg-card/95 backdrop-blur-sm border-b border-border px-4 py-2">
@@ -24,6 +43,7 @@ export function GameHeader({ player, locationIcon, locationName }: GameHeaderPro
             <div className="font-bold text-sm text-foreground leading-tight">{player?.name}</div>
             <div className="text-[10px] text-muted-foreground">
               Ур. {player?.level} {player?.race?.name} {player?.class?.name}
+              {evolvedStageName && <span className="text-gold"> «{evolvedStageName}»</span>}
             </div>
           </div>
         </div>

@@ -137,6 +137,8 @@ export interface BossFightState {
   armedEffects: { kind: 'reduce_next_incoming' | 'boost_next_outgoing' | 'next_attack_crit' | 'next_attack_lifesteal' | 'next_attack_ignore_defense'; percent: number }[];
   /** Кулдауны активных способностей с явным "КД N ходов" — slug способности → ходов до готовности. */
   abilityCooldowns: Record<string, number>;
+  /** Противоядие использовано в этом бою — ДоТ-урон (яд/горение) больше не применяется до конца боя. */
+  poisonCured: boolean;
 }
 
 export function initBossState(mechanics: BossMechanics | undefined): BossFightState {
@@ -160,6 +162,7 @@ export function initBossState(mechanics: BossMechanics | undefined): BossFightSt
     deathSaveUsed: false,
     armedEffects: [],
     abilityCooldowns: {},
+    poisonCured: false,
   };
 }
 

@@ -72,6 +72,8 @@ export interface PlayerData {
   combatLog: string | null;
   bossState: string | null;
   lastDailyReward: string | null;
+  consumableAttackBonus: number;
+  consumableFightsLeft: number;
   inventory: InventoryItem[];
   quests: QuestData[];
 }

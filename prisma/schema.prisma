@@ -38,6 +38,8 @@ model Player {
   combatLog       String?   // JSON string
   bossState       String?   // JSON string — фазы/щит/ДоТ/призывы текущего боя с боссом (см. lib/boss-mechanics.ts)
   lastDailyReward String?   // ISO date string
+  consumableAttackBonus  Int @default(0) // временный бонус к атаке от Эликсира Мощи (elixir_power)
+  consumableFightsLeft   Int @default(0) // на сколько ещё боёв действует consumableAttackBonus
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 

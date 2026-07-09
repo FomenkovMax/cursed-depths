@@ -21,7 +21,7 @@
  * combat/action/route.ts.
  */
 
-export type EffectKind = 'damage' | 'heal' | 'shield' | 'debuff' | 'buff' | 'armor' | 'utility';
+export type EffectKind = 'damage' | 'heal' | 'shield' | 'debuff' | 'buff' | 'armor' | 'speed' | 'utility';
 
 export interface PlayerCombatStats {
   strength: number;
@@ -97,14 +97,34 @@ export function extractBossOverridePercent(bossNote: string | null | undefined):
   return match ? parseInt(match[1], 10) / 100 : null;
 }
 
+/**
+ * "как исцеление(себе)" / "исцеление себя на N% от урона" — лайфстил-побочка атаки/дебаффа,
+ * не самостоятельный хил. "исцеление снижается/блокируется" — дебафф на ЧУЖОЕ исцеление,
+ * тоже не свой хил. Без этого guard'а heal-проверка ниже (единственная СТРОГО ПЕРВАЯ
+ * проверка) перехватывала такие способности раньше debuff/damage — напр. frost-bite
+ * ("Атака, снижающая скорость врага... и крадущая 5% ХП как исцеление себе") превращалась
+ * ЦЕЛИКОМ в чистый heal без единого урона врагу; the-plague (яд + "исцеление снижается
+ * на 50%") — в heal вместо яда.
+ */
+function isLifestealOrEnemyHealDebuff(description: string): boolean {
+  return /как исцел/i.test(description)
+    || /исцелени[ея]\s+(себя\s+)?на\s*\d+\s*%\s*от\s*урона/i.test(description)
+    || /исцелени[ея]\s+(снижа|блокир|запрещ)/i.test(description);
+}
+
 /** Грубая классификация эффекта способности по ключевым словам описания. */
 export function classifyEffect(description: string): EffectKind {
-  if (/восстанавлив|исцел|реген/i.test(description)) return 'heal';
+  if (/восстанавлив|исцел|реген/i.test(description) && !isLifestealOrEnemyHealDebuff(description)) return 'heal';
   // Негативный lookbehind на "за" — иначе "снижает ЗАЩИТу врага" ложно матчился бы
   // по "щит" внутри "защиту" и способность превращалась в щит ИГРОКУ вместо
   // дебаффа на врага (напр. battle-roar).
   if (/(?<!за)щит|поглощ/i.test(description)) return 'shield';
-  if (/снижа|блокир|замедл|обездвиж|\bяд\b|дебафф|молчани|заглуш/i.test(description)) return 'debuff';
+  if (/снижа|блокир|замедл|обездвиж|\bяд\b|дебафф|молчани|заглуш|характеристик/i.test(description)) return 'debuff';
+  // "+N% к скорости" на несколько ходов без урона рядом — единственная способность, где
+  // "скорость" не сопровождает уже работающий урон/броню/дебафф (см. lib/combat-effects.ts
+  // player_dodge_buff) — трактуем как бафф уклонения, а не как generic buff-паттерн ниже
+  // (иначе "+20% к скорости" ложно читалось бы как +20% к УРОНУ игрока, напр. the-onslaught).
+  if (/\+\d+%\s*(к\s*)?скорост/i.test(description) && !/урон/i.test(description)) return 'speed';
   // "+N% к урону"/"усиливает урон" с длительностью ("на N ход") — бафф урона на
   // несколько ходов, а не разовая атака. Без этой проверки жадный /урон/i ниже
   // ловил бы такие способности (напр. "+25% к урону на 2 хода") как обычный урон.
@@ -134,6 +154,8 @@ export interface AbilityResolution {
   enemyDamageReduction: number;
   /** Насколько усилен урон игрока (доля 0-1) на buffTurns ходов, если kind === 'buff'. */
   playerDamageBonus: number;
+  /** Насколько усилен шанс уклонения игрока (доля 0-1) на effectTurns ходов, если kind === 'speed'. */
+  dodgeBonus: number;
   /** Сколько ходов действует бафф/дебафф (0, если способность не создаёт длящийся эффект). */
   effectTurns: number;
 }
@@ -163,7 +185,7 @@ export function resolveAbility(
   const effectivePercent = bossOverride ?? percent;
 
   const result: AbilityResolution = {
-    kind, damage: 0, heal: 0, shield: 0, enemyDamageReduction: 0, playerDamageBonus: 0, effectTurns: 0,
+    kind, damage: 0, heal: 0, shield: 0, enemyDamageReduction: 0, playerDamageBonus: 0, dodgeBonus: 0, effectTurns: 0,
   };
 
   switch (kind) {
@@ -197,6 +219,13 @@ export function resolveAbility(
       // Защитная стойка: снижает входящий урон врага, как дебафф, но без
       // сопутствующего "разового" урона от атаки — это не атака, а стойка.
       result.enemyDamageReduction = Math.min(0.75, effectivePercent);
+      result.effectTurns = EFFECT_DURATION_TURNS;
+      break;
+    case 'speed':
+      // "скорость" не имеет буквального смысла в строго чередующемся 1v1-бою (нет
+      // очередности хода, которую можно было бы менять) — трактуем как шанс уклониться
+      // от следующих ударов врага (см. lib/combat-effects.ts player_dodge_buff).
+      result.dodgeBonus = Math.min(0.5, effectivePercent);
       result.effectTurns = EFFECT_DURATION_TURNS;
       break;
     default:

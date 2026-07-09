@@ -124,7 +124,7 @@ export interface BossFightState {
 
   // ===== Общие для любого боя поля (не боссовые механики) — см. lib/combat-effects.ts =====
   /** Активные баффы/дебаффы от способностей игрока, контр-ДоТы от пассивок и "активированные" стойки (контрудар после блока, усиление дебаффов), тикающие по ходам. */
-  activeEffects: { kind: 'player_damage_buff' | 'enemy_damage_debuff' | 'enemy_dot' | 'on_block_counter_active' | 'debuff_amplify'; percent: number; turnsRemaining: number }[];
+  activeEffects: { kind: 'player_damage_buff' | 'enemy_damage_debuff' | 'enemy_dot' | 'on_block_counter_active' | 'debuff_amplify' | 'player_dodge_buff'; percent: number; turnsRemaining: number }[];
   /** Щит игрока от способностей — поглощает входящий урон раньше ХП. */
   playerShieldHp: number;
   /** Счётчик результативных атак/способностей игрока за бой — для пассивок "каждый N-й удар". */

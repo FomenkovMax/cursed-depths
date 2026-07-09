@@ -23,18 +23,23 @@ export async function POST(req: NextRequest) {
     if (party.leaderId !== player.id) return NextResponse.json({ error: 'Начать бой может только лидер пати' }, { status: 403 });
     if (party.status !== 'forming') return NextResponse.json({ error: 'Пати уже в бою' }, { status: 400 });
 
-    // Первая версия совместного боя — только рядовые (не-boss) враги, см. lib/party-combat-engine.ts.
     // Враг выбирается из локации ЛИДЕРА, не требует физического совпадения locationId у всех
     // участников — как и в большинстве кооп-игр, вступление в общий бой само "телепортирует"
-    // всю пати в общий инстанс.
-    const pool = ENEMIES.filter(e => e.locationId === player.locationId && !e.isBoss);
-    if (pool.length === 0) {
+    // всю пати в общий инстанс. Пул и шанс босса — те же 15%, что и у одиночного /api/explore
+    // (см. его же логику), чтобы пати-бой не был ни строго легче, ни отдельным особым режимом.
+    const locationEnemies = ENEMIES.filter(e => e.locationId === player.locationId);
+    if (locationEnemies.length === 0) {
       return NextResponse.json({ error: 'В этой локации нет подходящих врагов для группового боя' }, { status: 400 });
     }
+    const bossPool = locationEnemies.filter(e => e.isBoss);
+    const regularPool = locationEnemies.filter(e => !e.isBoss);
+    const pool = regularPool.length === 0
+      ? bossPool
+      : (bossPool.length > 0 && Math.random() < 0.15 ? bossPool : regularPool);
     const enemy = pool[Math.floor(Math.random() * pool.length)];
     const scaledMaxHp = scaleEnemyHpForPartySize(enemy.hp + Math.floor(Math.random() * 5), party.members.length);
 
-    const fightState = initPartyFightState(party.members.map(m => m.playerId));
+    const fightState = initPartyFightState(party.members.map(m => m.playerId), enemy.mechanics);
 
     // upsert, не create — PartyCombat.partyId уникален (1:1 с Party), а пати сражается не один
     // раз за всю жизнь: после победы/поражения статус возвращается в 'forming' (см.

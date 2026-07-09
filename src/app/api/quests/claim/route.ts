@@ -3,6 +3,7 @@ import { db } from '@/lib/db';
 import { ITEMS } from '@/lib/game-data';
 import { validateTelegramRequest } from '@/lib/auth';
 import { addItemToInventory } from '@/lib/inventory-utils';
+import { collectQuestItemId } from '@/lib/quests';
 
 export async function POST(req: NextRequest) {
   const auth = validateTelegramRequest(req);
@@ -29,6 +30,18 @@ export async function POST(req: NextRequest) {
     });
 
     if (!player) return NextResponse.json({ error: 'Персонаж не найден' }, { status: 404 });
+
+    // "Принеси предмет"-квесты (см. lib/quests.ts collectQuestType) сдаются вместе с самим
+    // предметом — иначе игрок получал бы награду и оставлял себе предмет, теряя смысл сдачи.
+    const requiredItemId = collectQuestItemId(quest.type);
+    let turnInInventoryId: string | null = null;
+    if (requiredItemId) {
+      const turnInItem = await db.inventory.findFirst({ where: { playerId: player.id, itemId: requiredItemId } });
+      if (!turnInItem) {
+        return NextResponse.json({ error: 'У вас больше нет предмета для сдачи этого квеста' }, { status: 400 });
+      }
+      turnInInventoryId = turnInItem.id;
+    }
 
     // Level up if the XP reward pushes past the threshold (как в combat/action и daily)
     let newXp = player.xp + (reward.xp || 0);
@@ -77,6 +90,18 @@ export async function POST(req: NextRequest) {
               icon: itemData.icon,
               quantity: 1,
             }, tx);
+          }
+        }
+      }
+
+      // Consume the turned-in quest item
+      if (turnInInventoryId) {
+        const turnInItem = await tx.inventory.findUnique({ where: { id: turnInInventoryId } });
+        if (turnInItem) {
+          if (turnInItem.quantity > 1) {
+            await tx.inventory.update({ where: { id: turnInInventoryId }, data: { quantity: { decrement: 1 } } });
+          } else {
+            await tx.inventory.delete({ where: { id: turnInInventoryId } });
           }
         }
       }

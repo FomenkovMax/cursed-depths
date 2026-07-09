@@ -656,7 +656,7 @@ export const ENEMIES: EnemyTemplate[] = [
 
   // Кладбище кораблей (Level 6-7)
   { id: 'drowned_sailor', nameRu: 'Утопленный моряк', nameEn: 'Drowned Sailor', hp: 60, ac: 16, attack: 14, damage: '1d10+5', xp: 64, gold: 28, lootTable: [{ itemId: 'chainmail', chance: 0.15 }, { itemId: 'shadow_cloak', chance: 0.08 }], locationId: 'shipwreck_graveyard', isBoss: false, icon: '⚓' },
-  { id: 'ghost_captain', nameRu: 'Призрачный капитан', nameEn: 'Ghost Captain', hp: 66, ac: 17, attack: 15, damage: '2d6+5', xp: 70, gold: 32, lootTable: [{ itemId: 'shadow_dagger', chance: 0.1 }, { itemId: 'first_fall_dust', chance: 0.1 }], locationId: 'shipwreck_graveyard', isBoss: false, icon: '🏴‍☠️' },
+  { id: 'ghost_captain', nameRu: 'Призрачный капитан', nameEn: 'Ghost Captain', hp: 66, ac: 17, attack: 15, damage: '2d6+5', xp: 70, gold: 32, lootTable: [{ itemId: 'shadow_dagger', chance: 0.1 }, { itemId: 'first_fall_dust', chance: 0.1 }, { itemId: 'ancient_map', chance: 0.15 }], locationId: 'shipwreck_graveyard', isBoss: false, icon: '🏴‍☠️' },
   { id: 'hull_crawler', nameRu: 'Ползун обшивки', nameEn: 'Hull Crawler', hp: 58, ac: 16, attack: 13, damage: '1d10+5', xp: 62, gold: 26, lootTable: [{ itemId: 'iron_ore', chance: 0.3 }], locationId: 'shipwreck_graveyard', isBoss: false, icon: '🦀' },
 
   // Чумной лагерь (Level 7)
@@ -665,7 +665,7 @@ export const ENEMIES: EnemyTemplate[] = [
   { id: 'toxic_experiment', nameRu: 'Токсичный эксперимент', nameEn: 'Toxic Experiment', hp: 70, ac: 17, attack: 16, damage: '2d6+6', xp: 75, gold: 34, lootTable: [{ itemId: 'greater_health', chance: 0.3 }, { itemId: 'void_crystal', chance: 0.08 }], locationId: 'plague_camp', isBoss: false, icon: '🧫' },
 
   // Костяной собор (Level 7)
-  { id: 'bone_priest', nameRu: 'Костяной жрец', nameEn: 'Bone Priest', hp: 68, ac: 17, attack: 16, damage: '1d10+6', xp: 74, gold: 34, lootTable: [{ itemId: 'first_fall_dust', chance: 0.12 }, { itemId: 'mana_potion', chance: 0.4 }], locationId: 'bone_cathedral', isBoss: false, icon: '💀' },
+  { id: 'bone_priest', nameRu: 'Костяной жрец', nameEn: 'Bone Priest', hp: 68, ac: 17, attack: 16, damage: '1d10+6', xp: 74, gold: 34, lootTable: [{ itemId: 'first_fall_dust', chance: 0.12 }, { itemId: 'mana_potion', chance: 0.4 }, { itemId: 'cursed_locket', chance: 0.1 }], locationId: 'bone_cathedral', isBoss: false, icon: '💀' },
   { id: 'cathedral_guardian', nameRu: 'Страж собора', nameEn: 'Cathedral Guardian', hp: 75, ac: 18, attack: 16, damage: '2d8+5', xp: 80, gold: 36, lootTable: [{ itemId: 'dwarven_plate', chance: 0.1 }, { itemId: 'greater_health', chance: 0.3 }], locationId: 'bone_cathedral', isBoss: false, icon: '⛪' },
 
   // Врата Мора (Level 7)

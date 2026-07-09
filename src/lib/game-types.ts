@@ -152,8 +152,22 @@ export interface PartyFightStateData {
   currentTurnIndex: number;
   round: number;
   sharedEnemyEffects: { kind: string; percent: number; turnsRemaining: number }[];
-  members: Record<string, { activeEffects: { kind: string; percent: number; turnsRemaining: number }[]; shieldHp: number; alive: boolean; fled: boolean }>;
+  members: Record<string, {
+    activeEffects: { kind: string; percent: number; turnsRemaining: number }[];
+    shieldHp: number;
+    alive: boolean;
+    fled: boolean;
+    playerRooted: boolean;
+    curseStacks: number;
+  }>;
   combatLog: PartyCombatLogEntry[];
+  bossMechanics: {
+    phase: number;
+    shieldHp: number;
+    shieldBroken: boolean;
+    summonStacks: number;
+    vulnerableNextTurn: boolean;
+  } | null;
 }
 
 export interface PartyCombatMemberSnapshot {
@@ -170,7 +184,7 @@ export interface PartyCombatStateResponse {
   state: PartyFightStateData | null;
   members: PartyCombatMemberSnapshot[];
   currentActingPlayerId: string | null;
-  enemy: { id: string; nameRu: string; icon: string; ac: number; damage: string } | null;
+  enemy: { id: string; nameRu: string; icon: string; ac: number; damage: string; isBoss: boolean; shieldMax: number | null } | null;
 }
 
 export type GameScreen = 'loading' | 'creation' | 'game';

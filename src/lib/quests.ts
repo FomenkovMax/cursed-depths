@@ -21,13 +21,45 @@ interface DailyQuestSeed {
   reward: { xp: number; gold: number; items?: string[] };
 }
 
-const DAILY_QUEST_IDS = ['daily_kill', 'daily_explore', 'daily_craft'];
+const DAILY_QUEST_IDS = ['daily_kill', 'daily_explore', 'daily_craft', 'daily_collect'];
+
+/** Тип "принеси предмет"-квеста для конкретного itemId — единая конвенция для issueDailyQuests,
+ * inventory-utils.ts (продвигает прогресс, когда предмет попадает в инвентарь) и quests/claim
+ * (понимает, какой предмет нужно списать при сдаче квеста). */
+export function collectQuestType(itemId: string): string {
+  return `collect_${itemId}`;
+}
+
+/** Обратное к collectQuestType — извлекает itemId из quest.type, или null, если это не "принеси предмет"-квест. */
+export function collectQuestItemId(questType: string): string | null {
+  return questType.startsWith('collect_') ? questType.slice('collect_'.length) : null;
+}
+
+// ancient_map/cursed_locket (type: 'quest' в ITEMS) были полными карточками без единого
+// способа их сдать — прогресс/квест-система (см. заголовок файла) не поддерживала квестов
+// "принеси предмет" вообще. Чередуем предмет по дню месяца, чтобы оба стали осмысленными.
+const COLLECT_TARGETS: Record<string, { title: string; description: string; reward: { xpMult: number; goldMult: number } }> = {
+  ancient_map: {
+    title: 'Находка на память',
+    description: 'Принесите Древнюю карту — скупщик реликвий заплатит за неё.',
+    reward: { xpMult: 35, goldMult: 25 },
+  },
+  cursed_locket: {
+    title: 'Опасная находка',
+    description: 'Принесите Проклятый медальон — с такими вещами лучше не задерживаться.',
+    reward: { xpMult: 40, goldMult: 15 },
+  },
+};
 
 function buildDailyQuests(level: number): DailyQuestSeed[] {
+  const collectItemId = new Date().getUTCDate() % 2 === 0 ? 'ancient_map' : 'cursed_locket';
+  const collect = COLLECT_TARGETS[collectItemId];
+
   return [
     { questId: 'daily_kill', type: 'kill', title: 'Охота', description: 'Победите 3 врагов в бою.', target: 3, reward: { xp: 30 * level, gold: 15 * level } },
     { questId: 'daily_explore', type: 'explore', title: 'Исследователь', description: 'Исследуйте локацию 5 раз.', target: 5, reward: { xp: 20 * level, gold: 10 * level } },
     { questId: 'daily_craft', type: 'craft', title: 'Подмастерье', description: 'Скрафтите 1 предмет.', target: 1, reward: { xp: 25 * level, gold: 12 * level, items: ['health_potion'] } },
+    { questId: 'daily_collect', type: collectQuestType(collectItemId), title: collect.title, description: collect.description, target: 1, reward: { xp: collect.reward.xpMult * level, gold: collect.reward.goldMult * level } },
   ];
 }
 

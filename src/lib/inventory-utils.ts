@@ -8,8 +8,9 @@
  */
 
 import { db } from '@/lib/db';
+import { incrementQuestProgress, collectQuestType } from '@/lib/quests';
 
-type PrismaClientLike = { inventory: typeof db.inventory };
+type PrismaClientLike = { inventory: typeof db.inventory; playerQuest: typeof db.playerQuest };
 
 interface AddItemParams {
   playerId: string;
@@ -51,7 +52,7 @@ export async function addItemToInventory(params: AddItemParams, client?: PrismaC
   }
 
   // Create new inventory entry
-  return prisma.inventory.create({
+  const created = await prisma.inventory.create({
     data: {
       playerId,
       itemId,
@@ -65,4 +66,12 @@ export async function addItemToInventory(params: AddItemParams, client?: PrismaC
       slot: slot || null,
     },
   });
+
+  // Quest items ("принеси предмет") advance their matching quest the moment they land
+  // in the inventory — see lib/quests.ts collectQuestType(). Cheap no-op if no such quest is active.
+  if (type === 'quest') {
+    await incrementQuestProgress(prisma, playerId, collectQuestType(itemId), quantity);
+  }
+
+  return created;
 }

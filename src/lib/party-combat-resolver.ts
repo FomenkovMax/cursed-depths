@@ -739,10 +739,14 @@ export async function resolvePartyAction(
     }
   }
 
-  // Награда за победу — каждый живой (не сбежавший и не павший) участник получает полный
-  // "сольный" XP/золото/лут, без деления между участниками (см. lib/party-combat-engine.ts —
-  // намеренное упрощение первой версии, не штрафовать игроков за совместную игру).
+  // Награда за победу — живые (не сбежавшие и не павшие) участники делят XP и золото
+  // ПОРОВНУ (стандартная для коопа схема: общий эффект усилий делится, а не раздаётся каждому
+  // целиком), но лут каждый катает НЕЗАВИСИМО — удача не делится, у каждого свой бросок по той
+  // же таблице, что и в сольном бою. round() применяется на КАЖДОГО получателя отдельно (не на
+  // сумму — иначе округление в большую сторону при делении копило бы "лишний" XP при
+  // распределении по цепочке; так тоже возможна погрешность в ±1 на игрока, но не накопительная).
   const rewardTargets = partyWon ? aliveIds() : [];
+  const rewardShare = Math.max(1, rewardTargets.length);
   for (const id of rewardTargets) {
     droppedItemsByMember[id] = rollLoot(enemyTemplate.lootTable);
   }
@@ -764,8 +768,8 @@ export async function resolvePartyAction(
       if (!row) continue;
       const l = live.get(id)!;
       const isActing = id === player.id;
-      const xpGain = rewardTargets.includes(id) ? enemyTemplate.xp : 0;
-      const goldGain = rewardTargets.includes(id) ? enemyTemplate.gold + rollDice('1d4') * Math.ceil(row.level / 2) : 0;
+      const xpGain = rewardTargets.includes(id) ? Math.round(enemyTemplate.xp / rewardShare) : 0;
+      const goldGain = rewardTargets.includes(id) ? Math.round((enemyTemplate.gold + rollDice('1d4') * Math.ceil(row.level / 2)) / rewardShare) : 0;
       const lvl = applyLevelUp(row.xp + xpGain, row.level, row.xpToNext, row.statPoints, row.maxHp);
 
       const updateData: Record<string, unknown> = {

@@ -14,7 +14,7 @@
 
 import type { BossFightState } from './boss-mechanics';
 
-type ActiveEffectKind = 'player_damage_buff' | 'enemy_damage_debuff' | 'enemy_dot' | 'on_block_counter_active' | 'debuff_amplify';
+type ActiveEffectKind = 'player_damage_buff' | 'enemy_damage_debuff' | 'enemy_dot' | 'on_block_counter_active' | 'debuff_amplify' | 'player_dodge_buff';
 
 /**
  * "Заряженные" одноразовые эффекты от способностей вроде "Снижает урон

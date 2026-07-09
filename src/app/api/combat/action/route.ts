@@ -397,6 +397,9 @@ export async function POST(req: NextRequest) {
           if (resolution.playerDamageBonus > 0 && resolution.effectTurns > 0) {
             addActiveEffect(bossState, 'player_damage_buff', resolution.playerDamageBonus, resolution.effectTurns);
           }
+          if (resolution.dodgeBonus > 0 && resolution.effectTurns > 0) {
+            addActiveEffect(bossState, 'player_dodge_buff', resolution.dodgeBonus, resolution.effectTurns);
+          }
 
           const parts = [`${ability.icon} ${ability.name}!`];
           if (damageAbsorbed) parts.push('Урон поглощён щитом.');
@@ -405,6 +408,7 @@ export async function POST(req: NextRequest) {
           if (resolution.shield > 0) parts.push(`Щит: ${resolution.shield} ХП`);
           if (resolution.enemyDamageReduction > 0) parts.push(`Враг ослаблен на ${Math.round(resolution.enemyDamageReduction * 100)}% на ${resolution.effectTurns} х.`);
           if (resolution.playerDamageBonus > 0) parts.push(`Ваш урон усилен на ${Math.round(resolution.playerDamageBonus * 100)}% на ${resolution.effectTurns} х.`);
+          if (resolution.dodgeBonus > 0) parts.push(`Шанс уклонения повышен на ${Math.round(resolution.dodgeBonus * 100)}% на ${resolution.effectTurns} х.`);
           combatLog.push({ text: parts.join(' '), turn: currentTurn });
           if (cleanseMsg) combatLog.push({ text: cleanseMsg, turn: currentTurn });
         }
@@ -512,7 +516,8 @@ export async function POST(req: NextRequest) {
           incomingDamage = Math.round(incomingDamage * 0.5);
         }
 
-        const dodged = fullyBlocked || Math.random() < dodgeChancePercent(playerPassives);
+        const totalDodgeChance = Math.min(0.9, dodgeChancePercent(playerPassives) + activeEffectBonus(bossState, 'player_dodge_buff'));
+        const dodged = fullyBlocked || Math.random() < totalDodgeChance;
         if (dodged) {
           combatLog.push({
             text: fullyBlocked

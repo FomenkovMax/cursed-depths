@@ -23,9 +23,12 @@ export default function RootLayout({
   return (
     <html lang="ru" suppressHydrationWarning>
       <head>
-        {/* Telegram WebApp SDK — must load BEFORE our app code runs */}
+        {/* Telegram WebApp SDK, самохостится на своём домене (public/telegram-web-app.js) —
+            telegram.org у части российских провайдеров недоступен/подвисает и блокирует
+            рендер всей страницы, т.к. скрипт синхронный и должен догрузиться до <body>.
+            Должен грузиться ДО кода приложения. */}
         <Script
-          src="https://telegram.org/js/telegram-web-app.js"
+          src="/telegram-web-app.js"
           strategy="beforeInteractive"
         />
       </head>

@@ -113,6 +113,21 @@ function extractBlockSkillCountTurns(text: string): { count: number; turns: numb
 }
 
 /**
+ * "Заглушает врага на N ход(а/ов)" — единственная способность с такой формулировкой
+ * (silencing-strike). Отдельно от extractBlockSkillCountTurns() — там речь про N СЛУЧАЙНЫХ
+ * скиллов, здесь про полное молчание (все доступные скиллы разом), см. использование ниже
+ * (ALL_MECHANICS_SENTINEL).
+ */
+function extractSilenceTurns(text: string): number | null {
+  const match = text.match(/заглуша[а-яё]*\s*врага\s*на\s*(\d+)\s*ход/i);
+  return match ? parseInt(match[1], 10) : null;
+}
+
+/** У BlockableMechanic всего 4 варианта (см. lib/boss-mechanics.ts) — любое количество не
+ * меньше этого гарантированно блокирует ВСЕ доступные у врага периодические механики разом. */
+const ALL_MECHANICS_SENTINEL = 99;
+
+/**
  * "как исцеление(себе)" / "исцеление себя на N% от урона" — лайфстил-побочка атаки/дебаффа,
  * не самостоятельный хил. "исцеление снижается/блокируется" — дебафф на ЧУЖОЕ исцеление,
  * тоже не свой хил. Без этого guard'а heal-проверка ниже (единственная СТРОГО ПЕРВАЯ
@@ -344,6 +359,34 @@ export function resolveAbility(
     }
     result.blockSkillCount = count;
     result.blockSkillTurns = turns;
+  }
+
+  // "Заглушает врага на N ход" (silencing-strike) — единственная способность с этим
+  // паттерном. Без этой ветки текст ловится общей debuff-веткой ВЫШЕ по ключевому слову
+  // "заглуш" и (за неимением явного % в тексте) получает МНИМЫЙ дебафф — extractEffectPercent
+  // молча подставляет дефолтные 30% на стандартные EFFECT_DURATION_TURNS=3 хода, хотя текст
+  // вообще не описывает снижение урона врага, а описывает статус-эффект молчания на 1 ход.
+  // Здесь глушим этот побочный псевдо-дебафф и заменяем настоящим молчанием: блокировкой
+  // ВСЕХ доступных периодических механик врага сразу (ALL_MECHANICS_SENTINEL) — переиспользуем
+  // ту же инфраструктуру, что и mute-bond/hand-of-morvena/total-fading. "Атака, которая..." —
+  // прямой урон debuff-ветки (result.damage) оставляем как есть, это не отменяется.
+  const silenceTurns = extractSilenceTurns(description);
+  if (silenceTurns !== null) {
+    result.enemyDamageReduction = 0;
+    if (bossContext?.isBoss && bossContext.bossNote) {
+      // "Увеличивает стоимость скиллов на 30%" — механики стоимости скиллов у врагов в этом
+      // движке не существует (mana/costs моделируются только для игрока), буквально
+      // применить нечего — та же ситуация, что с summon-bossNote у rise-of-the-dead/
+      // legion-of-ash. Вместо полного молчания на боссах (тривиализировало бы боссовые
+      // механики) — тот же ослабленный паттерн, что у mute-bond/hand-of-morvena: блокируется
+      // 1 случайный скилл, а не все разом.
+      result.blockSkillCount = 1;
+      const turnsOnlyMatch = bossContext.bossNote.match(/на\s*(\d+)\s*ход/i);
+      result.blockSkillTurns = turnsOnlyMatch ? parseInt(turnsOnlyMatch[1], 10) : silenceTurns;
+    } else {
+      result.blockSkillCount = ALL_MECHANICS_SENTINEL;
+      result.blockSkillTurns = silenceTurns;
+    }
   }
 
   return result;

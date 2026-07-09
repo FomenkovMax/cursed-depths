@@ -151,6 +151,9 @@ export interface PartyFightStateData {
   turnOrder: string[];
   currentTurnIndex: number;
   round: number;
+  /** Epoch ms момента начала текущего хода — используется для отсчёта AFK-таймаута (см.
+   * AFK_TIMEOUT_MS в lib/party-combat-engine.ts). */
+  turnStartedAt: number;
   sharedEnemyEffects: { kind: string; percent: number; turnsRemaining: number }[];
   members: Record<string, {
     activeEffects: { kind: string; percent: number; turnsRemaining: number }[];

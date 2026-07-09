@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { validateTelegramRequest } from '@/lib/auth';
 import { ENEMIES } from '@/lib/game-data';
-import { type PartyFightState, currentActingPlayerId } from '@/lib/party-combat-engine';
+import { type PartyFightState, currentActingPlayerId, AFK_TIMEOUT_MS } from '@/lib/party-combat-engine';
+import { resolvePartyAction } from '@/lib/party-combat-resolver';
 
 export async function GET(req: NextRequest) {
   const auth = validateTelegramRequest(req);
@@ -20,7 +21,31 @@ export async function GET(req: NextRequest) {
       include: { combat: true },
     });
     if (!party || !party.combat) return NextResponse.json({ combat: null });
-    const combat = party.combat;
+    let combat = party.combat;
+
+    // Автопропуск "отошедшего" (AFK) хода — своего крона в serverless-деплое нет, поэтому эту
+    // проверку делает GET-состояние, которое и так поллят все участники каждые ~2с, пока идёт
+    // бой: если текущий actor не действовал дольше AFK_TIMEOUT_MS, за него резолвится 'defend'
+    // тем же путём, что и обычный клик (см. resolvePartyAction в party-combat-resolver.ts), и
+    // очередь передаётся дальше. Ограничение числа итераций — на случай, если несколько
+    // участников подряд отошли одновременно; resolvePartyAction сам безопасен при гонке
+    // нескольких одновременных GET-запросов, поскольку каждый раз заново проверяет по свежим
+    // данным из БД, что actingPlayerId всё ещё реально ходит — если очередь уже сдвинул кто-то
+    // другой, вызов просто вернёт ok:false, и цикл ниже тихо остановится.
+    const AFK_SKIP_ITERATION_LIMIT = 6; // с запасом даже для макс. пати из 6 участников
+    for (let i = 0; i < AFK_SKIP_ITERATION_LIMIT && combat.status === 'active'; i++) {
+      let liveState: PartyFightState | null = null;
+      try { liveState = JSON.parse(combat.state); } catch { break; }
+      if (!liveState) break;
+      const startedAt = liveState.turnStartedAt ?? Date.now();
+      if (Date.now() - startedAt <= AFK_TIMEOUT_MS) break;
+      const actingId = currentActingPlayerId(liveState);
+      if (!actingId) break;
+      const outcome = await resolvePartyAction(actingId, 'defend', undefined, true);
+      if (!outcome.ok) break;
+      combat = outcome.combat;
+      if (combat.status !== 'active') break;
+    }
 
     let state: PartyFightState | null = null;
     try {

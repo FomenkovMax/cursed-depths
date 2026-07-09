@@ -102,7 +102,6 @@ export interface QuestData {
   completed: boolean;
   claimed: boolean;
   reward: string;
-  expiresAt: string | null;
   createdAt: string;
 }
 

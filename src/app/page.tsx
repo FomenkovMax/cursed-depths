@@ -233,37 +233,6 @@ export default function CursedDepths() {
       .finally(() => setLeaderboardLoading(false));
   }, [tab]);
 
-  // ===== PARTY (короткий поллинг вместо realtime-инфраструктуры — нет ни WebSocket, ни
-  // Vercel-совместимого push-сервиса, поэтому "реальное время" реализовано как fetch раз в
-  // ~2 секунды, пока открыта вкладка "Пати") =====
-  const refreshParty = useCallback(async () => {
-    const data = await apiCall('/api/party/state');
-    if (data.party !== undefined) setParty(data.party);
-  }, [apiCall]);
-
-  const refreshPartyCombat = useCallback(async () => {
-    const data: PartyCombatStateResponse = await apiCall('/api/party/combat/state');
-    if (data.combat !== undefined) setPartyCombatState(data);
-  }, [apiCall]);
-
-  useEffect(() => {
-    if (!telegramIdRef.current || screen !== 'game') return;
-    refreshParty();
-    if (tab !== 'party') return;
-    const interval = setInterval(refreshParty, 2000);
-    return () => clearInterval(interval);
-  }, [tab, screen, refreshParty]);
-
-  useEffect(() => {
-    if (!telegramIdRef.current || screen !== 'game' || tab !== 'party' || party?.status !== 'in_combat') {
-      setPartyCombatState(null);
-      return;
-    }
-    refreshPartyCombat();
-    const interval = setInterval(refreshPartyCombat, 2000);
-    return () => clearInterval(interval);
-  }, [tab, screen, party?.status, refreshPartyCombat]);
-
   // Приглашение по Telegram deep-link: бот присылает кнопку web_app с URL вида
   // "?joinParty=<id>" (см. src/app/api/telegram/webhook/route.ts) — при первом входе в игру
   // с таким параметром автоматически вступаем в пати (сам переход по ссылке уже
@@ -311,6 +280,42 @@ export default function CursedDepths() {
       // silent
     }
   }, []);
+
+  // ===== PARTY (короткий поллинг вместо realtime-инфраструктуры — нет ни WebSocket, ни
+  // Vercel-совместимого push-сервиса, поэтому "реальное время" реализовано как fetch раз в
+  // ~2 секунды, пока открыта вкладка "Пати") =====
+  const refreshParty = useCallback(async () => {
+    const data = await apiCall('/api/party/state');
+    if (data.party !== undefined) setParty(data.party);
+  }, [apiCall]);
+
+  const refreshPartyCombat = useCallback(async () => {
+    const data: PartyCombatStateResponse = await apiCall('/api/party/combat/state');
+    if (data.combat !== undefined) setPartyCombatState(data);
+    // Каждый ход в пати-бою реально меняет HP/MP кого-то из живых участников (см.
+    // party-combat-resolver.ts) — без этого шапка (GameHeader) у ЛЮБОГО зрителя (не только у
+    // ходившего) оставалась замороженной на значении до начала боя, пока поллинг ждал
+    // окончания всего боя, чтобы обновить player.
+    await refreshPlayer();
+  }, [apiCall, refreshPlayer]);
+
+  useEffect(() => {
+    if (!telegramIdRef.current || screen !== 'game') return;
+    refreshParty();
+    if (tab !== 'party') return;
+    const interval = setInterval(refreshParty, 2000);
+    return () => clearInterval(interval);
+  }, [tab, screen, refreshParty]);
+
+  useEffect(() => {
+    if (!telegramIdRef.current || screen !== 'game' || tab !== 'party' || party?.status !== 'in_combat') {
+      setPartyCombatState(null);
+      return;
+    }
+    refreshPartyCombat();
+    const interval = setInterval(refreshPartyCombat, 2000);
+    return () => clearInterval(interval);
+  }, [tab, screen, party?.status, refreshPartyCombat]);
 
   // ===== CREATE CHARACTER =====
   const createPlayer = async () => {
@@ -580,6 +585,13 @@ export default function CursedDepths() {
       } else {
         setMessage({ text: data.message, type: 'success' });
         await refreshPlayer();
+        // Клейм квеста считает level-up по тем же формулам, что combat/action и daily (см.
+        // quests/claim/route.ts), но раньше UI никак это не показывал — тот же самый переход
+        // уровня из боя или дейлика давал анимацию, а из квеста нет.
+        if (data.leveledUp) {
+          setLevelUpAnimation(true);
+          setTimeout(() => setLevelUpAnimation(false), 1500);
+        }
       }
     } catch {
       setMessage({ text: 'Ошибка получения награды', type: 'error' });
@@ -641,11 +653,14 @@ export default function CursedDepths() {
       if (data.error) {
         setMessage({ text: data.error, type: 'error' });
       } else {
-        await refreshPartyCombat();
+        // Каждое действие в пати-бою реально меняет HP/MP звонившего (см.
+        // party-combat-resolver.ts) — без этого шапка (GameHeader) и проверка "хватает ли
+        // маны" на кнопках способностей в PartyTab читали устаревший player, замороженный на
+        // значении до начала боя, пока бой не заканчивался.
+        await Promise.all([refreshPartyCombat(), refreshPlayer()]);
         if (data.combatOver) {
           setMessage({ text: data.partyWon ? 'Победа! Награда получена всей пати.' : 'Пати повержена или разбежалась...', type: data.partyWon ? 'success' : 'error' });
           await refreshParty();
-          await refreshPlayer();
         }
       }
     } catch {

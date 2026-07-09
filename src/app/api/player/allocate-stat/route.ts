@@ -39,9 +39,13 @@ export async function POST(req: NextRequest) {
     const totalAllocated = allocated.reduce((sum, a) => sum + a.points, 0);
     const currentInStat = allocated.find(a => a.field === stat)!.points;
 
-    // Проверяем долю ДО начисления нового очка: иначе самое первое вложенное
-    // очко всегда даёт 100% и блокирует любое распределение с нуля.
-    if (totalAllocated > 0 && currentInStat / totalAllocated >= 0.6) {
+    // Проверяем долю ПОСЛЕ начисления нового очка (currentInStat+1 / totalAllocated+1) — иначе
+    // капа можно превысить примерно на 1 очко: старая проверка "до" пропускала точку, где ДО
+    // начисления доля ещё ≤60%, а ПОСЛЕ уже нет (напр. 7/12=58.3% пропускала бы 8-е очко,
+    // уводя итог на 8/13≈61.5%). Первое очко в ПОКА ПУСТУЮ характеристику всегда разрешено
+    // (currentInStat === 0) — иначе оно всегда давало бы 100% (1/1) и блокировало любое
+    // распределение с нуля, включая самое первое очко в игре.
+    if (currentInStat > 0 && (currentInStat + 1) / (totalAllocated + 1) > 0.6) {
       return NextResponse.json({ error: 'Нельзя вложить более 60% очков в одну характеристику' }, { status: 400 });
     }
 

@@ -98,6 +98,21 @@ export function extractBossOverridePercent(bossNote: string | null | undefined):
 }
 
 /**
+ * "Блокирует (один/N) случайный(ых) скилл(а) врага на N ход(а/ов)" — три способности
+ * (mute-bond, hand-of-morvena, total-fading) с идентичной по смыслу формулировкой.
+ * Возвращает null, если способность вообще не про блокировку скиллов (большинство).
+ * Счётчик по умолчанию 1, если явного числа нет (напр. "один случайный скилл").
+ */
+function extractBlockSkillCountTurns(text: string): { count: number; turns: number } | null {
+  const match = text.match(/блокир[а-яё]*\s*(\d+|один|одна|одного)?\s*(?:случайн[а-яё]*\s*)?скилл[а-яё]*[^.]*?на\s*(\d+)\s*ход/i);
+  if (!match) return null;
+  const countRaw = match[1];
+  const count = !countRaw || /один|одна|одного/i.test(countRaw) ? 1 : parseInt(countRaw, 10);
+  const turns = parseInt(match[2], 10);
+  return { count, turns };
+}
+
+/**
  * "как исцеление(себе)" / "исцеление себя на N% от урона" — лайфстил-побочка атаки/дебаффа,
  * не самостоятельный хил. "исцеление снижается/блокируется" — дебафф на ЧУЖОЕ исцеление,
  * тоже не свой хил. Без этого guard'а heal-проверка ниже (единственная СТРОГО ПЕРВАЯ
@@ -182,6 +197,13 @@ export interface AbilityResolution {
   summonDamage: number;
   /** Сколько ходов действует бафф/дебафф (0, если способность не создаёт длящийся эффект). */
   effectTurns: number;
+  /** Сколько случайных "скиллов" врага (периодических механик босса — см. lib/boss-mechanics.ts)
+   * блокируется этим кастом. 0, если способность не про блокировку скиллов. Извлекается
+   * НЕЗАВИСИМО от kind — блокировка может быть побочным эффектом способности другого typa
+   * (напр. total-fading — debuff со своим уроном И блокировкой 2 скиллов). */
+  blockSkillCount: number;
+  /** Сколько ходов действует блокировка скиллов (см. blockSkillCount). */
+  blockSkillTurns: number;
 }
 
 /**
@@ -204,13 +226,13 @@ export function resolveAbility(
   // См. extractBossOverridePercent() — применяется к debuff/armor/dot, т.к. в этих кейсах
   // bossNote просто масштабирует то же самое число. 'summon' намеренно исключён — там
   // bossNote подменяет эффект целиком, а не масштабирует (см. case 'summon' ниже).
-  // Блокировка скиллов врага не реализована вообще, либо разрешается в
-  // conditional-ability-engine.ts.
+  // Блокировка скиллов врага — см. extractBlockSkillCountTurns() и блок после switch ниже.
   const bossOverride = bossContext?.isBoss ? extractBossOverridePercent(bossContext.bossNote) : null;
   const effectivePercent = bossOverride ?? percent;
 
   const result: AbilityResolution = {
     kind, damage: 0, heal: 0, shield: 0, enemyDamageReduction: 0, playerDamageBonus: 0, dodgeBonus: 0, enemyDotPercent: 0, summonDamage: 0, effectTurns: 0,
+    blockSkillCount: 0, blockSkillTurns: 0,
   };
 
   switch (kind) {
@@ -295,6 +317,33 @@ export function resolveAbility(
     }
     default:
       result.damage = mitigateDamage(base, defenderVitality);
+  }
+
+  // Блокировка скиллов врага — независимо от kind (может быть побочкой другого эффекта,
+  // напр. total-fading — debuff со своим уроном И блокировкой 2 скиллов одновременно).
+  // У обычных (не-boss) врагов нет "скиллов" вообще, только базовая атака — combat/action/route.ts
+  // применяет это только к периодическим механикам босса (см. lib/boss-mechanics.ts), для
+  // рядового врага эффект будет декоративным (заблокировать нечего).
+  const baseBlockSkill = extractBlockSkillCountTurns(description);
+  if (baseBlockSkill) {
+    let count = baseBlockSkill.count;
+    let turns = baseBlockSkill.turns;
+    if (bossContext?.isBoss && bossContext.bossNote) {
+      // Полный оверрайд (напр. total-fading: "Снимает максимум 2 баффа, блокирует 1 скилл
+      // на 1 ход.") — своё количество И своя длительность.
+      const bossOverrideFull = extractBlockSkillCountTurns(bossContext.bossNote);
+      if (bossOverrideFull) {
+        count = bossOverrideFull.count;
+        turns = bossOverrideFull.turns;
+      } else {
+        // Оверрайд только длительности (mute-bond/hand-of-morvena: "Боссы: На 1 ход." — без
+        // явного упоминания скилла/количества, число скиллов остаётся как в PvE).
+        const turnsOnlyMatch = bossContext.bossNote.match(/на\s*(\d+)\s*ход/i);
+        if (turnsOnlyMatch) turns = parseInt(turnsOnlyMatch[1], 10);
+      }
+    }
+    result.blockSkillCount = count;
+    result.blockSkillTurns = turns;
   }
 
   return result;

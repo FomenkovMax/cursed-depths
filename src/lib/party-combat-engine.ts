@@ -75,7 +75,16 @@ export interface PartyFightState {
   combatLog: { text: string; turn: number; actorPlayerId?: string }[];
   /** null для рядовых врагов (нет боссовых механик вообще) — см. lib/boss-mechanics.ts BossMechanics. */
   bossMechanics: PartyBossMechanicsState | null;
+  /** Epoch ms момента, когда очередь перешла к текущему actor'у — см. AFK_TIMEOUT_MS ниже. */
+  turnStartedAt: number;
 }
+
+/** Сколько миллисекунд ждать хода текущего actor'а, прежде чем считать его отошедшим (AFK) и
+ * автоматически пропустить его ход (см. resolvePartyAction в party-combat-resolver.ts) — без
+ * этого один пропавший игрок стопорит очередь всей пати навсегда, ведь фоновых задач/крона
+ * в serverless-деплое нет: проверка "протух ли ход" делает GET /api/party/combat/state,
+ * которую и так поллят все участники каждые ~2с, пока идёт бой. */
+export const AFK_TIMEOUT_MS = 2 * 60 * 1000;
 
 function initMemberFightState(): PartyMemberFightState {
   return {
@@ -100,6 +109,7 @@ export function initPartyFightState(playerIds: string[], mechanics?: BossMechani
     sharedEnemyEffects: [],
     members,
     combatLog: [],
+    turnStartedAt: Date.now(),
     bossMechanics: bossInit && mechanics ? {
       turnCount: bossInit.turnCount,
       phase: bossInit.phase,

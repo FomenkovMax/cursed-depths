@@ -141,6 +141,38 @@ export interface PartyData {
   combat: PartyCombatData | null;
 }
 
+export interface PartyCombatLogEntry {
+  text: string;
+  turn: number;
+  actorPlayerId?: string;
+}
+
+export interface PartyFightStateData {
+  turnOrder: string[];
+  currentTurnIndex: number;
+  round: number;
+  sharedEnemyEffects: { kind: string; percent: number; turnsRemaining: number }[];
+  members: Record<string, { activeEffects: { kind: string; percent: number; turnsRemaining: number }[]; shieldHp: number; alive: boolean; fled: boolean }>;
+  combatLog: PartyCombatLogEntry[];
+}
+
+export interface PartyCombatMemberSnapshot {
+  id: string;
+  name: string;
+  hp: number;
+  maxHp: number;
+  level: number;
+  class: { name: string; icon: string };
+}
+
+export interface PartyCombatStateResponse {
+  combat: { id: string; enemyId: string; enemyHp: number; enemyMaxHp: number; status: string } | null;
+  state: PartyFightStateData | null;
+  members: PartyCombatMemberSnapshot[];
+  currentActingPlayerId: string | null;
+  enemy: { id: string; nameRu: string; icon: string; ac: number; damage: string } | null;
+}
+
 export type GameScreen = 'loading' | 'creation' | 'game';
 export type GameTab = 'overview' | 'combat' | 'map' | 'inventory' | 'quests' | 'craft' | 'leaderboard' | 'party';
 

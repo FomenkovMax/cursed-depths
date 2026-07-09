@@ -5,6 +5,13 @@ import { validateTelegramRequest } from '@/lib/auth';
 import { addItemToInventory } from '@/lib/inventory-utils';
 import { incrementQuestProgress } from '@/lib/quests';
 
+/** Брошено внутри транзакции, когда материала не хватило В МОМЕНТ фактического списания —
+ * либо изначально, либо потому что параллельный запрос успел израсходовать его первым (см.
+ * заголовок ниже). Откатывает транзакцию целиком, наружу всплывает как понятное 400. */
+class InsufficientMaterialError extends Error {
+  constructor(public itemName: string) { super('INSUFFICIENT_MATERIAL'); }
+}
+
 export async function POST(req: NextRequest) {
   const auth = validateTelegramRequest(req);
   if (!auth) {
@@ -39,19 +46,26 @@ export async function POST(req: NextRequest) {
     const resultItem = ITEMS.find(i => i.id === recipe.result.itemId);
     if (!resultItem) return NextResponse.json({ error: 'Результат крафта не найден' }, { status: 500 });
 
-    // Wrap material removal + item creation in a transaction
+    // Wrap material removal + item creation in a transaction. Список материалов игрока выше —
+    // снимок ДО транзакции, использовать его как единственную проверку небезопасно: два
+    // параллельных запроса на один и тот же рецепт оба прочли бы "материалов хватает" и оба
+    // списали бы полное количество, уводя остаток в минус, но при этом оба получили бы
+    // результат крафта — дублирование предмета за цену одного набора материалов. Поэтому
+    // списание ниже — САМО условие достаточности (updateMany с quantity >= mat.quantity),
+    // проверяемое атомарно в момент фактической записи, а не по устаревшему снимку.
     await db.$transaction(async (tx) => {
-      // Remove materials
       for (const mat of recipe.materials) {
         const inventoryItem = player.inventory.find(i => i.itemId === mat.itemId)!;
-        if (inventoryItem.quantity > mat.quantity) {
-          await tx.inventory.update({
-            where: { id: inventoryItem.id },
-            data: { quantity: { decrement: mat.quantity } },
-          });
-        } else {
-          await tx.inventory.delete({ where: { id: inventoryItem.id } });
+        const result = await tx.inventory.updateMany({
+          where: { id: inventoryItem.id, quantity: { gte: mat.quantity } },
+          data: { quantity: { decrement: mat.quantity } },
+        });
+        if (result.count === 0) {
+          const itemData = ITEMS.find(i => i.id === mat.itemId);
+          throw new InsufficientMaterialError(itemData?.nameRu || mat.itemId);
         }
+        // Убираем опустевший стак — decrement мог увести именно эту запись в 0.
+        await tx.inventory.deleteMany({ where: { id: inventoryItem.id, quantity: { lte: 0 } } });
       }
 
       // Add result item (stacks with existing if stackable)
@@ -74,6 +88,9 @@ export async function POST(req: NextRequest) {
       item: resultItem,
     });
   } catch (error) {
+    if (error instanceof InsufficientMaterialError) {
+      return NextResponse.json({ error: `Недостаточно ${error.itemName}` }, { status: 400 });
+    }
     console.error('[API] Route error:', error);
     if (error instanceof Error && error.message?.includes('connection')) {
       return NextResponse.json({ error: 'Ошибка подключения к базе данных. Попробуйте позже.' }, { status: 503 });

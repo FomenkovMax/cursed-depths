@@ -5,6 +5,12 @@ import { validateTelegramRequest } from '@/lib/auth';
 import { addItemToInventory } from '@/lib/inventory-utils';
 import { issueDailyQuests } from '@/lib/quests';
 
+/** Брошено внутри транзакции, если ежедневная награда уже забрана СЕГОДНЯ В МОМЕНТ фактической
+ * записи (см. комментарий у updateMany ниже) — напр. параллельный дубликат того же запроса. */
+class AlreadyClaimedTodayError extends Error {
+  constructor() { super('ALREADY_CLAIMED_TODAY'); }
+}
+
 export async function POST(req: NextRequest) {
   const auth = validateTelegramRequest(req);
   if (!auth) {
@@ -40,30 +46,38 @@ export async function POST(req: NextRequest) {
       leveledUp = true;
     }
 
-    // Wrap gold/XP giving + potion giving + quest reset in a transaction
+    // Wrap gold/XP giving + potion giving + quest reset in a transaction. player.lastDailyReward
+    // выше — снимок ДО транзакции; параллельный дубликат того же запроса (двойной тап) прочёл
+    // бы тот же снимок и тоже прошёл бы проверку — награда выдалась бы дважды за день. Поэтому
+    // отметка "награда за today забрана" — само условие (lastDailyReward !== today), проверяемое
+    // атомарно в момент записи через updateMany, и идёт ПЕРВОЙ операцией в транзакции.
+    const updateData: Record<string, unknown> = {
+      gold: { increment: goldReward },
+      xp: newXp,
+      lastDailyReward: today,
+    };
+    if (leveledUp) {
+      updateData.level = newLevel;
+      updateData.xpToNext = newXpToNext;
+      updateData.statPoints = newStatPoints;
+      const newMaxHp = player.maxHp + 10 * (newLevel - player.level);
+      updateData.maxHp = newMaxHp;
+      updateData.hp = newMaxHp; // Full heal on level up
+    }
+
     const updated = await db.$transaction(async (tx) => {
+      // { not: today } в SQL по трёхзначной логике NULL не совпадает со строками, где
+      // lastDailyReward ещё NULL (игрок ни разу не забирал награду) — "NULL <> 'today'" даёт
+      // NULL, а не TRUE, так что такие строки WHERE не находил бы вовсе. Явный OR с null нужен,
+      // иначе самая первая в жизни игрока попытка получить награду ложно считалась бы "уже забрана".
+      const claimResult = await tx.player.updateMany({
+        where: { telegramId, OR: [{ lastDailyReward: null }, { lastDailyReward: { not: today } }] },
+        data: updateData,
+      });
+      if (claimResult.count === 0) throw new AlreadyClaimedTodayError();
+
       // Свежий набор ежедневных квестов на новый день (до итогового запроса с include: quests)
       await issueDailyQuests(tx, player.id, player.level);
-
-      const updateData: Record<string, unknown> = {
-        gold: { increment: goldReward },
-        xp: newXp,
-        lastDailyReward: today,
-      };
-      if (leveledUp) {
-        updateData.level = newLevel;
-        updateData.xpToNext = newXpToNext;
-        updateData.statPoints = newStatPoints;
-        const newMaxHp = player.maxHp + 10 * (newLevel - player.level);
-        updateData.maxHp = newMaxHp;
-        updateData.hp = newMaxHp; // Full heal on level up
-      }
-
-      const result = await tx.player.update({
-        where: { telegramId },
-        data: updateData,
-        include: { inventory: true, quests: true, race: true, class: { include: { abilities: true } } },
-      });
 
       // Give a health potion (stacks with existing)
       await addItemToInventory({
@@ -77,7 +91,10 @@ export async function POST(req: NextRequest) {
         quantity: 1,
       }, tx);
 
-      return result;
+      return tx.player.findUniqueOrThrow({
+        where: { telegramId },
+        include: { inventory: true, quests: true, race: true, class: { include: { abilities: true } } },
+      });
     });
 
     return NextResponse.json({
@@ -88,6 +105,9 @@ export async function POST(req: NextRequest) {
       player: updated,
     });
   } catch (error) {
+    if (error instanceof AlreadyClaimedTodayError) {
+      return NextResponse.json({ error: 'Вы уже получили ежедневную награду сегодня' }, { status: 400 });
+    }
     console.error('[API] Route error:', error);
     if (error instanceof Error && error.message?.includes('connection')) {
       return NextResponse.json({ error: 'Ошибка подключения к базе данных. Попробуйте позже.' }, { status: 503 });

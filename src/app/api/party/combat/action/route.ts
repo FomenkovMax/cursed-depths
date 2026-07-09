@@ -15,6 +15,15 @@ import {
   type PlayerCombatStats,
 } from '@/lib/combat-engine';
 import {
+  bossAcMultiplier,
+  applyDamageToBoss,
+  adaptiveResistMultiplier,
+  playerDamageMultiplier,
+  resolveBossTurn,
+  blockRandomMechanics,
+  tickBlockedMechanics,
+} from '@/lib/boss-mechanics';
+import {
   type PartyFightState,
   currentActingPlayerId,
   advanceTurn,
@@ -27,6 +36,9 @@ import {
   applyDamageToMemberShield,
   describesGroupEffect,
   hasActiveMembers,
+  mergePartyFightState,
+  buildBossShimState,
+  writeBackBossShimState,
 } from '@/lib/party-combat-engine';
 
 /** Начисление уровня по тем же формулам, что и одиночный бой (см. combat/action/route.ts). */
@@ -71,9 +83,15 @@ export async function POST(req: NextRequest) {
     const combat = party.combat;
     if (combat.status !== 'active') return NextResponse.json({ error: 'Бой уже завершён' }, { status: 400 });
 
+    const enemyTemplate = ENEMIES.find(e => e.id === combat.enemyId);
+    if (!enemyTemplate) return NextResponse.json({ error: 'Враг не найден' }, { status: 404 });
+    const isBoss = !!enemyTemplate.mechanics;
+
     let state: PartyFightState;
     try {
-      state = JSON.parse(combat.state);
+      // Мёржим поверх свежих дефолтов, не доверяя распарсенному JSON целиком — та же защита,
+      // что и в одиночном бою (см. mergePartyFightState в party-combat-engine.ts).
+      state = mergePartyFightState(JSON.parse(combat.state), enemyTemplate.mechanics);
     } catch {
       return NextResponse.json({ error: 'Повреждённое состояние боя' }, { status: 500 });
     }
@@ -81,9 +99,6 @@ export async function POST(req: NextRequest) {
     if (currentActingPlayerId(state) !== player.id) {
       return NextResponse.json({ error: 'Сейчас не ваш ход' }, { status: 403 });
     }
-
-    const enemyTemplate = ENEMIES.find(e => e.id === combat.enemyId);
-    if (!enemyTemplate) return NextResponse.json({ error: 'Враг не найден' }, { status: 404 });
 
     // Полные строки ВСЕХ участников пати — нужны и для фан-аута групповых способностей
     // (лечение/бафф на всю живую пати), и для хода врага (случайная цель может быть не
@@ -112,7 +127,14 @@ export async function POST(req: NextRequest) {
       primaryStat: player.class.primaryStat,
     };
     const weaponBonus = actingLive.equipBonuses.attack + (player.consumableFightsLeft > 0 ? player.consumableAttackBonus : 0);
-    const effectiveEnemyAc = enemyTemplate.ac;
+
+    // Личная половина боссовых механик АКТУЮЩЕГО игрока (адаптивная резистентность и
+    // проклятие относятся к тому, кто сейчас действует) — см. lib/party-combat-engine.ts.
+    // Для рядовых врагов (mechanics === undefined) все функции ниже — честные no-op'ы.
+    const actingShim = buildBossShimState(state, player.id);
+    const effectiveEnemyAc = Math.max(1, Math.round(enemyTemplate.ac * bossAcMultiplier(enemyTemplate.mechanics, actingShim)));
+    actingShim.vulnerableNextTurn = false; // окно уязвимости расходуется на текущее действие вне зависимости от исхода
+    const curseMult = playerDamageMultiplier(enemyTemplate.mechanics, actingShim);
     const memberDamageBuff = memberEffectBonus(state, player.id, 'player_damage_buff');
 
     let enemyHp = combat.enemyHp;
@@ -132,10 +154,23 @@ export async function POST(req: NextRequest) {
       } else {
         state.combatLog.push({ text: `${player.name} пытается сбежать — не вышло!`, turn: currentTurn, actorPlayerId: player.id });
       }
+    } else if (action === 'defend') {
+      // Снимает риск "Ответного удара" на следующем ходу врага против этого участника (см.
+      // resolveBossTurn) — в отличие от одиночного боя, здесь НЕТ гарантированного "враг ударит
+      // именно вас следующим" (цель хода врага случайна среди всей пати), поэтому классическое
+      // "защита снижает входящий урон вдвое" честно не переносится — половинить урон было бы
+      // нечему, пока неизвестно, кого враг вообще атакует.
+      actingShim.playerDefendedLastTurn = true;
+      state.combatLog.push({ text: `${player.name} принимает защитную стойку.`, turn: currentTurn, actorPlayerId: player.id });
     } else if (action === 'attack') {
-      const rawDamage = Math.round(mitigateDamage(basicAttackDamage(combatStats) + weaponBonus, effectiveEnemyAc) * (1 + memberDamageBuff));
-      enemyHp = Math.max(0, enemyHp - rawDamage);
-      state.combatLog.push({ text: `${player.name} атакует! Урон: ${rawDamage}`, turn: currentTurn, actorPlayerId: player.id });
+      const resist = adaptiveResistMultiplier(enemyTemplate.mechanics, actingShim, 'attack');
+      const rawDamage = Math.round(mitigateDamage(basicAttackDamage(combatStats) + weaponBonus, effectiveEnemyAc) * curseMult * resist * (1 + memberDamageBuff));
+      const { hpDamage, messages } = applyDamageToBoss(enemyTemplate.mechanics, actingShim, rawDamage);
+      enemyHp = Math.max(0, enemyHp - hpDamage);
+      const absorbed = rawDamage > 0 && hpDamage === 0;
+      state.combatLog.push({ text: absorbed ? `${player.name} атакует! Урон поглощён щитом.` : `${player.name} атакует! Урон: ${hpDamage}`, turn: currentTurn, actorPlayerId: player.id });
+      if (resist < 1) state.combatLog.push({ text: 'Враг адаптировался к этому типу урона!', turn: currentTurn });
+      for (const m of messages) state.combatLog.push({ text: m, turn: currentTurn });
     } else if (action === 'ability') {
       const ability = player.class.abilities.find(a => a.id === abilityId);
       if (!ability) {
@@ -148,14 +183,18 @@ export async function POST(req: NextRequest) {
         state.combatLog.push({ text: `Нужно ${manaCostForStage(ability.stage)} маны!`, turn: currentTurn, actorPlayerId: player.id });
       } else {
         playerMp -= manaCostForStage(ability.stage);
-        const resolution = resolveAbility(ability.description, combatStats, effectiveEnemyAc);
+        const resolution = resolveAbility(ability.description, combatStats, effectiveEnemyAc, isBoss ? { isBoss: true, bossNote: ability.bossNote } : undefined);
         const isGroup = describesGroupEffect(ability.description);
 
         const parts = [`${ability.icon} ${ability.name}!`];
         if (resolution.damage > 0) {
-          const abilityDamage = Math.round(resolution.damage * (1 + memberDamageBuff));
-          enemyHp = Math.max(0, enemyHp - abilityDamage);
-          parts.push(`Урон: ${abilityDamage}`);
+          const resist = adaptiveResistMultiplier(enemyTemplate.mechanics, actingShim, 'ability');
+          const abilityDamage = Math.round(resolution.damage * curseMult * resist * (1 + memberDamageBuff));
+          const { hpDamage, messages } = applyDamageToBoss(enemyTemplate.mechanics, actingShim, abilityDamage);
+          enemyHp = Math.max(0, enemyHp - hpDamage);
+          parts.push(abilityDamage > 0 && hpDamage === 0 ? 'Урон поглощён щитом.' : `Урон: ${hpDamage}`);
+          if (resist < 1) parts.push('(враг адаптировался к этому типу урона)');
+          for (const m of messages) parts.push(m);
         }
         if (resolution.heal > 0) {
           const healTargets = isGroup ? aliveIds() : [player.id];
@@ -191,12 +230,24 @@ export async function POST(req: NextRequest) {
           addSharedEnemyEffect(state, 'summon_damage', resolution.summonDamage, resolution.effectTurns);
           parts.push(`Скелет-союзник будет наносить ${resolution.summonDamage} урона в ход (${resolution.effectTurns} х.)`);
         }
+        if (resolution.blockSkillCount > 0) {
+          // У рядовых врагов нет периодических механик вообще — блокировать нечего,
+          // blockRandomMechanics корректно вернёт пустой массив в этом случае.
+          const blockedLabels = blockRandomMechanics(enemyTemplate.mechanics, actingShim, resolution.blockSkillCount, resolution.blockSkillTurns);
+          parts.push(
+            blockedLabels.length > 0
+              ? `Заблокирован${blockedLabels.length > 1 ? 'ы' : ''} скилл${blockedLabels.length > 1 ? 'ы' : ''} врага (${blockedLabels.join(', ')}) на ${resolution.blockSkillTurns} х.`
+              : 'У врага не нашлось скилла для блокировки.'
+          );
+        }
         if (resolution.noAllyToTarget) parts.push('Нет цели для этой способности.');
         state.combatLog.push({ text: parts.join(' '), turn: currentTurn, actorPlayerId: player.id });
       }
     } else {
       return NextResponse.json({ error: 'Неизвестное действие' }, { status: 400 });
     }
+
+    writeBackBossShimState(state, player.id, actingShim);
 
     if (enemyHp <= 0 && !combatOver) {
       combatOver = true;
@@ -233,23 +284,73 @@ export async function POST(req: NextRequest) {
             const debuff = Math.min(0.9, sharedEnemyEffectBonus(state, 'enemy_damage_debuff'));
             const rawDamage = rollDice(enemyTemplate.damage) * (1 - debuff);
             const baseDamage = Math.max(1, Math.round(mitigateDamage(rawDamage, targetLive.vitality) - targetLive.equipBonuses.defense));
-            const dodgeChance = memberEffectBonus(state, targetId, 'player_dodge_buff');
-            if (Math.random() < dodgeChance) {
-              state.combatLog.push({ text: `${enemyTemplate.nameRu} атакует ${targetRow.name}! Уклонение!`, turn: currentTurn });
+
+            if (enemyTemplate.mechanics) {
+              // Личная половина шима — цель ЭТОГО хода врага (окно уязвимости/обездвиживание/
+              // защитная стойка/проклятие относятся к тому, кого враг сейчас атакует).
+              const enemyShim = buildBossShimState(state, targetId);
+              const turnResult = resolveBossTurn(enemyTemplate.mechanics, enemyShim, enemyHp, enemyMaxHp, baseDamage, targetLive.maxHp);
+
+              if (turnResult.bossHeal > 0) {
+                enemyHp = Math.min(enemyMaxHp, enemyHp + turnResult.bossHeal);
+              }
+              if (turnResult.healToPlayer > 0) {
+                targetLive.hp = Math.min(targetLive.maxHp, targetLive.hp + turnResult.healToPlayer);
+                state.combatLog.push({ text: `${enemyTemplate.nameRu} исцеляет ${targetRow.name}... но это лечение проклято!`, turn: currentTurn });
+              } else {
+                const dodgeChance = memberEffectBonus(state, targetId, 'player_dodge_buff');
+                if (Math.random() < dodgeChance) {
+                  state.combatLog.push({ text: `${enemyTemplate.nameRu} атакует ${targetRow.name}! Уклонение!`, turn: currentTurn });
+                } else {
+                  const { hpDamage, absorbed } = applyDamageToMemberShield(state, targetId, turnResult.damageToPlayer);
+                  targetLive.hp = Math.max(0, targetLive.hp - hpDamage);
+                  if (targetLive.hp <= 0) state.members[targetId].alive = false;
+                  state.combatLog.push({
+                    text: absorbed
+                      ? (hpDamage > 0 ? `${enemyTemplate.nameRu} атакует ${targetRow.name}! Щит поглощает часть урона, ${hpDamage} в ХП!` : `${enemyTemplate.nameRu} атакует ${targetRow.name}! Урон полностью поглощён щитом!`)
+                      : `${enemyTemplate.nameRu} атакует ${targetRow.name}! Урон: ${hpDamage}`,
+                    turn: currentTurn,
+                  });
+                }
+              }
+
+              if (turnResult.dotDamageToPlayer > 0 && !state.members[targetId].poisonCured) {
+                const { hpDamage: dotDmg } = applyDamageToMemberShield(state, targetId, turnResult.dotDamageToPlayer);
+                targetLive.hp = Math.max(0, targetLive.hp - dotDmg);
+                if (targetLive.hp <= 0) state.members[targetId].alive = false;
+                state.combatLog.push({ text: `${targetRow.name} получает ${dotDmg} урона от продолжающегося эффекта!`, turn: currentTurn });
+              }
+
+              for (const m of turnResult.messages) state.combatLog.push({ text: m, turn: currentTurn });
+
+              writeBackBossShimState(state, targetId, enemyShim);
             } else {
-              const { hpDamage, absorbed } = applyDamageToMemberShield(state, targetId, baseDamage);
-              targetLive.hp = Math.max(0, targetLive.hp - hpDamage);
-              if (targetLive.hp <= 0) state.members[targetId].alive = false;
-              state.combatLog.push({
-                text: absorbed
-                  ? (hpDamage > 0 ? `${enemyTemplate.nameRu} атакует ${targetRow.name}! Щит поглощает часть урона, ${hpDamage} в ХП!` : `${enemyTemplate.nameRu} атакует ${targetRow.name}! Урон полностью поглощён щитом!`)
-                  : `${enemyTemplate.nameRu} атакует ${targetRow.name}! Урон: ${hpDamage}`,
-                turn: currentTurn,
-              });
+              // Рядовой враг — простая плоская атака без фаз/самолечения/призывов/проклятий.
+              const dodgeChance = memberEffectBonus(state, targetId, 'player_dodge_buff');
+              if (Math.random() < dodgeChance) {
+                state.combatLog.push({ text: `${enemyTemplate.nameRu} атакует ${targetRow.name}! Уклонение!`, turn: currentTurn });
+              } else {
+                const { hpDamage, absorbed } = applyDamageToMemberShield(state, targetId, baseDamage);
+                targetLive.hp = Math.max(0, targetLive.hp - hpDamage);
+                if (targetLive.hp <= 0) state.members[targetId].alive = false;
+                state.combatLog.push({
+                  text: absorbed
+                    ? (hpDamage > 0 ? `${enemyTemplate.nameRu} атакует ${targetRow.name}! Щит поглощает часть урона, ${hpDamage} в ХП!` : `${enemyTemplate.nameRu} атакует ${targetRow.name}! Урон полностью поглощён щитом!`)
+                    : `${enemyTemplate.nameRu} атакует ${targetRow.name}! Урон: ${hpDamage}`,
+                  turn: currentTurn,
+                });
+              }
             }
           }
         }
 
+        if (state.bossMechanics) {
+          // tickBlockedMechanics трогает только общую половину шима (blockedMechanics) — какой
+          // memberId подставить неважно, личные поля этим вызовом не читаются и не пишутся.
+          const blockShim = buildBossShimState(state, state.turnOrder[0]);
+          tickBlockedMechanics(blockShim);
+          state.bossMechanics.blockedMechanics = blockShim.blockedMechanics;
+        }
         tickPartyEffects(state);
 
         if (!hasActiveMembers(state) && !combatOver) {

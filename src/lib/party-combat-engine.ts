@@ -1,20 +1,33 @@
 /**
  * Оркестрация совместного боя пати (несколько живых игроков против одного общего врага).
  * Параллельна одиночному бою (combat/action/route.ts + boss-mechanics.ts) — использует те же
- * чистые функции (resolveAbility, mitigateDamage, basicAttackDamage из combat-engine.ts), но
- * не сам BossFightState: тот смешивает поля ВРАГА (фаза/щит/призывы — общие для всех) с полями
- * ИГРОКА (щит/баффы/кулдауны — свои у каждого), а в пати участников несколько.
+ * чистые функции (resolveAbility, mitigateDamage, basicAttackDamage из combat-engine.ts, а
+ * теперь и resolveBossTurn/applyDamageToBoss/bossAcMultiplier/adaptiveResistMultiplier/
+ * playerDamageMultiplier/blockRandomMechanics/tickBlockedMechanics из boss-mechanics.ts), но не
+ * сам BossFightState целиком — тот смешивает поля ВРАГА (фаза/щит/призывы — общие для всей
+ * пати) с полями ИГРОКА (заряд обездвиживания/серия одинаковых действий/стаки проклятия —
+ * свои у каждого участника), а участников теперь несколько.
  *
- * Сознательно ограничено первой версией — только рядовые (не-boss) враги. Полноценные боссовые
- * механики (BossMechanics: фазы/щит/адаптивная резистентность/блокировка скиллов и т.д.,
- * см. lib/boss-mechanics.ts) рассчитаны на ОДНОГО защищающегося и требуют отдельного прохода
- * поверх уже работающего одиночного боя — не в рамках этой части. Также пока не перенесены:
- * пассивки игроков (lib/passive-engine.ts/passive-runtime.ts), "заряженные" эффекты и кулдауны
- * способностей (lib/conditional-ability-engine.ts) — базовая атака и полный набор resolveAbility
- * kind'ов (damage/heal/shield/debuff/buff/armor/speed/dot/summon) уже работают, что покрывает
- * основной геймплейный цикл; пассивки/чардж-эффекты — честный follow-up после того, как
- * подтвердится, что сама оркестрация ходов работает на реальных партиях игроков.
+ * Решение — не форкать и не переписывать boss-mechanics.ts (нулевой риск регрессии для
+ * одиночного боя), а на каждый вызов строить временный BossFightState-совместимый "шим" из
+ * общей части (bossMechanics ниже) + личных полей ОДНОГО конкретного участника (см.
+ * buildBossShimState/writeBackBossShimState), вызывать существующую функцию как есть, и
+ * записать её мутации обратно в нужные места. Кого использовать как "личную половину" шима —
+ * решает вызывающий код (combat/action/route.ts): на ходу самого игрока — его самого
+ * (адаптивная резистентность и проклятие относятся к тому, кто действует), на ходу врага —
+ * случайно выбранную цель (окно уязвимости/обездвиживание/защитная стойка относятся к тому,
+ * кого враг сейчас атакует).
+ *
+ * Всё ещё НЕ перенесено: пассивки игроков (lib/passive-engine.ts/passive-runtime.ts) и
+ * "заряженные"/условные эффекты способностей включая обереги от смерти (lib/conditional-
+ * ability-engine.ts) — базовая атака, защита, полный набор resolveAbility kind'ов и теперь
+ * полноценные боссовые механики покрывают основной цикл; пассивки/чардж-эффекты — честный
+ * follow-up.
  */
+
+import { initBossState, type BossFightState, type BossMechanics, type BlockableMechanic } from './boss-mechanics';
+
+export type { BossFightState };
 
 export type PartySharedEffectKind = 'enemy_damage_debuff' | 'enemy_dot' | 'summon_damage';
 export type PartyMemberEffectKind = 'player_damage_buff' | 'player_dodge_buff';
@@ -24,6 +37,33 @@ export interface PartyMemberFightState {
   shieldHp: number;
   alive: boolean;
   fled: boolean;
+  // ===== Личная половина боссовых механик (см. buildBossShimState ниже) — актуальны, только
+  // пока bossMechanics на PartyFightState не null (бой с боссом). =====
+  /** Обездвиживание корнями-ловушками — отменяет СЛЕДУЮЩЕЕ действие именно этого участника. */
+  playerRooted: boolean;
+  /** Защищался ли этот участник на своём последнем ходу — от этого зависит "Ответный удар". */
+  playerDefendedLastTurn: boolean;
+  /** Тип последнего результативного действия ЭТОГО участника — для адаптивной резистентности. */
+  lastActionType: 'attack' | 'ability' | null;
+  /** Сколько раз подряд этот участник использовал один и тот же тип действия. */
+  repeatStreak: number;
+  /** Стаки проклятия (от лечения-с-проклятием боссов) — свои у каждого исцелённого. */
+  curseStacks: number;
+  deathSaveUsed: boolean;
+  poisonCured: boolean;
+}
+
+/** Общая (на всю пати) часть боссовых механик — принадлежит ВРАГУ, не конкретному игроку.
+ * Подмножество полей BossFightState, см. заголовок файла и buildBossShimState. */
+export interface PartyBossMechanicsState {
+  turnCount: number;
+  phase: number;
+  shieldHp: number;
+  shieldBroken: boolean;
+  turnsSinceBroken: number;
+  summonStacks: number;
+  vulnerableNextTurn: boolean;
+  blockedMechanics: { kind: BlockableMechanic; turnsRemaining: number }[];
 }
 
 export interface PartyFightState {
@@ -33,13 +73,26 @@ export interface PartyFightState {
   sharedEnemyEffects: { kind: PartySharedEffectKind; percent: number; turnsRemaining: number }[];
   members: Record<string, PartyMemberFightState>;
   combatLog: { text: string; turn: number; actorPlayerId?: string }[];
+  /** null для рядовых врагов (нет боссовых механик вообще) — см. lib/boss-mechanics.ts BossMechanics. */
+  bossMechanics: PartyBossMechanicsState | null;
 }
 
-export function initPartyFightState(playerIds: string[]): PartyFightState {
+function initMemberFightState(): PartyMemberFightState {
+  return {
+    activeEffects: [], shieldHp: 0, alive: true, fled: false,
+    playerRooted: false, playerDefendedLastTurn: false, lastActionType: null, repeatStreak: 0,
+    curseStacks: 0, deathSaveUsed: false, poisonCured: false,
+  };
+}
+
+export function initPartyFightState(playerIds: string[], mechanics?: BossMechanics): PartyFightState {
   const members: Record<string, PartyMemberFightState> = {};
   for (const id of playerIds) {
-    members[id] = { activeEffects: [], shieldHp: 0, alive: true, fled: false };
+    members[id] = initMemberFightState();
   }
+  // Переиспользуем initBossState() ради дефолтов (напр. shieldHp = mechanics.shieldMax), не
+  // задваивая формулу — просто вытаскиваем общую (не-per-player) часть результата.
+  const bossInit = mechanics ? initBossState(mechanics) : null;
   return {
     turnOrder: playerIds,
     currentTurnIndex: 0,
@@ -47,7 +100,105 @@ export function initPartyFightState(playerIds: string[]): PartyFightState {
     sharedEnemyEffects: [],
     members,
     combatLog: [],
+    bossMechanics: bossInit && mechanics ? {
+      turnCount: bossInit.turnCount,
+      phase: bossInit.phase,
+      shieldHp: bossInit.shieldHp,
+      shieldBroken: bossInit.shieldBroken,
+      turnsSinceBroken: bossInit.turnsSinceBroken,
+      summonStacks: bossInit.summonStacks,
+      vulnerableNextTurn: bossInit.vulnerableNextTurn,
+      blockedMechanics: bossInit.blockedMechanics,
+    } : null,
   };
+}
+
+/**
+ * Мёржит распарсенный JSON поверх свежих дефолтов — тот же приём, что уже спас
+ * combat/action/route.ts (одиночный бой) от 500-к на старых боях после деплоя с новыми
+ * полями BossFightState. Здесь риск даже выше: PartyFightState появился в предыдущем PR БЕЗ
+ * bossMechanics/личных боссовых полей участников — любая пати, оставшаяся 'in_combat' на
+ * момент этого деплоя, имела бы JSON без них, и первое же обращение (buildBossShimState
+ * читает member.playerRooted и т.п.) просто вернуло бы undefined благодаря "?? defaultValue"
+ * в самом шиме — не упало бы, но лучше не полагаться на защиту в одном-единственном месте.
+ * members мёржится ПОЭЛЕМЕНТНО (не одним поверхностным spread'ом) — иначе новые поля внутри
+ * уже существующих участников молча терялись бы, раз ключ "members" в распарсенном JSON уже
+ * присутствует целиком.
+ */
+export function mergePartyFightState(parsed: PartyFightState, mechanics?: BossMechanics): PartyFightState {
+  const fresh = initPartyFightState(parsed.turnOrder ?? [], mechanics);
+  const members: Record<string, PartyMemberFightState> = {};
+  for (const id of fresh.turnOrder) {
+    members[id] = { ...initMemberFightState(), ...(parsed.members?.[id] ?? {}) };
+  }
+  return {
+    ...fresh,
+    ...parsed,
+    members,
+    bossMechanics: mechanics ? { ...fresh.bossMechanics!, ...(parsed.bossMechanics ?? {}) } : null,
+  };
+}
+
+/**
+ * Строит временный BossFightState-совместимый объект из общей (bossMechanics) и личной
+ * (members[memberId]) половин — для разового вызова existing-функций boss-mechanics.ts
+ * (resolveBossTurn/applyDamageToBoss/bossAcMultiplier/adaptiveResistMultiplier/
+ * playerDamageMultiplier/blockRandomMechanics/tickBlockedMechanics), которые ожидают единый
+ * BossFightState и мутируют его на месте. Поля, которых у пати нет и эти функции не читают
+ * (activeEffects/playerShieldHp/armedEffects/abilityCooldowns/playerAttackCount/
+ * playerHitsTakenCount) — пустые заглушки, безопасно игнорируются вызывающими функциями.
+ * Мутации шима нужно вернуть обратно через writeBackBossShimState после вызова.
+ */
+export function buildBossShimState(state: PartyFightState, memberId: string): BossFightState {
+  const shared = state.bossMechanics;
+  const member = state.members[memberId];
+  return {
+    turnCount: shared?.turnCount ?? 0,
+    phase: shared?.phase ?? 1,
+    shieldHp: shared?.shieldHp ?? 0,
+    shieldBroken: shared?.shieldBroken ?? false,
+    turnsSinceBroken: shared?.turnsSinceBroken ?? 0,
+    summonStacks: shared?.summonStacks ?? 0,
+    playerDefendedLastTurn: member?.playerDefendedLastTurn ?? false,
+    playerRooted: member?.playerRooted ?? false,
+    lastActionType: member?.lastActionType ?? null,
+    repeatStreak: member?.repeatStreak ?? 0,
+    curseStacks: member?.curseStacks ?? 0,
+    vulnerableNextTurn: shared?.vulnerableNextTurn ?? false,
+    activeEffects: [],
+    playerShieldHp: 0,
+    playerAttackCount: 0,
+    playerHitsTakenCount: 0,
+    deathSaveUsed: member?.deathSaveUsed ?? false,
+    armedEffects: [],
+    abilityCooldowns: {},
+    poisonCured: member?.poisonCured ?? false,
+    blockedMechanics: shared?.blockedMechanics ?? [],
+  };
+}
+
+/** Переносит мутации шима (см. buildBossShimState) обратно в общую и личную половины state. */
+export function writeBackBossShimState(state: PartyFightState, memberId: string, shim: BossFightState): void {
+  if (state.bossMechanics) {
+    state.bossMechanics.turnCount = shim.turnCount;
+    state.bossMechanics.phase = shim.phase;
+    state.bossMechanics.shieldHp = shim.shieldHp;
+    state.bossMechanics.shieldBroken = shim.shieldBroken;
+    state.bossMechanics.turnsSinceBroken = shim.turnsSinceBroken;
+    state.bossMechanics.summonStacks = shim.summonStacks;
+    state.bossMechanics.vulnerableNextTurn = shim.vulnerableNextTurn;
+    state.bossMechanics.blockedMechanics = shim.blockedMechanics;
+  }
+  const member = state.members[memberId];
+  if (member) {
+    member.playerDefendedLastTurn = shim.playerDefendedLastTurn;
+    member.playerRooted = shim.playerRooted;
+    member.lastActionType = shim.lastActionType;
+    member.repeatStreak = shim.repeatStreak;
+    member.curseStacks = shim.curseStacks;
+    member.deathSaveUsed = shim.deathSaveUsed;
+    member.poisonCured = shim.poisonCured;
+  }
 }
 
 function canAct(state: PartyFightState, playerId: string): boolean {

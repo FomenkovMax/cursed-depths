@@ -17,11 +17,19 @@ export async function POST(req: NextRequest) {
 
     const party = await db.party.findUnique({
       where: { id: player.partyMember.partyId },
-      include: { members: { orderBy: { joinedAt: 'asc' } } },
+      include: { members: { orderBy: { joinedAt: 'asc' }, include: { player: { select: { name: true, inCombat: true } } } } },
     });
     if (!party) return NextResponse.json({ error: 'Пати не найдена' }, { status: 404 });
     if (party.leaderId !== player.id) return NextResponse.json({ error: 'Начать бой может только лидер пати' }, { status: 403 });
     if (party.status !== 'forming') return NextResponse.json({ error: 'Пати уже в бою' }, { status: 400 });
+
+    // Соло-бой и пати-бой пишут Player.hp независимо друг от друга (PartyCombat не трогает
+    // Player.inCombat — см. lib/party-guards.ts) — если хоть один участник уже в соло-бою,
+    // старт пати-боя даст ему сражаться в обеих системах одновременно, портя его же HP.
+    const memberInSoloCombat = party.members.find(m => m.player.inCombat);
+    if (memberInSoloCombat) {
+      return NextResponse.json({ error: `${memberInSoloCombat.player.name} сейчас в одиночном бою — дождитесь его окончания` }, { status: 400 });
+    }
 
     // Враг выбирается из локации ЛИДЕРА, не требует физического совпадения locationId у всех
     // участников — как и в большинстве кооп-игр, вступление в общий бой само "телепортирует"

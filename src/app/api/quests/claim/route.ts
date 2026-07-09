@@ -5,6 +5,12 @@ import { validateTelegramRequest } from '@/lib/auth';
 import { addItemToInventory } from '@/lib/inventory-utils';
 import { collectQuestItemId } from '@/lib/quests';
 
+/** Брошено внутри транзакции, если квест уже помечен полученным В МОМЕНТ фактической записи
+ * (см. комментарий у updateMany ниже) — напр. параллельный дубликат того же запроса. */
+class AlreadyClaimedError extends Error {
+  constructor() { super('ALREADY_CLAIMED'); }
+}
+
 export async function POST(req: NextRequest) {
   const auth = validateTelegramRequest(req);
   if (!auth) {
@@ -57,8 +63,20 @@ export async function POST(req: NextRequest) {
       leveledUp = true;
     }
 
-    // Wrap reward giving + item additions + quest claiming in a transaction
+    // Wrap reward giving + item additions + quest claiming in a transaction. quest.claimed
+    // выше — снимок ДО транзакции; параллельный дубликат того же запроса (двойной тап) прочёл
+    // бы тот же снимок claimed:false и тоже прошёл бы проверку — награда выдалась бы дважды.
+    // Поэтому пометка "получено" — САМО условие (claimed: false), проверяемое атомарно в
+    // момент записи через updateMany, и идёт ПЕРВОЙ операцией в транзакции: если она не
+    // применилась (count===0), значит кто-то другой уже забрал награду — откатываем всё,
+    // ничего не выдав повторно.
     await db.$transaction(async (tx) => {
+      const claimResult = await tx.playerQuest.updateMany({
+        where: { id: questId, claimed: false },
+        data: { claimed: true },
+      });
+      if (claimResult.count === 0) throw new AlreadyClaimedError();
+
       // Give gold/XP rewards
       const updateData: Record<string, unknown> = {
         xp: newXp,
@@ -94,24 +112,25 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      // Consume the turned-in quest item
+      // Consume the turned-in quest item — атомарно (та же логика, что и claimResult выше):
+      // два разных квеста, ссылающихся на один и тот же requiredItemId, могли бы параллельно
+      // попытаться сдать последний экземпляр предмета.
       if (turnInInventoryId) {
-        const turnInItem = await tx.inventory.findUnique({ where: { id: turnInInventoryId } });
-        if (turnInItem) {
-          if (turnInItem.quantity > 1) {
-            await tx.inventory.update({ where: { id: turnInInventoryId }, data: { quantity: { decrement: 1 } } });
-          } else {
-            await tx.inventory.delete({ where: { id: turnInInventoryId } });
-          }
+        const consumeResult = await tx.inventory.updateMany({
+          where: { id: turnInInventoryId, quantity: { gte: 1 } },
+          data: { quantity: { decrement: 1 } },
+        });
+        if (consumeResult.count > 0) {
+          await tx.inventory.deleteMany({ where: { id: turnInInventoryId, quantity: { lte: 0 } } });
         }
       }
-
-      // Mark quest as claimed
-      await tx.playerQuest.update({ where: { id: questId }, data: { claimed: true } });
     });
 
     return NextResponse.json({ message: 'Награда получена!', reward, leveledUp, newLevel });
   } catch (error) {
+    if (error instanceof AlreadyClaimedError) {
+      return NextResponse.json({ error: 'Награда уже получена' }, { status: 400 });
+    }
     console.error('[API] Route error:', error);
     if (error instanceof Error && error.message?.includes('connection')) {
       return NextResponse.json({ error: 'Ошибка подключения к базе данных. Попробуйте позже.' }, { status: 503 });

@@ -4,6 +4,12 @@ import { validateTelegramRequest } from '@/lib/auth';
 import { addItemToInventory } from '@/lib/inventory-utils';
 import { getShopBuyableItems } from '@/lib/shop';
 
+/** Брошено внутри транзакции, когда золота не хватило В МОМЕНТ фактического списания (см.
+ * комментарий у updateMany ниже). Откатывает транзакцию целиком. */
+class InsufficientGoldError extends Error {
+  constructor() { super('INSUFFICIENT_GOLD'); }
+}
+
 export async function POST(req: NextRequest) {
   const auth = validateTelegramRequest(req);
   if (!auth) {
@@ -25,8 +31,16 @@ export async function POST(req: NextRequest) {
     if (!itemData) return NextResponse.json({ error: 'Этот предмет не продаётся' }, { status: 400 });
     if (player.gold < itemData.value) return NextResponse.json({ error: 'Недостаточно золота' }, { status: 400 });
 
+    // player.gold выше — снимок ДО транзакции; два параллельных запроса оба прочли бы "золота
+    // хватает" и оба списали бы decrement, уводя баланс в минус, но оба получили бы предмет —
+    // дублирование за цену одной покупки. Поэтому списание — само условие (gold >= value),
+    // проверяемое атомарно в момент записи через updateMany, а не по устаревшему снимку.
     const updated = await db.$transaction(async (tx) => {
-      await tx.player.update({ where: { telegramId }, data: { gold: { decrement: itemData.value } } });
+      const result = await tx.player.updateMany({
+        where: { telegramId, gold: { gte: itemData.value } },
+        data: { gold: { decrement: itemData.value } },
+      });
+      if (result.count === 0) throw new InsufficientGoldError();
 
       await addItemToInventory({
         playerId: player.id,
@@ -48,6 +62,9 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ message: `Куплено: ${itemData.nameRu} за ${itemData.value} золота`, player: updated });
   } catch (error) {
+    if (error instanceof InsufficientGoldError) {
+      return NextResponse.json({ error: 'Недостаточно золота' }, { status: 400 });
+    }
     console.error('[API] Route error:', error);
     if (error instanceof Error && error.message?.includes('connection')) {
       return NextResponse.json({ error: 'Ошибка подключения к базе данных. Попробуйте позже.' }, { status: 503 });

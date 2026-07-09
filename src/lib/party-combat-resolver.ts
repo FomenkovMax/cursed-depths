@@ -59,7 +59,7 @@ import {
   blockRandomMechanics,
   tickBlockedMechanics,
 } from '@/lib/boss-mechanics';
-import { parsePassiveEffect, type PassiveEffect } from '@/lib/passive-engine';
+import { parsePassiveEffect, describesGroupPassiveAura, type PassiveEffect } from '@/lib/passive-engine';
 import {
   parseDeathWard,
   parseArmedEffects,
@@ -114,6 +114,43 @@ import {
   peekMemberArmedEffectPercent,
   consumeMemberArmedEffects,
 } from '@/lib/party-combat-engine';
+
+interface AuraMemberRow { id: string; level: number; class: { abilities: { type: string; stage: number; description: string }[] } }
+
+/**
+ * Совокупный бонус ото всех "аур" (см. describesGroupPassiveAura в passive-engine.ts:
+ * eternal-vow/sacred-aura/the-leader) среди ЖИВОЙ пати — каждая действует, только пока у СВОЕГО
+ * носителя выполняется её собственное условие (eternal-vow требует HP носителя > 50%, не HP
+ * получателя бонуса). Включает бонус от самого получателя, если у него тоже есть такая аура —
+ * та же семантика, что и раньше при self-применении (см. заголовок passive-engine.ts). Эти
+ * эффекты СОЗНАТЕЛЬНО исключены из partyPassives (см. ниже) — иначе носитель получал бы свой
+ * же бонус дважды: один раз отсюда, второй раз через свой личный passives-список.
+ */
+function partyAuraBonuses(memberRows: AuraMemberRow[], live: Map<string, { hp: number; maxHp: number }>, aliveIdsList: string[]) {
+  let damageMultBonus = 0, defenseMultBonus = 0, healingBonusPercent = 0;
+  const byId = new Map(memberRows.map(m => [m.id, m]));
+  for (const id of aliveIdsList) {
+    const row = byId.get(id);
+    const bearerLive = live.get(id);
+    if (!row || !bearerLive) continue;
+    const bearerHpPercent = bearerLive.maxHp > 0 ? (bearerLive.hp / bearerLive.maxHp) * 100 : 100;
+    for (const ability of row.class.abilities) {
+      if (ability.type !== 'passive' || row.level < stageUnlockLevel(ability.stage)) continue;
+      if (!describesGroupPassiveAura(ability.description)) continue;
+      const effect = parsePassiveEffect(ability.description);
+      if (!effect) continue;
+      if (effect.kind === 'hp_threshold') {
+        const met = effect.below ? bearerHpPercent < effect.thresholdPercent : bearerHpPercent > effect.thresholdPercent;
+        if (met) defenseMultBonus += effect.defenseMultBonus;
+      } else if (effect.kind === 'unconditional_damage_buff') {
+        damageMultBonus += effect.damageMultBonus;
+      } else if (effect.kind === 'unconditional_healing_buff') {
+        healingBonusPercent += effect.healingBonusPercent;
+      }
+    }
+  }
+  return { damageMultBonus, defenseMultBonus, healingBonusPercent };
+}
 
 /** Начисление уровня по тем же формулам, что и одиночный бой (см. combat/action/route.ts). */
 function applyLevelUp(xp: number, level: number, xpToNext: number, statPoints: number, maxHp: number) {
@@ -192,7 +229,10 @@ export async function resolvePartyAction(
     const equip = computeEquipmentBonuses(m.inventory);
     live.set(m.id, { hp: m.hp, maxHp: m.maxHp + equip.hp, vitality: m.vitality + equip.vitality, equipBonuses: equip });
     partyPassives.set(m.id, m.class.abilities
-      .filter(a => a.type === 'passive' && m.level >= stageUnlockLevel(a.stage))
+      // describesGroupPassiveAura исключены отсюда намеренно — это ауры на ВСЮ пати
+      // (eternal-vow/sacred-aura/the-leader), а не self-only эффекты; их считает
+      // partyAuraBonuses() ниже. Оставлять их и тут значило бы удваивать бонус носителю.
+      .filter(a => a.type === 'passive' && m.level >= stageUnlockLevel(a.stage) && !describesGroupPassiveAura(a.description))
       .map(a => parsePassiveEffect(a.description))
       .filter((e): e is PassiveEffect => e !== null));
   }
@@ -212,10 +252,15 @@ export async function resolvePartyAction(
   };
   const weaponBonus = actingLive.equipBonuses.attack + (player.consumableFightsLeft > 0 ? player.consumableAttackBonus : 0);
 
+  const aliveIds = () => state.turnOrder.filter(id => state.members[id]?.alive && !state.members[id]?.fled);
+
   const hpPercentAtTurnStart = actingLive.maxHp > 0 ? (actingLive.hp / actingLive.maxHp) * 100 : 100;
   const thresholdBonus = hpThresholdBonuses(actingPassives, hpPercentAtTurnStart);
   const uncondBonus = unconditionalBonuses(actingPassives);
-  const totalHealingBonus = thresholdBonus.healingBonusPercent + uncondBonus.healingBonusPercent;
+  // Ауры пати (eternal-vow/sacred-aura/the-leader, см. describesGroupPassiveAura) — считаются
+  // заново на каждом ходу actor'а по ТЕКУЩЕМУ HP всех живых носителей.
+  const partyAura = partyAuraBonuses(memberRows, live, aliveIds());
+  const totalHealingBonus = thresholdBonus.healingBonusPercent + uncondBonus.healingBonusPercent + partyAura.healingBonusPercent;
 
   /**
    * Инкрементирует счётчик ударов ЭТОГО участника и считает множитель от "каждый N-й удар"/
@@ -269,6 +314,7 @@ export async function resolvePartyAction(
   const passiveDamageMult = 1
     + thresholdBonus.damageMultBonus
     + uncondBonus.damageMultBonus
+    + partyAura.damageMultBonus
     + damageVsDebuffedEnemyBonus(actingPassives, enemyCurrentlyDebuffed)
     + damageVsShieldedEnemyBonus(actingPassives, enemyCurrentlyShielded)
     + memberDamageBuff;
@@ -279,8 +325,6 @@ export async function resolvePartyAction(
   let partyWon = false;
   const currentTurn = state.combatLog.length;
   const droppedItemsByMember: Record<string, string[]> = {};
-
-  const aliveIds = () => state.turnOrder.filter(id => state.members[id]?.alive && !state.members[id]?.fled);
 
   // Обездвиживание корнями-ловушками с предыдущего хода отменяет текущее действие ЦЕЛИКОМ
   // (кроме пассивок с иммунитетом, напр. steadfastness) — раньше playerRooted писался шимом,
@@ -555,9 +599,13 @@ export async function resolvePartyAction(
           const targetHpPercent = targetLive.maxHp > 0 ? (targetLive.hp / targetLive.maxHp) * 100 : 100;
           const targetThreshold = hpThresholdBonuses(targetPassives, targetHpPercent);
           const targetUncond = unconditionalBonuses(targetPassives);
+          // Ауры пати (eternal-vow и т.п.) — считаются заново по ТЕКУЩЕМУ HP всех живых
+          // носителей на момент хода врага (могло измениться с начала запроса).
+          const targetPartyAura = partyAuraBonuses(memberRows, live, candidates);
           const enemyDamageReduction = Math.min(0.9, sharedEnemyEffectBonus(state, 'enemy_damage_debuff'));
           const passiveIncomingReduction = Math.min(0.9,
             targetThreshold.incomingReductionPercent + targetThreshold.defenseMultBonus + targetUncond.defenseMultBonus
+            + targetPartyAura.defenseMultBonus
             + (isDefending ? onDefendDefenseBonus(targetPassives) : 0)
             + (fullyBlocked ? 0 : armedBlock.percent));
           const totalReduction = Math.min(0.9, enemyDamageReduction + passiveIncomingReduction);

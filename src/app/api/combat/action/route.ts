@@ -403,6 +403,10 @@ export async function POST(req: NextRequest) {
           if (resolution.enemyDotPercent > 0 && resolution.effectTurns > 0) {
             addActiveEffect(bossState, 'enemy_dot', resolution.enemyDotPercent, resolution.effectTurns);
           }
+          if (resolution.summonDamage > 0 && resolution.effectTurns > 0) {
+            // summonDamage — уже готовое число урона за ход (не процент), см. resolveAbility.
+            addActiveEffect(bossState, 'summon_damage', resolution.summonDamage, resolution.effectTurns);
+          }
 
           const parts = [`${ability.icon} ${ability.name}!`];
           if (damageAbsorbed) parts.push('Урон поглощён щитом.');
@@ -413,6 +417,7 @@ export async function POST(req: NextRequest) {
           if (resolution.enemyDotPercent > 0) parts.push(`Враг отравлен: ${Math.round(resolution.enemyDotPercent * 100)}% ХП/ход на ${resolution.effectTurns} х.`);
           if (resolution.playerDamageBonus > 0) parts.push(`Ваш урон усилен на ${Math.round(resolution.playerDamageBonus * 100)}% на ${resolution.effectTurns} х.`);
           if (resolution.dodgeBonus > 0) parts.push(`Шанс уклонения повышен на ${Math.round(resolution.dodgeBonus * 100)}% на ${resolution.effectTurns} х.`);
+          if (resolution.summonDamage > 0) parts.push(`Скелет-союзник будет наносить ${resolution.summonDamage} урона в ход (${resolution.effectTurns} х.)`);
           combatLog.push({ text: parts.join(' '), turn: currentTurn });
           if (cleanseMsg) combatLog.push({ text: cleanseMsg, turn: currentTurn });
         }
@@ -452,6 +457,14 @@ export async function POST(req: NextRequest) {
         const dotDmg = Math.round(enemyMaxHp * enemyDotPercent);
         enemyHp = Math.max(0, enemyHp - dotDmg);
         combatLog.push({ text: `Враг горит! Урон: ${dotDmg}`, turn: currentTurn });
+      }
+
+      // summon_damage хранит уже готовое число урона за ход (не процент от enemyMaxHp,
+      // в отличие от enemy_dot выше) — см. resolveAbility, ветка 'summon'.
+      const summonDmg = activeEffectBonus(bossState, 'summon_damage');
+      if (summonDmg > 0 && enemyHp > 0) {
+        enemyHp = Math.max(0, enemyHp - summonDmg);
+        combatLog.push({ text: `Скелет-союзник наносит урон! Урон: ${summonDmg}`, turn: currentTurn });
       }
     }
 

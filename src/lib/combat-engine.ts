@@ -21,7 +21,7 @@
  * combat/action/route.ts.
  */
 
-export type EffectKind = 'damage' | 'heal' | 'shield' | 'debuff' | 'buff' | 'armor' | 'speed' | 'dot' | 'utility';
+export type EffectKind = 'damage' | 'heal' | 'shield' | 'debuff' | 'buff' | 'armor' | 'speed' | 'dot' | 'summon' | 'utility';
 
 export interface PlayerCombatStats {
   strength: number;
@@ -129,6 +129,10 @@ export function classifyEffect(description: string): EffectKind {
   // этого исключения extractEffectPercent() брал бы ПЕРВЫЙ процент во всей строке (20%,
   // от совсем другого варианта стойки), а не корректные 6% для варианта "Яд".
   if (/яд[а-яё]*[^.]*?\d+\s*%\s*(хп|здоровья)/i.test(description) && !/выбирает/i.test(description)) return 'dot';
+  // "Призывает N скелетов"/"Поднимает ... как скелета-союзника" — саммон, а не разовая
+  // атака. Должна идти РАНЬШЕ damage-ветки ниже — иначе "50% ХП и урона оригинала"
+  // содержит голое "урон" и способность превращалась бы в обычный удар по врагу.
+  if (/(призыва[а-яё]*|поднимает)[^.]*скелет/i.test(description)) return 'summon';
   // "\bяд\b" ниже НЕ работал для кириллицы — JS \b строится на \w, который не распознаёт
   // кириллические буквы, так что граница слова вокруг "яд" никогда не находилась (тот же
   // класс бага, что \w в passive-engine.ts в начале сессии). Заменено на явный guard без
@@ -173,6 +177,9 @@ export interface AbilityResolution {
   dodgeBonus: number;
   /** Периодический урон врагу (доля 0-1 от макс. ХП врага за ход) на effectTurns ходов, если kind === 'dot'. */
   enemyDotPercent: number;
+  /** Суммарный урон врагу за ход ото ВСЕХ призванных существ вместе (уже умножено на их
+   * количество), фиксированное число ХП, если kind === 'summon' — см. resolveAbility(). */
+  summonDamage: number;
   /** Сколько ходов действует бафф/дебафф (0, если способность не создаёт длящийся эффект). */
   effectTurns: number;
 }
@@ -194,15 +201,16 @@ export function resolveAbility(
   const percent = extractEffectPercent(description);
   const kind = classifyEffect(description);
   const base = basicAttackDamage(attacker);
-  // См. extractBossOverridePercent() — применяется к debuff/armor/dot, т.к. это кейсы
-  // в 35 bossNote-способностях, где базовый эффект уже реально работает через этот
-  // резолвер (остальные — саммоны/блок скиллов врага — не реализованы вообще, либо
-  // разрешаются в conditional-ability-engine.ts).
+  // См. extractBossOverridePercent() — применяется к debuff/armor/dot, т.к. в этих кейсах
+  // bossNote просто масштабирует то же самое число. 'summon' намеренно исключён — там
+  // bossNote подменяет эффект целиком, а не масштабирует (см. case 'summon' ниже).
+  // Блокировка скиллов врага не реализована вообще, либо разрешается в
+  // conditional-ability-engine.ts.
   const bossOverride = bossContext?.isBoss ? extractBossOverridePercent(bossContext.bossNote) : null;
   const effectivePercent = bossOverride ?? percent;
 
   const result: AbilityResolution = {
-    kind, damage: 0, heal: 0, shield: 0, enemyDamageReduction: 0, playerDamageBonus: 0, dodgeBonus: 0, enemyDotPercent: 0, effectTurns: 0,
+    kind, damage: 0, heal: 0, shield: 0, enemyDamageReduction: 0, playerDamageBonus: 0, dodgeBonus: 0, enemyDotPercent: 0, summonDamage: 0, effectTurns: 0,
   };
 
   switch (kind) {
@@ -252,6 +260,39 @@ export function resolveAbility(
       result.enemyDotPercent = Math.min(0.5, effectivePercent);
       result.effectTurns = EFFECT_DURATION_TURNS;
       break;
+    case 'summon': {
+      // Скелеты-союзники — упрощённая модель: не отдельная сущность со своим ХП/атакой
+      // (усложнило бы движок, строго заточенный на 1v1), а фиксированный ежеходный урон
+      // врагу, пока существо "живо" (тот же generic activeEffects-механизм, что и enemy_dot,
+      // но фиксированная величина, не доля от макс. ХП врага). "N% ХП и урона ОРИГИНАЛА"
+      // (текст подразумевает статы поднятого/призванного существа) на практике трактуем как
+      // % от БАЗОВОЙ АТАКИ ИГРОКА — единообразно с тем, как весь остальной резолвер уже
+      // трактует "процент" везде (a не вводим третий источник статов, которого сам резолвер
+      // не имеет — сюда передаются только PlayerCombatStats, не enemyTemplate).
+      //
+      // Длительность своя для каждой способности (1/2/3 хода — НЕ общая EFFECT_DURATION_TURNS).
+      const durationMatch = description.match(/(?:на|существу[а-яё]*)\s*(\d+)\s*ход/i);
+      const turns = durationMatch ? parseInt(durationMatch[1], 10) : EFFECT_DURATION_TURNS;
+
+      // swarm-of-the-dead: "40% ХП и урона; ЕСЛИ НЕТ павших врагов — из пустоты с 30%" —
+      // движок строго 1v1, "павших врагов" в момент каста никогда не бывает, так что
+      // ВСЕГДА срабатывает fallback-ветка — предпочитаем её процент, если он есть.
+      // Намеренно НЕ effectivePercent/bossOverride: у rise-of-the-dead/legion-of-ash
+      // bossNote не масштабирует число, а подменяет саммон ДРУГИМ эффектом целиком
+      // ("Не работает, вместо этого — яд...") — extractBossOverridePercent тут взял бы
+      // число из совершенно другого эффекта и дал бы саммону ложную силу. Такая полная
+      // замена типа эффекта — отдельная, более крупная задача; саммон просто работает
+      // одинаково и против боссов, bossNote для этих двух способностей игнорируется.
+      const fallbackMatch = description.match(/если нет[^%]*?(\d+)\s*%/i);
+      const summonPercent = fallbackMatch ? parseInt(fallbackMatch[1], 10) / 100 : percent;
+
+      const countMatch = description.match(/(\d+)\s*скелет/i);
+      const count = countMatch ? parseInt(countMatch[1], 10) : 1;
+
+      result.summonDamage = Math.round(base * Math.min(0.75, summonPercent)) * count;
+      result.effectTurns = turns;
+      break;
+    }
     default:
       result.damage = mitigateDamage(base, defenderVitality);
   }

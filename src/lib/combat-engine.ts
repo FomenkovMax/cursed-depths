@@ -21,7 +21,7 @@
  * combat/action/route.ts.
  */
 
-export type EffectKind = 'damage' | 'heal' | 'shield' | 'debuff' | 'buff' | 'armor' | 'speed' | 'utility';
+export type EffectKind = 'damage' | 'heal' | 'shield' | 'debuff' | 'buff' | 'armor' | 'speed' | 'dot' | 'utility';
 
 export interface PlayerCombatStats {
   strength: number;
@@ -119,7 +119,22 @@ export function classifyEffect(description: string): EffectKind {
   // по "щит" внутри "защиту" и способность превращалась в щит ИГРОКУ вместо
   // дебаффа на врага (напр. battle-roar).
   if (/(?<!за)щит|поглощ/i.test(description)) return 'shield';
-  if (/снижа|блокир|замедл|обездвиж|\bяд\b|дебафф|молчани|заглуш|характеристик/i.test(description)) return 'debuff';
+  // "Яд N% ХП/ход на M ходов" — периодический урон врагу (lib/combat-effects.ts enemy_dot,
+  // уже реально тикает в combat/action/route.ts, до этой ветки использовался только для
+  // контр-ожога от пассивок). Должна идти РАНЬШЕ общего debuff — иначе "яд" ловится общей
+  // веткой ниже и трактуется как снижение урона ВРАГА, а не периодический урон ЕМУ.
+  // "ВЫБИРАЕТ" исключён отдельно — способности с выбором одного из нескольких вариантов
+  // стойки (напр. moon-cycle: "Тень (+20% уклонение) / Кровь (+25% крит) / Яд (6% ХП/ход)")
+  // движок не умеет разрешать вообще (нет способа передать выбор игрока при касте) — без
+  // этого исключения extractEffectPercent() брал бы ПЕРВЫЙ процент во всей строке (20%,
+  // от совсем другого варианта стойки), а не корректные 6% для варианта "Яд".
+  if (/яд[а-яё]*[^.]*?\d+\s*%\s*(хп|здоровья)/i.test(description) && !/выбирает/i.test(description)) return 'dot';
+  // "\bяд\b" ниже НЕ работал для кириллицы — JS \b строится на \w, который не распознаёт
+  // кириллические буквы, так что граница слова вокруг "яд" никогда не находилась (тот же
+  // класс бага, что \w в passive-engine.ts в начале сессии). Заменено на явный guard без
+  // границ слова: "яд" не как часть другого слова (напр. "ядерный" — таких в игре нет, но
+  // на всякий случай исключаем непосредственно смежные кириллические буквы).
+  if (/снижа|блокир|замедл|обездвиж|(?<![а-яё])яд(?![а-яё])|дебафф|молчани|заглуш|характеристик/i.test(description)) return 'debuff';
   // "+N% к скорости" на несколько ходов без урона рядом — единственная способность, где
   // "скорость" не сопровождает уже работающий урон/броню/дебафф (см. lib/combat-effects.ts
   // player_dodge_buff) — трактуем как бафф уклонения, а не как generic buff-паттерн ниже
@@ -156,6 +171,8 @@ export interface AbilityResolution {
   playerDamageBonus: number;
   /** Насколько усилен шанс уклонения игрока (доля 0-1) на effectTurns ходов, если kind === 'speed'. */
   dodgeBonus: number;
+  /** Периодический урон врагу (доля 0-1 от макс. ХП врага за ход) на effectTurns ходов, если kind === 'dot'. */
+  enemyDotPercent: number;
   /** Сколько ходов действует бафф/дебафф (0, если способность не создаёт длящийся эффект). */
   effectTurns: number;
 }
@@ -177,15 +194,15 @@ export function resolveAbility(
   const percent = extractEffectPercent(description);
   const kind = classifyEffect(description);
   const base = basicAttackDamage(attacker);
-  // См. extractBossOverridePercent() — применяется только к debuff/armor, т.к. это
-  // единственные кейсы в 35 bossNote-способностях, где базовый эффект уже реально
-  // работает через этот резолвер (остальные — саммоны/блок скиллов/ДоТ на враге —
-  // либо не реализованы вообще, либо разрешаются в conditional-ability-engine.ts).
+  // См. extractBossOverridePercent() — применяется к debuff/armor/dot, т.к. это кейсы
+  // в 35 bossNote-способностях, где базовый эффект уже реально работает через этот
+  // резолвер (остальные — саммоны/блок скиллов врага — не реализованы вообще, либо
+  // разрешаются в conditional-ability-engine.ts).
   const bossOverride = bossContext?.isBoss ? extractBossOverridePercent(bossContext.bossNote) : null;
   const effectivePercent = bossOverride ?? percent;
 
   const result: AbilityResolution = {
-    kind, damage: 0, heal: 0, shield: 0, enemyDamageReduction: 0, playerDamageBonus: 0, dodgeBonus: 0, effectTurns: 0,
+    kind, damage: 0, heal: 0, shield: 0, enemyDamageReduction: 0, playerDamageBonus: 0, dodgeBonus: 0, enemyDotPercent: 0, effectTurns: 0,
   };
 
   switch (kind) {
@@ -226,6 +243,13 @@ export function resolveAbility(
       // очередности хода, которую можно было бы менять) — трактуем как шанс уклониться
       // от следующих ударов врага (см. lib/combat-effects.ts player_dodge_buff).
       result.dodgeBonus = Math.min(0.5, effectivePercent);
+      result.effectTurns = EFFECT_DURATION_TURNS;
+      break;
+    case 'dot':
+      // Яд — периодический урон врагу, а не разовый удар (см. lib/combat-effects.ts
+      // enemy_dot, тикает в combat/action/route.ts). Без сопутствующего "разового" урона —
+      // это наложение эффекта, не атака.
+      result.enemyDotPercent = Math.min(0.5, effectivePercent);
       result.effectTurns = EFFECT_DURATION_TURNS;
       break;
     default:

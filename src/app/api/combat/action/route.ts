@@ -400,6 +400,9 @@ export async function POST(req: NextRequest) {
           if (resolution.dodgeBonus > 0 && resolution.effectTurns > 0) {
             addActiveEffect(bossState, 'player_dodge_buff', resolution.dodgeBonus, resolution.effectTurns);
           }
+          if (resolution.enemyDotPercent > 0 && resolution.effectTurns > 0) {
+            addActiveEffect(bossState, 'enemy_dot', resolution.enemyDotPercent, resolution.effectTurns);
+          }
 
           const parts = [`${ability.icon} ${ability.name}!`];
           if (damageAbsorbed) parts.push('Урон поглощён щитом.');
@@ -407,6 +410,7 @@ export async function POST(req: NextRequest) {
           if (resolution.heal > 0) parts.push(`Восстановлено ${resolution.heal} ХП`);
           if (resolution.shield > 0) parts.push(`Щит: ${resolution.shield} ХП`);
           if (resolution.enemyDamageReduction > 0) parts.push(`Враг ослаблен на ${Math.round(resolution.enemyDamageReduction * 100)}% на ${resolution.effectTurns} х.`);
+          if (resolution.enemyDotPercent > 0) parts.push(`Враг отравлен: ${Math.round(resolution.enemyDotPercent * 100)}% ХП/ход на ${resolution.effectTurns} х.`);
           if (resolution.playerDamageBonus > 0) parts.push(`Ваш урон усилен на ${Math.round(resolution.playerDamageBonus * 100)}% на ${resolution.effectTurns} х.`);
           if (resolution.dodgeBonus > 0) parts.push(`Шанс уклонения повышен на ${Math.round(resolution.dodgeBonus * 100)}% на ${resolution.effectTurns} х.`);
           combatLog.push({ text: parts.join(' '), turn: currentTurn });

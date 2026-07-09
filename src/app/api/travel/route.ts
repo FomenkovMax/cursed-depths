@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { LOCATIONS } from '@/lib/game-data';
 import { validateTelegramRequest } from '@/lib/auth';
+import { isInActivePartyCombat } from '@/lib/party-guards';
 
 export async function POST(req: NextRequest) {
   const auth = validateTelegramRequest(req);
@@ -17,6 +18,9 @@ export async function POST(req: NextRequest) {
     const player = await db.player.findUnique({ where: { telegramId } });
     if (!player) return NextResponse.json({ error: 'Персонаж не найден' }, { status: 404 });
     if (player.inCombat) return NextResponse.json({ error: 'Нельзя путешествовать во время боя' }, { status: 400 });
+    if (await isInActivePartyCombat(player.id)) {
+      return NextResponse.json({ error: 'Нельзя путешествовать во время боя пати' }, { status: 400 });
+    }
 
     const currentLocation = LOCATIONS.find(l => l.id === player.locationId);
     const targetLocation = LOCATIONS.find(l => l.id === locationId);
@@ -33,7 +37,7 @@ export async function POST(req: NextRequest) {
     const updated = await db.player.update({
       where: { telegramId },
       data: { locationId },
-      include: { inventory: true, race: true, class: { include: { abilities: true } } },
+      include: { inventory: true, quests: true, race: true, class: { include: { abilities: true } } },
     });
 
     return NextResponse.json({

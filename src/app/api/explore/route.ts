@@ -11,6 +11,7 @@ import { stageUnlockLevel } from '@/lib/combat-engine';
 import { parsePassiveEffect, type PassiveEffect } from '@/lib/passive-engine';
 import { outOfCombatRegen } from '@/lib/passive-runtime';
 import { computeEquipmentBonuses } from '@/lib/equipment-stats';
+import { isInActivePartyCombat } from '@/lib/party-guards';
 
 export async function POST(req: NextRequest) {
   const auth = validateTelegramRequest(req);
@@ -27,6 +28,9 @@ export async function POST(req: NextRequest) {
     if (!player) return NextResponse.json({ error: 'Персонаж не найден' }, { status: 404 });
     if (player.inCombat) return NextResponse.json({ error: 'Вы уже в бою' }, { status: 400 });
     if (player.hp <= 0) return NextResponse.json({ error: 'Вы мертвы. Отдохните в таверне.' }, { status: 400 });
+    if (await isInActivePartyCombat(player.id)) {
+      return NextResponse.json({ error: 'Нельзя исследовать локацию во время боя пати' }, { status: 400 });
+    }
 
     // Вне-боевая регенерация (forest-whisper и аналоги) — каждый вызов /api/explore это единственный
     // в игре реальный аналог "хода вне боя" (см. заголовок lib/passive-engine.ts).

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { validateTelegramRequest } from '@/lib/auth';
 import { computeEquipmentBonuses } from '@/lib/equipment-stats';
+import { isInActivePartyCombat } from '@/lib/party-guards';
 
 export async function POST(req: NextRequest) {
   const auth = validateTelegramRequest(req);
@@ -15,12 +16,15 @@ export async function POST(req: NextRequest) {
     if (!player) return NextResponse.json({ error: 'Персонаж не найден' }, { status: 404 });
     if (player.locationId !== 'town') return NextResponse.json({ error: 'Нужно быть в городе для отдыха' }, { status: 400 });
     if (player.inCombat) return NextResponse.json({ error: 'Нельзя отдыхать во время боя' }, { status: 400 });
+    if (await isInActivePartyCombat(player.id)) {
+      return NextResponse.json({ error: 'Нельзя отдыхать во время боя пати' }, { status: 400 });
+    }
 
     const bonuses = computeEquipmentBonuses(player.inventory);
     const updated = await db.player.update({
       where: { telegramId },
       data: { hp: player.maxHp + bonuses.hp, mp: player.maxMp + bonuses.mp },
-      include: { inventory: true, race: true, class: { include: { abilities: true } } },
+      include: { inventory: true, quests: true, race: true, class: { include: { abilities: true } } },
     });
 
     return NextResponse.json({ message: 'Вы отдохнули в таверне. HP и MP полностью восстановлены!', player: updated });

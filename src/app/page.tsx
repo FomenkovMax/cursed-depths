@@ -13,6 +13,7 @@ import {
   GameMessage,
   TelegramGlobal,
   PartyData,
+  PartyCombatStateResponse,
 } from '@/lib/game-types';
 import { LoadingScreen } from '@/components/game/LoadingScreen';
 import { CharacterCreationScreen } from '@/components/game/CharacterCreationScreen';
@@ -41,6 +42,7 @@ export default function CursedDepths() {
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [leaderboardLoading, setLeaderboardLoading] = useState(false);
   const [party, setParty] = useState<PartyData | null>(null);
+  const [partyCombatState, setPartyCombatState] = useState<PartyCombatStateResponse | null>(null);
 
   // Character creation state
   const [creationStep, setCreationStep] = useState(0);
@@ -239,6 +241,11 @@ export default function CursedDepths() {
     if (data.party !== undefined) setParty(data.party);
   }, [apiCall]);
 
+  const refreshPartyCombat = useCallback(async () => {
+    const data: PartyCombatStateResponse = await apiCall('/api/party/combat/state');
+    if (data.combat !== undefined) setPartyCombatState(data);
+  }, [apiCall]);
+
   useEffect(() => {
     if (!telegramIdRef.current || screen !== 'game') return;
     refreshParty();
@@ -246,6 +253,16 @@ export default function CursedDepths() {
     const interval = setInterval(refreshParty, 2000);
     return () => clearInterval(interval);
   }, [tab, screen, refreshParty]);
+
+  useEffect(() => {
+    if (!telegramIdRef.current || screen !== 'game' || tab !== 'party' || party?.status !== 'in_combat') {
+      setPartyCombatState(null);
+      return;
+    }
+    refreshPartyCombat();
+    const interval = setInterval(refreshPartyCombat, 2000);
+    return () => clearInterval(interval);
+  }, [tab, screen, party?.status, refreshPartyCombat]);
 
   // Приглашение по Telegram deep-link: бот присылает кнопку web_app с URL вида
   // "?joinParty=<id>" (см. src/app/api/telegram/webhook/route.ts) — при первом входе в игру
@@ -601,6 +618,42 @@ export default function CursedDepths() {
     setLoading(false);
   };
 
+  const handleStartPartyCombat = async () => {
+    setLoading(true);
+    try {
+      const data = await apiCall('/api/party/combat/start', 'POST');
+      if (data.error) {
+        setMessage({ text: data.error, type: 'error' });
+      } else {
+        await refreshParty();
+        await refreshPartyCombat();
+      }
+    } catch {
+      setMessage({ text: 'Не удалось начать бой', type: 'error' });
+    }
+    setLoading(false);
+  };
+
+  const handlePartyCombatAction = async (action: string, abilityId?: string) => {
+    setLoading(true);
+    try {
+      const data = await apiCall('/api/party/combat/action', 'POST', { action, abilityId });
+      if (data.error) {
+        setMessage({ text: data.error, type: 'error' });
+      } else {
+        await refreshPartyCombat();
+        if (data.combatOver) {
+          setMessage({ text: data.partyWon ? 'Победа! Награда получена всей пати.' : 'Пати повержена или разбежалась...', type: data.partyWon ? 'success' : 'error' });
+          await refreshParty();
+          await refreshPlayer();
+        }
+      }
+    } catch {
+      setMessage({ text: 'Ошибка боевого действия', type: 'error' });
+    }
+    setLoading(false);
+  };
+
   // ===== ALLOCATE STAT POINT =====
   const handleAllocateStat = async (stat: string) => {
     if (!player) return;
@@ -790,10 +843,15 @@ export default function CursedDepths() {
           <PartyTab
             playerId={player?.id ?? null}
             party={party}
+            combatState={partyCombatState}
             loading={loading}
             botUsername={process.env.NEXT_PUBLIC_BOT_USERNAME ?? null}
+            availableAbilities={getAvailableAbilities()}
+            playerMp={player?.mp ?? 0}
             onCreateParty={handleCreateParty}
             onLeaveParty={handleLeaveParty}
+            onStartCombat={handleStartPartyCombat}
+            onCombatAction={handlePartyCombatAction}
           />
         </Tabs>
       </main>

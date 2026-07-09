@@ -440,6 +440,7 @@ export async function POST(req: NextRequest) {
                 : 'У врага не нашлось скилла для блокировки.'
             );
           }
+          if (resolution.noAllyToTarget) parts.push('В группе нет союзников — способность не подействовала.');
           combatLog.push({ text: parts.join(' '), turn: currentTurn });
           if (cleanseMsg) combatLog.push({ text: cleanseMsg, turn: currentTurn });
         }

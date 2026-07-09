@@ -128,6 +128,32 @@ function extractSilenceTurns(text: string): number | null {
 const ALL_MECHANICS_SENTINEL = 99;
 
 /**
+ * "Воскрешает [одного] [павшего] союзника" — единственная способность с таким текстом
+ * (return-to-roots). Структурно требует павшего СОЮЗНИКА, которого в строго одиночном
+ * 1v1-бою этого движка никогда не бывает (если падает сам игрок — бой уже проигран). Без
+ * этой проверки kind классифицировался бы как 'utility' и проваливался в generic default
+ * ветку switch, которая трактует "нераспознанный эффект" как обычную атаку — способность
+ * поддержки/воскрешения молча превращалась в полноценный урон по врагу.
+ */
+function requiresFallenAlly(description: string): boolean {
+  return /воскреша[а-яё]*[^.]*?союзник/i.test(description);
+}
+
+/**
+ * "+N% к урону" где-то в тексте СВЕРХ основного эффекта другого kind (напр. great-prayer:
+ * "восстанавливают 25% ХП И получают +30% к урону" — heal ЗАБИРАЕТ kind первым по
+ * приоритету классификатора, буст урона иначе терялся бы целиком; flame-of-rebirth: "но все
+ * атаки наносят +50% огненного урона" — тоже перехватывается heal-веткой по слову "реген" в
+ * соседнем предложении про союзников). `\s*` перед "урон" — иначе прилагательное между %
+ * и словом ("огненного урона") ломает совпадение. НЕ применяется, если kind уже 'buff' (там
+ * тот же бонус уже посчитан основной buff-веткой) — иначе просто дублирует то же число.
+ */
+function extractSecondaryDamageBuff(description: string): number | null {
+  const match = description.match(/\+(\d+)%\s*(к\s*)?[а-яё]*\s*урон/i);
+  return match ? parseInt(match[1], 10) / 100 : null;
+}
+
+/**
  * "как исцеление(себе)" / "исцеление себя на N% от урона" — лайфстил-побочка атаки/дебаффа,
  * не самостоятельный хил. "исцеление снижается/блокируется" — дебафф на ЧУЖОЕ исцеление,
  * тоже не свой хил. Без этого guard'а heal-проверка ниже (единственная СТРОГО ПЕРВАЯ
@@ -219,6 +245,10 @@ export interface AbilityResolution {
   blockSkillCount: number;
   /** Сколько ходов действует блокировка скиллов (см. blockSkillCount). */
   blockSkillTurns: number;
+  /** true, если способность структурно требует другого игрока-союзника (напр. "воскрешает
+   * павшего союзника"), которого в текущем движке (строго одиночный 1v1) никогда не бывает —
+   * все посчитанные выше поля обнулены, это честный no-op, а не "спрятанная атака". */
+  noAllyToTarget: boolean;
 }
 
 /**
@@ -247,7 +277,7 @@ export function resolveAbility(
 
   const result: AbilityResolution = {
     kind, damage: 0, heal: 0, shield: 0, enemyDamageReduction: 0, playerDamageBonus: 0, dodgeBonus: 0, enemyDotPercent: 0, summonDamage: 0, effectTurns: 0,
-    blockSkillCount: 0, blockSkillTurns: 0,
+    blockSkillCount: 0, blockSkillTurns: 0, noAllyToTarget: false,
   };
 
   switch (kind) {
@@ -332,6 +362,37 @@ export function resolveAbility(
     }
     default:
       result.damage = mitigateDamage(base, defenderVitality);
+  }
+
+  // "Воскрешает павшего союзника" — структурный no-op в одиночном бою (см.
+  // requiresFallenAlly). Обнуляем ВСЁ, что успел насчитать switch выше (для return-to-roots
+  // это damage=32 от default-ветки, т.к. её kind — 'utility') — честный "нечего делать",
+  // а не спрятанная атака.
+  if (requiresFallenAlly(description)) {
+    result.damage = 0;
+    result.heal = 0;
+    result.shield = 0;
+    result.enemyDamageReduction = 0;
+    result.playerDamageBonus = 0;
+    result.dodgeBonus = 0;
+    result.enemyDotPercent = 0;
+    result.summonDamage = 0;
+    result.effectTurns = 0;
+    result.noAllyToTarget = true;
+  }
+
+  // Вторичный бафф урона поверх heal-эффекта (great-prayer, flame-of-rebirth — см.
+  // extractSecondaryDamageBuff). Специально сужено до kind === 'heal' (а не "любой kind
+  // кроме buff") — иначе ловит ложные срабатывания на способностях со СВОЕЙ, другой
+  // семантикой "+N% урона": условные одноразовые бонусы ("следующий удар +50%", "если
+  // убивает — ..."), периодические триггеры ("каждые 2 удара") и т.п. — те же слова-
+  // исключения, что и в основной buff-ветке классификатора выше, здесь тоже обязательны.
+  if (kind === 'heal' && result.playerDamageBonus === 0 && !/следующ|каждые|цел[ьи]/i.test(description)) {
+    const secondaryBuff = extractSecondaryDamageBuff(description);
+    if (secondaryBuff !== null) {
+      result.playerDamageBonus = Math.min(0.75, secondaryBuff);
+      result.effectTurns = EFFECT_DURATION_TURNS;
+    }
   }
 
   // Блокировка скиллов врага — независимо от kind (может быть побочкой другого эффекта,

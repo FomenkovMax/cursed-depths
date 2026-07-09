@@ -46,12 +46,56 @@ model Player {
   inventory       Inventory[]
   quests          PlayerQuest[]
   creation        CharacterCreation?
+  partyMember     PartyMember?
 
   @@index([telegramId])
   @@index([locationId])
   @@index([level])
   @@index([raceId])
   @@index([classId])
+}
+
+// Пати (совместный бой) — см. lib/party-combat-engine.ts. Игрок состоит максимум в одной
+// пати одновременно (PartyMember.playerId уникален). Приглашение — Telegram deep-link
+// (t.me/bot?start=party_<id>), поэтому отдельной модели приглашений нет — вступление это
+// просто POST /api/party/join, пока пати status='forming' и не заполнена.
+model Party {
+  id        String   @id @default(cuid())
+  leaderId  String   // Player.id лидера пати
+  status    String   @default("forming") // forming | in_combat | disbanded
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  members   PartyMember[]
+  combat    PartyCombat?
+}
+
+model PartyMember {
+  id       String   @id @default(cuid())
+  partyId  String
+  party    Party    @relation(fields: [partyId], references: [id], onDelete: Cascade)
+  playerId String   @unique
+  player   Player   @relation(fields: [playerId], references: [id])
+  joinedAt DateTime @default(now())
+
+  @@index([partyId])
+}
+
+// Совместный бой пати — параллельная система combat-состояния, НЕ трогает Player.inCombat/
+// enemyId/enemyHp/bossState/combatLog (те остаются только для одиночного боя). ХП каждого
+// участника хранится в его собственной строке Player (см. lib/party-combat-engine.ts) — здесь
+// только оркестрация ходов и эффектов, без дублирования здоровья.
+model PartyCombat {
+  id         String   @id @default(cuid())
+  partyId    String   @unique
+  party      Party    @relation(fields: [partyId], references: [id], onDelete: Cascade)
+  enemyId    String
+  enemyHp    Int
+  enemyMaxHp Int
+  state      String   // JSON string — PartyFightState, см. lib/party-combat-engine.ts
+  status     String   @default("active") // active | won | lost
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 }
 
 model Inventory {

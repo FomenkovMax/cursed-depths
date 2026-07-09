@@ -12,6 +12,7 @@ import {
   GameTab,
   GameMessage,
   TelegramGlobal,
+  PartyData,
 } from '@/lib/game-types';
 import { LoadingScreen } from '@/components/game/LoadingScreen';
 import { CharacterCreationScreen } from '@/components/game/CharacterCreationScreen';
@@ -23,6 +24,7 @@ import { InventoryTab } from '@/components/game/InventoryTab';
 import { QuestsTab } from '@/components/game/QuestsTab';
 import { CraftTab } from '@/components/game/CraftTab';
 import { LeaderboardTab, type LeaderboardEntry } from '@/components/game/LeaderboardTab';
+import { PartyTab } from '@/components/game/PartyTab';
 
 // ===== MAIN COMPONENT =====
 export default function CursedDepths() {
@@ -38,6 +40,7 @@ export default function CursedDepths() {
   const [floatingDamage, setFloatingDamage] = useState<{ id: number; text: string; color: string }[]>([]);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [leaderboardLoading, setLeaderboardLoading] = useState(false);
+  const [party, setParty] = useState<PartyData | null>(null);
 
   // Character creation state
   const [creationStep, setCreationStep] = useState(0);
@@ -227,6 +230,44 @@ export default function CursedDepths() {
       .catch(() => setMessage({ text: 'Не удалось загрузить таблицу лидеров', type: 'error' }))
       .finally(() => setLeaderboardLoading(false));
   }, [tab]);
+
+  // ===== PARTY (короткий поллинг вместо realtime-инфраструктуры — нет ни WebSocket, ни
+  // Vercel-совместимого push-сервиса, поэтому "реальное время" реализовано как fetch раз в
+  // ~2 секунды, пока открыта вкладка "Пати") =====
+  const refreshParty = useCallback(async () => {
+    const data = await apiCall('/api/party/state');
+    if (data.party !== undefined) setParty(data.party);
+  }, [apiCall]);
+
+  useEffect(() => {
+    if (!telegramIdRef.current || screen !== 'game') return;
+    refreshParty();
+    if (tab !== 'party') return;
+    const interval = setInterval(refreshParty, 2000);
+    return () => clearInterval(interval);
+  }, [tab, screen, refreshParty]);
+
+  // Приглашение по Telegram deep-link: бот присылает кнопку web_app с URL вида
+  // "?joinParty=<id>" (см. src/app/api/telegram/webhook/route.ts) — при первом входе в игру
+  // с таким параметром автоматически вступаем в пати (сам переход по ссылке уже
+  // подразумевает согласие) и открываем вкладку "Пати".
+  const joinPartyChecked = useRef(false);
+  useEffect(() => {
+    if (screen !== 'game' || joinPartyChecked.current || !telegramIdRef.current) return;
+    joinPartyChecked.current = true;
+    const partyId = new URLSearchParams(window.location.search).get('joinParty');
+    if (!partyId) return;
+    window.history.replaceState({}, '', window.location.pathname);
+    apiCall('/api/party/join', 'POST', { partyId }).then(data => {
+      if (data.error) {
+        setMessage({ text: data.error, type: 'error' });
+      } else {
+        setParty(data.party);
+        setTab('party');
+        setMessage({ text: 'Вы вступили в пати!', type: 'success' });
+      }
+    });
+  }, [screen, apiCall]);
 
   // ===== FLOATING DAMAGE HELPER =====
   const addFloatingDamage = useCallback((text: string, color: string) => {
@@ -529,6 +570,37 @@ export default function CursedDepths() {
     setLoading(false);
   };
 
+  // ===== PARTY: CREATE / LEAVE =====
+  const handleCreateParty = async () => {
+    setLoading(true);
+    try {
+      const data = await apiCall('/api/party/create', 'POST');
+      if (data.error) {
+        setMessage({ text: data.error, type: 'error' });
+      } else {
+        setParty(data.party);
+      }
+    } catch {
+      setMessage({ text: 'Не удалось создать пати', type: 'error' });
+    }
+    setLoading(false);
+  };
+
+  const handleLeaveParty = async () => {
+    setLoading(true);
+    try {
+      const data = await apiCall('/api/party/leave', 'POST');
+      if (data.error) {
+        setMessage({ text: data.error, type: 'error' });
+      } else {
+        setParty(null);
+      }
+    } catch {
+      setMessage({ text: 'Не удалось покинуть пати', type: 'error' });
+    }
+    setLoading(false);
+  };
+
   // ===== ALLOCATE STAT POINT =====
   const handleAllocateStat = async (stat: string) => {
     if (!player) return;
@@ -648,7 +720,7 @@ export default function CursedDepths() {
       {/* Main content */}
       <main className="flex-1 overflow-hidden">
         <Tabs value={tab} onValueChange={v => setTab(v as GameTab)} className="h-full flex flex-col">
-          <TabsList className="grid w-full grid-cols-7 bg-card rounded-none border-b border-border h-10 p-0">
+          <TabsList className="grid w-full grid-cols-8 bg-card rounded-none border-b border-border h-10 p-0">
             <TabsTrigger value="overview" className="text-xs py-2 data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
               🏠
             </TabsTrigger>
@@ -672,6 +744,9 @@ export default function CursedDepths() {
             </TabsTrigger>
             <TabsTrigger value="leaderboard" className="text-xs py-2 data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
               🏆
+            </TabsTrigger>
+            <TabsTrigger value="party" className="text-xs py-2 data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
+              👥
             </TabsTrigger>
           </TabsList>
 
@@ -711,6 +786,15 @@ export default function CursedDepths() {
           <CraftTab player={player} loading={loading} hasMaterials={hasMaterials} onCraft={handleCraft} />
 
           <LeaderboardTab player={player} leaderboard={leaderboard} loading={leaderboardLoading} />
+
+          <PartyTab
+            playerId={player?.id ?? null}
+            party={party}
+            loading={loading}
+            botUsername={process.env.NEXT_PUBLIC_BOT_USERNAME ?? null}
+            onCreateParty={handleCreateParty}
+            onLeaveParty={handleLeaveParty}
+          />
         </Tabs>
       </main>
 

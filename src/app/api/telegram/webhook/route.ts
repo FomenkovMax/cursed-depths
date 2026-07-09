@@ -34,19 +34,28 @@ export async function POST(req: NextRequest) {
     // After DNS works, set WEBAPP_URL=https://cursed-depths.ru on Vercel
     const WEBAPP_URL = process.env.WEBAPP_URL || 'https://cursed-depths.vercel.app';
 
-    if (text === '/start' || text === '/play') {
+    if (text.startsWith('/start') || text === '/play') {
+      // Приглашение в пати — Telegram deep-link вида t.me/<bot>?start=party_<id>
+      // (см. src/components/game/PartyTab.tsx). Telegram присылает payload после
+      // "/start " как есть, без URL-декодирования, поэтому party_<id> ловится напрямую.
+      const startPayload = text.startsWith('/start ') ? text.slice('/start '.length).trim() : '';
+      const partyMatch = startPayload.match(/^party_(.+)$/);
+      const webAppUrl = partyMatch ? `${WEBAPP_URL}?joinParty=${encodeURIComponent(partyMatch[1])}` : WEBAPP_URL;
+
       const keyboard = {
         inline_keyboard: [[
           {
-            text: '🎮 Играть в Cursed Depths',
-            web_app: { url: WEBAPP_URL },
+            text: partyMatch ? '🎮 Открыть игру и вступить в пати' : '🎮 Играть в Cursed Depths',
+            web_app: { url: webAppUrl },
           },
         ]],
       };
 
-      const welcomeText = text === '/start'
-        ? `⚔️ Добро пожаловать в **Cursed Depths**!\n\n Dungeon crawler по правилам D&D 5e.\n\n🗡️ 6 рас • ⚔️ 26 классов • 🏰 37 локаций\n🐲 97 монстров • 📦 54 предмета\n\nНажмите кнопку ниже, чтобы начать!`
-        : `🎮 Откройте Cursed Depths для игры!`;
+      const welcomeText = partyMatch
+        ? `👥 Вас позвали в пати! Нажмите кнопку ниже, чтобы открыть игру и присоединиться.`
+        : text === '/start'
+          ? `⚔️ Добро пожаловать в **Cursed Depths**!\n\n Dungeon crawler по правилам D&D 5e.\n\n🗡️ 6 рас • ⚔️ 26 классов • 🏰 37 локаций\n🐲 97 монстров • 📦 54 предмета\n\nНажмите кнопку ниже, чтобы начать!`
+          : `🎮 Откройте Cursed Depths для игры!`;
 
       await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
         method: 'POST',

@@ -111,8 +111,38 @@ export interface CombatLogEntry {
   turn: number;
 }
 
+export interface PartyMemberData {
+  id: string;
+  playerId: string;
+  joinedAt: string;
+  player: {
+    id: string;
+    name: string;
+    level: number;
+    hp: number;
+    maxHp: number;
+    class: { name: string; icon: string };
+  };
+}
+
+export interface PartyCombatData {
+  id: string;
+  enemyId: string;
+  enemyHp: number;
+  enemyMaxHp: number;
+  status: string;
+}
+
+export interface PartyData {
+  id: string;
+  leaderId: string;
+  status: string;
+  members: PartyMemberData[];
+  combat: PartyCombatData | null;
+}
+
 export type GameScreen = 'loading' | 'creation' | 'game';
-export type GameTab = 'overview' | 'combat' | 'map' | 'inventory' | 'quests' | 'craft' | 'leaderboard';
+export type GameTab = 'overview' | 'combat' | 'map' | 'inventory' | 'quests' | 'craft' | 'leaderboard' | 'party';
 
 export type GameMessage = { text: string; type: 'info' | 'success' | 'error' } | null;
 

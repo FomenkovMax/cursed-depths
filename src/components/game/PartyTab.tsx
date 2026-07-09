@@ -7,6 +7,34 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { manaCostForStage } from '@/lib/combat-engine';
 import { PartyData, PartyCombatStateResponse, AbilityData } from '@/lib/game-types';
 
+// Личные баффы/активированные стойки участника (см. PartyMemberEffectKind в
+// lib/party-combat-engine.ts) — те же ярлыки, что и в CombatTab.tsx для одиночного боя, плюс
+// player_dodge_buff, которого у соло-боя нет отдельным полем (там смешан в activeEffects без
+// подписи, тут — своя запись).
+const MEMBER_EFFECT_LABELS: Record<string, string> = {
+  player_damage_buff: 'Урон усилен',
+  player_dodge_buff: 'Уклонение усилено',
+  on_block_counter_active: 'Контрудар после блока',
+  debuff_amplify: 'Дебаффы усилены',
+};
+
+// "Заряженные" одноразовые эффекты участника (см. PartyArmedEffectKind) — ждут следующего
+// нанесённого/полученного удара, см. lib/conditional-ability-engine.ts.
+const ARMED_EFFECT_LABELS: Record<string, string> = {
+  reduce_next_incoming: 'Снижает след. удар',
+  boost_next_outgoing: 'След. атака изменена',
+  next_attack_crit: 'След. атака — крит',
+  next_attack_lifesteal: 'След. атака лечит',
+  next_attack_ignore_defense: 'След. атака игнорирует броню',
+};
+
+// Общие на пати эффекты, наложенные на ВРАГА (см. PartySharedEffectKind).
+const SHARED_ENEMY_EFFECT_LABELS: Record<string, string> = {
+  enemy_damage_debuff: 'Враг ослаблен',
+  enemy_dot: 'Враг горит',
+  summon_damage: 'Скелет-союзник',
+};
+
 interface PartyTabProps {
   playerId: string | null;
   party: PartyData | null;
@@ -119,6 +147,17 @@ export function PartyTab({
                   )}
                 </div>
               )}
+              {/* Общие дебаффы/эффекты на враге, наложенные пати */}
+              {!!combatState.state?.sharedEnemyEffects.length && (
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  {combatState.state.sharedEnemyEffects.map((e, i) => (
+                    <Badge key={i} variant="outline" className="text-[10px] h-4 border-border">
+                      {SHARED_ENEMY_EFFECT_LABELS[e.kind] ?? e.kind}{' '}
+                      {e.kind === 'summon_damage' ? e.percent : `${Math.round(e.percent * 100)}%`} ({e.turnsRemaining} х.)
+                    </Badge>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -145,6 +184,21 @@ export function PartyTab({
                       <div className="h-1.5 bg-secondary rounded-full overflow-hidden mt-1">
                         <div className="h-full bg-hp rounded-full transition-all duration-500" style={{ width: `${Math.max(0, (m.hp / m.maxHp) * 100)}%` }} />
                       </div>
+                      {/* Баффы/активированные стойки и заряженные эффекты этого участника */}
+                      {(!!memberState?.activeEffects.length || !!memberState?.armedEffects.length) && (
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {memberState?.activeEffects.map((e, i) => (
+                            <Badge key={`ae-${i}`} variant="outline" className="text-[9px] h-4 px-1 border-border">
+                              {MEMBER_EFFECT_LABELS[e.kind] ?? e.kind} {Math.round(e.percent * 100)}% ({e.turnsRemaining} х.)
+                            </Badge>
+                          ))}
+                          {memberState?.armedEffects.map((e, i) => (
+                            <Badge key={`arm-${i}`} variant="outline" className="text-[9px] h-4 px-1 border-gold/50 text-gold">
+                              ⚡ {ARMED_EFFECT_LABELS[e.kind] ?? e.kind}
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
                     </div>
                     <div className="text-[10px] text-hp shrink-0">{m.hp}/{m.maxHp}</div>
                   </div>
@@ -185,7 +239,8 @@ export function PartyTab({
                       <div className="grid grid-cols-2 gap-1.5">
                         {availableAbilities.map((ability: AbilityData) => {
                           const manaCost = manaCostForStage(ability.stage);
-                          const canUse = !loading && playerMp >= manaCost;
+                          const cooldown = (playerId && combatState.state?.members[playerId]?.abilityCooldowns[ability.slug]) || 0;
+                          const canUse = !loading && playerMp >= manaCost && cooldown <= 0;
                           return (
                             <Button
                               key={ability.id}
@@ -197,7 +252,9 @@ export function PartyTab({
                             >
                               <div className="text-left">
                                 <div className="font-medium">{ability.icon} {ability.name}</div>
-                                <div className="text-[10px] text-muted-foreground">{manaCost} маны</div>
+                                <div className="text-[10px] text-muted-foreground">
+                                  {cooldown > 0 ? `КД: ${cooldown} х.` : `${manaCost} маны`}
+                                </div>
                               </div>
                             </Button>
                           );

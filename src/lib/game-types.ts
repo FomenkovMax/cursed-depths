@@ -157,6 +157,8 @@ export interface PartyFightStateData {
   sharedEnemyEffects: { kind: string; percent: number; turnsRemaining: number }[];
   members: Record<string, {
     activeEffects: { kind: string; percent: number; turnsRemaining: number }[];
+    armedEffects: { kind: string; percent: number }[];
+    abilityCooldowns: Record<string, number>;
     shieldHp: number;
     alive: boolean;
     fled: boolean;

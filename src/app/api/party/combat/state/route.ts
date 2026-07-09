@@ -43,7 +43,17 @@ export async function GET(req: NextRequest) {
       state,
       members: memberRows,
       currentActingPlayerId: state ? currentActingPlayerId(state) : null,
-      enemy: enemyTemplate ? { id: enemyTemplate.id, nameRu: enemyTemplate.nameRu, icon: enemyTemplate.icon, ac: enemyTemplate.ac, damage: enemyTemplate.damage } : null,
+      enemy: enemyTemplate
+        ? {
+            id: enemyTemplate.id,
+            nameRu: enemyTemplate.nameRu,
+            icon: enemyTemplate.icon,
+            ac: enemyTemplate.ac,
+            damage: enemyTemplate.damage,
+            isBoss: !!enemyTemplate.isBoss,
+            shieldMax: enemyTemplate.mechanics?.shieldMax ?? null,
+          }
+        : null,
     });
   } catch (error) {
     console.error('[API] Route error:', error);

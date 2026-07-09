@@ -22,6 +22,8 @@ import {
   bossAcMultiplier,
   adaptiveResistMultiplier,
   playerDamageMultiplier,
+  blockRandomMechanics,
+  tickBlockedMechanics,
   type BossFightState,
 } from '@/lib/boss-mechanics';
 import { addActiveEffect, activeEffectBonus, tickActiveEffects, tickCooldowns, applyDamageToPlayerShield, armEffect, consumeArmedEffects, peekArmedEffectPercent } from '@/lib/combat-effects';
@@ -103,7 +105,14 @@ export async function POST(req: NextRequest) {
 
     let bossState: BossFightState;
     try {
-      bossState = player.bossState ? JSON.parse(player.bossState) : initBossState(enemyTemplate.mechanics);
+      // Мёржим поверх свежего initBossState(), а не доверяем распарсенному JSON целиком —
+      // bossState персистится в БД поле игрока и переживает деплои. Каждое поле, добавленное
+      // в BossFightState за время этой сессии (activeEffects, armedEffects, abilityCooldowns,
+      // poisonCured, blockedMechanics и т.д.), отсутствовало бы в JSON боя, начатого ДО
+      // деплоя с этим полем — без мёржа JSON.parse "успешно" вернул бы объект без него, и
+      // первая же попытка его использовать (напр. tickBlockedMechanics -> .map на undefined)
+      // валила бы весь эндпоинт с 500 для игрока посреди боя.
+      bossState = player.bossState ? { ...initBossState(enemyTemplate.mechanics), ...JSON.parse(player.bossState) } : initBossState(enemyTemplate.mechanics);
     } catch { bossState = initBossState(enemyTemplate.mechanics); }
 
     const currentTurn = combatLog.length;
@@ -407,6 +416,12 @@ export async function POST(req: NextRequest) {
             // summonDamage — уже готовое число урона за ход (не процент), см. resolveAbility.
             addActiveEffect(bossState, 'summon_damage', resolution.summonDamage, resolution.effectTurns);
           }
+          let blockedSkillLabels: string[] = [];
+          if (resolution.blockSkillCount > 0) {
+            // У рядовых врагов нет периодических механик вообще — блокировать нечего,
+            // blockRandomMechanics корректно вернёт пустой массив в этом случае.
+            blockedSkillLabels = blockRandomMechanics(enemyTemplate.mechanics, bossState, resolution.blockSkillCount, resolution.blockSkillTurns);
+          }
 
           const parts = [`${ability.icon} ${ability.name}!`];
           if (damageAbsorbed) parts.push('Урон поглощён щитом.');
@@ -418,6 +433,13 @@ export async function POST(req: NextRequest) {
           if (resolution.playerDamageBonus > 0) parts.push(`Ваш урон усилен на ${Math.round(resolution.playerDamageBonus * 100)}% на ${resolution.effectTurns} х.`);
           if (resolution.dodgeBonus > 0) parts.push(`Шанс уклонения повышен на ${Math.round(resolution.dodgeBonus * 100)}% на ${resolution.effectTurns} х.`);
           if (resolution.summonDamage > 0) parts.push(`Скелет-союзник будет наносить ${resolution.summonDamage} урона в ход (${resolution.effectTurns} х.)`);
+          if (resolution.blockSkillCount > 0) {
+            parts.push(
+              blockedSkillLabels.length > 0
+                ? `Заблокирован${blockedSkillLabels.length > 1 ? 'ы' : ''} скилл${blockedSkillLabels.length > 1 ? 'ы' : ''} врага (${blockedSkillLabels.join(', ')}) на ${resolution.blockSkillTurns} х.`
+                : 'У врага не нашлось скилла для блокировки.'
+            );
+          }
           combatLog.push({ text: parts.join(' '), turn: currentTurn });
           if (cleanseMsg) combatLog.push({ text: cleanseMsg, turn: currentTurn });
         }
@@ -621,6 +643,7 @@ export async function POST(req: NextRequest) {
 
       tickActiveEffects(bossState);
       tickCooldowns(bossState);
+      tickBlockedMechanics(bossState);
     }
 
     // Mana regen each round (Фаза 1.3: +10 маны за ход)

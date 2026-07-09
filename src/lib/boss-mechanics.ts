@@ -139,6 +139,73 @@ export interface BossFightState {
   abilityCooldowns: Record<string, number>;
   /** Противоядие использовано в этом бою — ДоТ-урон (яд/горение) больше не применяется до конца боя. */
   poisonCured: boolean;
+  /** "Заблокированные" периодические механики босса (см. BlockableMechanic) от способностей
+   * игрока вроде mute-bond/hand-of-morvena/total-fading — их триггер пропускается в
+   * resolveBossTurn, пока turnsRemaining > 0. */
+  blockedMechanics: { kind: BlockableMechanic; turnsRemaining: number }[];
+}
+
+/**
+ * Периодические ("раз в N ходов") боевые действия босса — ближайший в этом движке аналог
+ * дискретного "скилла", который можно заблокировать способностью игрока (mute-bond и т.п.).
+ * Непрерывные пассивные черты (самолечение, ДоТ, кража ХП, формы, щит) сюда намеренно НЕ
+ * входят — это не отдельные "ходы", а константы боя, "заблокировать" их нечем.
+ */
+export type BlockableMechanic = 'root' | 'counterStrike' | 'bigHit' | 'summon';
+
+const BLOCKABLE_MECHANIC_LABELS: Record<BlockableMechanic, string> = {
+  root: 'корни-ловушки',
+  counterStrike: 'ответный удар',
+  bigHit: 'колоссальный удар',
+  summon: 'призыв подкрепления',
+};
+
+/** Какие из периодических механик реально настроены у этого врага — только их и есть смысл "блокировать". */
+function eligibleBlockableMechanics(mechanics: BossMechanics | undefined): BlockableMechanic[] {
+  if (!mechanics) return [];
+  const eligible: BlockableMechanic[] = [];
+  if (mechanics.rootEveryTurns) eligible.push('root');
+  if (mechanics.counterStrikeEveryTurns) eligible.push('counterStrike');
+  if (mechanics.bigHitEveryTurns) eligible.push('bigHit');
+  if (mechanics.summonEveryTurns) eligible.push('summon');
+  return eligible;
+}
+
+/**
+ * Блокирует до count случайных периодических механик врага на turns ходов (mute-bond,
+ * hand-of-morvena, total-fading). У рядовых врагов (mechanics === undefined) и у боссов без
+ * ни одной периодической механики блокировать нечего — возвращает пустой массив, вызывающий
+ * код (combat/action/route.ts) в этом случае пишет в лог, что скилл для блокировки не нашёлся.
+ */
+export function blockRandomMechanics(
+  mechanics: BossMechanics | undefined,
+  state: BossFightState,
+  count: number,
+  turns: number
+): string[] {
+  const eligible = eligibleBlockableMechanics(mechanics).filter(
+    kind => !state.blockedMechanics.some(b => b.kind === kind)
+  );
+  const picked: BlockableMechanic[] = [];
+  for (let i = 0; i < count && eligible.length > 0; i++) {
+    const idx = Math.floor(Math.random() * eligible.length);
+    picked.push(eligible.splice(idx, 1)[0]);
+  }
+  for (const kind of picked) {
+    state.blockedMechanics.push({ kind, turnsRemaining: turns });
+  }
+  return picked.map(kind => BLOCKABLE_MECHANIC_LABELS[kind]);
+}
+
+function isMechanicBlocked(state: BossFightState, kind: BlockableMechanic): boolean {
+  return state.blockedMechanics.some(b => b.kind === kind);
+}
+
+/** Уменьшает оставшуюся длительность блокировок скиллов на 1 ход и убирает истёкшие. */
+export function tickBlockedMechanics(state: BossFightState): void {
+  state.blockedMechanics = state.blockedMechanics
+    .map(b => ({ ...b, turnsRemaining: b.turnsRemaining - 1 }))
+    .filter(b => b.turnsRemaining > 0);
 }
 
 export function initBossState(mechanics: BossMechanics | undefined): BossFightState {
@@ -163,6 +230,7 @@ export function initBossState(mechanics: BossMechanics | undefined): BossFightSt
     armedEffects: [],
     abilityCooldowns: {},
     poisonCured: false,
+    blockedMechanics: [],
   };
 }
 
@@ -319,7 +387,8 @@ export function resolveBossTurn(
     (mechanics.summonFromPhase === undefined || state.phase >= mechanics.summonFromPhase);
   if (
     mechanics.summonEveryTurns && summonActive && state.turnCount % mechanics.summonEveryTurns === 0 &&
-    (mechanics.summonMaxStacks === undefined || state.summonStacks < mechanics.summonMaxStacks)
+    (mechanics.summonMaxStacks === undefined || state.summonStacks < mechanics.summonMaxStacks) &&
+    !isMechanicBlocked(state, 'summon')
   ) {
     state.summonStacks += 1;
     messages.push('Босс призывает подкрепление!');
@@ -346,13 +415,13 @@ export function resolveBossTurn(
   const rootActive =
     (mechanics.rootFromPhase === undefined || state.phase >= mechanics.rootFromPhase) &&
     (mechanics.rootUntilPhase === undefined || state.phase < mechanics.rootUntilPhase);
-  if (mechanics.rootEveryTurns && rootActive && state.turnCount % mechanics.rootEveryTurns === 0) {
+  if (mechanics.rootEveryTurns && rootActive && state.turnCount % mechanics.rootEveryTurns === 0 && !isMechanicBlocked(state, 'root')) {
     state.playerRooted = true;
     messages.push('Корни-ловушки оплетают ваши ноги!');
   }
 
   // Ответный удар (нейтрализуется защитой игрока в предыдущий ход)
-  if (mechanics.counterStrikeEveryTurns && state.turnCount % mechanics.counterStrikeEveryTurns === 0) {
+  if (mechanics.counterStrikeEveryTurns && state.turnCount % mechanics.counterStrikeEveryTurns === 0 && !isMechanicBlocked(state, 'counterStrike')) {
     if (state.playerDefendedLastTurn) {
       messages.push('Вы блокируете Ответный удар!');
     } else {
@@ -362,7 +431,7 @@ export function resolveBossTurn(
   }
 
   // Колоссальный удар раз в N ходов — следующий ход игрока попадает в окно уязвимости
-  if (mechanics.bigHitEveryTurns && state.turnCount % mechanics.bigHitEveryTurns === 0) {
+  if (mechanics.bigHitEveryTurns && state.turnCount % mechanics.bigHitEveryTurns === 0 && !isMechanicBlocked(state, 'bigHit')) {
     damageMult *= mechanics.bigHitMult ?? 2;
     state.vulnerableNextTurn = true;
     messages.push('Колоссальный удар! Защита на миг дрогнула — бейте сейчас!');

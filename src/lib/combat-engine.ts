@@ -161,11 +161,22 @@ function extractSecondaryDamageBuff(description: string): number | null {
  * ("Атака, снижающая скорость врага... и крадущая 5% ХП как исцеление себе") превращалась
  * ЦЕЛИКОМ в чистый heal без единого урона врагу; the-plague (яд + "исцеление снижается
  * на 50%") — в heal вместо яда.
+ *
+ * Та же ловушка есть и для "регенерации"/"лечения" ВРАГА — отдельный корень слова
+ * ("регенерац.../реген", "лечени...") не покрывался словом "исцел" выше вообще, хотя смысл
+ * тот же: способность УБИРАЕТ/БЛОКИРУЕТ/КРАДЁТ что-то у ВРАГА, а не лечит игрока. Без этого
+ * dead-vein ("Блокирует пассивную регенерацию врага") и ailet-silence ("враг не может
+ * получать исцеление") превращались в самолечение на ровном месте; thread-severance
+ * ("Снимает... эффекты лечения и регена, наносит урон...") и cold-fingers ("Наносит урон и
+ * крадёт реген здоровья врага...") — что хуже — теряли СВОЙ РЕАЛЬНЫЙ УРОН по врагу целиком
+ * (оба текста прямо говорят "наносит урон", но heal-ветка перехватывала их первой).
  */
 function isLifestealOrEnemyHealDebuff(description: string): boolean {
   return /как исцел/i.test(description)
     || /исцелени[ея]\s+(себя\s+)?на\s*\d+\s*%\s*от\s*урона/i.test(description)
-    || /исцелени[ея]\s+(снижа|блокир|запрещ)/i.test(description);
+    || /исцелени[ея]\s+(снижа|блокир|запрещ)/i.test(description)
+    || /(снима|блокир|краде[тш]|крадё[тш]|не может получать)[а-яё]*[^.]*?(регенерац[а-яё]*|реген\b|лечени[ея]|исцелени[ея])/i.test(description)
+    || /(регенерац[а-яё]*|реген)\s*(здоровья\s*)?врага/i.test(description);
 }
 
 /** Грубая классификация эффекта способности по ключевым словам описания. */
@@ -173,8 +184,13 @@ export function classifyEffect(description: string): EffectKind {
   if (/восстанавлив|исцел|реген/i.test(description) && !isLifestealOrEnemyHealDebuff(description)) return 'heal';
   // Негативный lookbehind на "за" — иначе "снижает ЗАЩИТу врага" ложно матчился бы
   // по "щит" внутри "защиту" и способность превращалась в щит ИГРОКУ вместо
-  // дебаффа на врага (напр. battle-roar).
-  if (/(?<!за)щит|поглощ/i.test(description)) return 'shield';
+  // дебаффа на врага (напр. battle-roar). Второй lookbehind "нет " — slant-strike:
+  // "...если у врага НЕТ ЩИТА — +50% урона..." описывает УСЛОВИЕ (у противника нет щита),
+  // а не создание щита себе — без исключения "Мощная атака" целиком превращалась в щит
+  // ИГРОКУ ценой 0 урона по врагу (у врагов в этом движке вообще нет щита как ресурса вне
+  // boss-mechanics.ts shieldMax, так что условие тут декоративно, но это не повод отбирать
+  // урон у атаки).
+  if (/(?<!за)(?<!нет )щит|поглощ/i.test(description)) return 'shield';
   // "Яд N% ХП/ход на M ходов" — периодический урон врагу (lib/combat-effects.ts enemy_dot,
   // уже реально тикает в combat/action/route.ts, до этой ветки использовался только для
   // контр-ожога от пассивок). Должна идти РАНЬШЕ общего debuff — иначе "яд" ловится общей
@@ -281,9 +297,17 @@ export function resolveAbility(
   };
 
   switch (kind) {
-    case 'damage':
-      result.damage = mitigateDamage(Math.round(base * (1 + percent)), defenderVitality);
+    case 'damage': {
+      // extractEffectPercent() берёт ПЕРВЫЙ процент в тексте — для slant-strike ("Мощная
+      // атака: игнорирует 25% брони, либо ... — +50% урона...") это 25% (величина игнора
+      // брони, не связанная с этой веткой урона вообще), а не заявленные +50%. Тот же
+      // приоритет явного "+N% урона", что уже используется в case 'buff' выше и в
+      // extractSecondaryDamageBuff — если он есть, это и есть настоящая сила атаки.
+      const explicitBonus = extractSecondaryDamageBuff(description);
+      const damagePercent = explicitBonus ?? percent;
+      result.damage = mitigateDamage(Math.round(base * (1 + damagePercent)), defenderVitality);
       break;
+    }
     case 'heal':
       result.heal = Math.round(base * percent) + Math.round(attacker.willpower);
       break;

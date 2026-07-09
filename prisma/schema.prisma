@@ -139,7 +139,6 @@ model PlayerQuest {
   completed   Boolean  @default(false)
   claimed     Boolean  @default(false)
   reward      String   // JSON: {xp, gold, items}
-  expiresAt   DateTime?
   createdAt   DateTime @default(now())
 
   @@index([playerId])

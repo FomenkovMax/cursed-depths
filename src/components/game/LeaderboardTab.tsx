@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { PlayerData } from '@/lib/game-types';
 
 export interface LeaderboardEntry {
+  id: string;
   name: string;
   race: { name: string; icon: string } | null;
   class: { name: string; icon: string } | null;
@@ -44,9 +45,9 @@ export function LeaderboardTab({ player, leaderboard, loading }: LeaderboardTabP
       ) : (
         <div className="space-y-1.5">
           {leaderboard.map((entry, i) => {
-            const isMe = !!player && entry.name === player.name;
+            const isMe = !!player && entry.id === player.id;
             return (
-              <Card key={`${entry.name}-${i}`} className={`border-border ${isMe ? 'border-gold/60 bg-gold/5' : ''}`}>
+              <Card key={entry.id} className={`border-border ${isMe ? 'border-gold/60 bg-gold/5' : ''}`}>
                 <CardContent className="p-2.5 flex items-center gap-2.5">
                   <span className="text-lg w-7 text-center">{RANK_MEDALS[i] ?? `#${i + 1}`}</span>
                   <span className="text-xl">{entry.race?.icon || '👤'}</span>

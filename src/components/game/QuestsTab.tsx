@@ -46,7 +46,11 @@ export function QuestsTab({ player, loading, onClaimQuest }: QuestsTabProps) {
                   <CardContent className="p-3">
                     <div className="flex items-start gap-2">
                       <span className="text-xl mt-0.5">
-                        {quest.type === 'daily' ? '📅' : quest.type === 'kill' ? '⚔️' : quest.type === 'explore' ? '🗺️' : quest.type === 'craft' ? '⚒️' : '📜'}
+                        {quest.type === 'kill' ? '⚔️'
+                          : quest.type === 'explore' ? '🗺️'
+                          : quest.type === 'craft' ? '⚒️'
+                          : quest.type.startsWith('collect_') ? '🎁'
+                          : '📜'}
                       </span>
                       <div className="flex-1 min-w-0">
                         <h4 className="font-bold text-sm">{quest.title}</h4>

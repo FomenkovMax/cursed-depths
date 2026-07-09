@@ -7,6 +7,7 @@ export async function GET() {
       orderBy: [{ level: 'desc' }, { xp: 'desc' }],
       take: 10,
       select: {
+        id: true,
         name: true,
         race: { select: { name: true, icon: true } },
         class: { select: { name: true, icon: true } },

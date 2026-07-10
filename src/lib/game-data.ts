@@ -484,6 +484,12 @@ export const ITEMS: Item[] = [
   // === QUEST ITEMS ===
   { id: 'ancient_map', nameRu: 'Древняя карта', nameEn: 'Ancient Map', type: 'quest', rarity: 'uncommon', stats: {}, descriptionRu: 'Карта, указывающая путь к сокровищу.', descriptionEn: 'Map showing the way to treasure.', icon: '🗺️', value: 0 },
   { id: 'cursed_locket', nameRu: 'Проклятый медальон', nameEn: 'Cursed Locket', type: 'quest', rarity: 'rare', stats: {}, descriptionRu: 'Медальон с тёмной магией.', descriptionEn: 'Locket with dark magic.', icon: '📿', value: 0 },
+
+  // === BLUEPRINTS === редкий лут топ-боссов, изучаются через POST /api/craft/learn
+  // (см. CraftTab.tsx) — навсегда открывают рецепт тира 3 (game-data.ts CRAFTING_RECIPES).
+  { id: 'blueprint_cursed_king_blade', nameRu: 'Чертёж: Клинок Проклятого Короля', nameEn: "Blueprint: Cursed King's Blade", type: 'blueprint', rarity: 'legendary', stats: {}, descriptionRu: 'Изучите, чтобы навсегда открыть рецепт Клинка Проклятого Короля.', descriptionEn: "Learn to permanently unlock the Cursed King's Blade recipe.", icon: '📜', value: 0 },
+  { id: 'blueprint_crown_armor', nameRu: 'Чертёж: Броня Короны', nameEn: 'Blueprint: Crown Armor', type: 'blueprint', rarity: 'legendary', stats: {}, descriptionRu: 'Изучите, чтобы навсегда открыть рецепт Брони Короны.', descriptionEn: 'Learn to permanently unlock the Crown Armor recipe.', icon: '📜', value: 0 },
+  { id: 'blueprint_crown_fragment', nameRu: 'Чертёж: Осколок Короны', nameEn: 'Blueprint: Crown Fragment', type: 'blueprint', rarity: 'legendary', stats: {}, descriptionRu: 'Изучите, чтобы навсегда открыть рецепт огранки Осколка Короны.', descriptionEn: 'Learn to permanently unlock the Crown Fragment recipe.', icon: '📜', value: 0 },
 ];
 
 // ===== ENEMIES =====
@@ -609,7 +615,7 @@ export const ENEMIES: EnemyTemplate[] = [
   { id: 'rift_collapse_horror', nameRu: 'Ужас обвала', nameEn: 'Rift Collapse Horror', hp: 50, ac: 15, attack: 11, damage: '1d10+5', xp: 56, gold: 26, lootTable: [{ itemId: 'greater_health', chance: 0.3 }, { itemId: 'dwarven_plate', chance: 0.08 }], locationId: 'foundation_rift', isBoss: false, icon: '🕳️' },
   {
     id: 'broken_oath', nameRu: 'Сломанная Клятва', nameEn: 'The Broken Oath', hp: 140, ac: 17, attack: 13, damage: '2d10+6', xp: 450, gold: 200,
-    lootTable: [{ itemId: 'broken_oath_hammer', chance: 0.15 }, { itemId: 'oath_shield_shard', chance: 0.3 }, { itemId: 'greater_health', chance: 0.3 }],
+    lootTable: [{ itemId: 'broken_oath_hammer', chance: 0.15 }, { itemId: 'oath_shield_shard', chance: 0.3 }, { itemId: 'greater_health', chance: 0.3 }, { itemId: 'blueprint_crown_armor', chance: 0.12 }],
     locationId: 'foundation_rift', isBoss: true, icon: '💔',
     mechanics: {
       shieldMax: 60, shieldRegenTurns: 4,
@@ -640,7 +646,7 @@ export const ENEMIES: EnemyTemplate[] = [
   { id: 'flame_wisp_swarm', nameRu: 'Рой огненных духов', nameEn: 'Flame Wisp Swarm', hp: 60, ac: 15, attack: 14, damage: '1d10+6', xp: 70, gold: 32, lootTable: [{ itemId: 'mana_potion', chance: 0.3 }], locationId: 'flame_cradle', isBoss: false, icon: '✨' },
   {
     id: 'first_dragon', nameRu: 'Первый Дракон', nameEn: 'The First Dragon', hp: 160, ac: 18, attack: 15, damage: '3d8+6', xp: 550, gold: 250,
-    lootTable: [{ itemId: 'first_dragon_scale', chance: 0.15 }, { itemId: 'ignira_fang', chance: 0.25 }, { itemId: 'elixir_power', chance: 0.3 }, { itemId: 'dragonslayer', chance: 0.08 }],
+    lootTable: [{ itemId: 'first_dragon_scale', chance: 0.15 }, { itemId: 'ignira_fang', chance: 0.25 }, { itemId: 'elixir_power', chance: 0.3 }, { itemId: 'dragonslayer', chance: 0.08 }, { itemId: 'blueprint_cursed_king_blade', chance: 0.12 }],
     locationId: 'flame_cradle', isBoss: true, icon: '🐉',
     mechanics: {
       playerDotPercent: 0.04, // Горение каждый ход
@@ -672,7 +678,7 @@ export const ENEMIES: EnemyTemplate[] = [
   { id: 'mass_grave_horror', nameRu: 'Ужас братской могилы', nameEn: 'Mass Grave Horror', hp: 70, ac: 17, attack: 16, damage: '2d6+6', xp: 78, gold: 36, lootTable: [{ itemId: 'greater_health', chance: 0.3 }, { itemId: 'shadow_essence', chance: 0.3 }], locationId: 'plague_gate', isBoss: false, icon: '🪦' },
   {
     id: 'first_risen', nameRu: 'Первый Восставший', nameEn: 'The First Risen', hp: 180, ac: 19, attack: 17, damage: '3d8+7', xp: 650, gold: 300,
-    lootTable: [{ itemId: 'first_risen_crown', chance: 0.15 }, { itemId: 'first_fall_dust', chance: 0.3 }, { itemId: 'elixir_power', chance: 0.3 }],
+    lootTable: [{ itemId: 'first_risen_crown', chance: 0.15 }, { itemId: 'first_fall_dust', chance: 0.3 }, { itemId: 'elixir_power', chance: 0.3 }, { itemId: 'blueprint_crown_fragment', chance: 0.12 }],
     locationId: 'plague_gate', isBoss: true, icon: '💀',
     mechanics: {
       summonEveryTurns: 2, summonBonusDamage: 6, summonUntilPhase: 2, summonMaxStacks: 5, // призывает скелетов каждые 2 хода до фазы 2
@@ -794,28 +800,36 @@ export interface CraftingRecipe {
   materials: { itemId: string; quantity: number }[];
   result: { itemId: string; quantity: number };
   icon: string;
+  /** Тир крафта — гейтится по уровню (см. minLevel), выше тир = чувствительнее
+   * шанс бонусного результата (см. lib/craft-engine.ts). */
+  tier: 1 | 2 | 3;
+  minLevel: number;
+  /** Только у тира 3 — рецепт недоступен, пока не изучен чертёж (itemId из ITEMS,
+   * type: 'blueprint'), см. POST /api/craft/learn. */
+  requiresBlueprintId?: string;
 }
 
 export const CRAFTING_RECIPES: CraftingRecipe[] = [
-  { id: 'craft_steel_sword', nameRu: 'Ковать Стальной меч', nameEn: 'Forge Steel Sword', materials: [{ itemId: 'iron_ore', quantity: 3 }], result: { itemId: 'steel_sword', quantity: 1 }, icon: '⚒️' },
-  { id: 'craft_chainmail', nameRu: 'Ковать Кольчугу', nameEn: 'Forge Chainmail', materials: [{ itemId: 'iron_ore', quantity: 4 }], result: { itemId: 'chainmail', quantity: 1 }, icon: '⚒️' },
-  { id: 'craft_health_potion', nameRu: 'Варить Зелье здоровья', nameEn: 'Brew Health Potion', materials: [{ itemId: 'iron_ore', quantity: 1 }], result: { itemId: 'health_potion', quantity: 2 }, icon: '🧪' },
-  { id: 'craft_shadow_dagger', nameRu: 'Зачаровать Теневой кинжал', nameEn: 'Enchant Shadow Dagger', materials: [{ itemId: 'steel_sword', quantity: 1 }, { itemId: 'shadow_essence', quantity: 2 }], result: { itemId: 'shadow_dagger', quantity: 1 }, icon: '✨' },
-  { id: 'craft_flame_blade', nameRu: 'Ковать Пламенный клинок', nameEn: 'Forge Flame Blade', materials: [{ itemId: 'steel_sword', quantity: 1 }, { itemId: 'dragon_scale', quantity: 1 }], result: { itemId: 'flame_blade', quantity: 1 }, icon: '🔥' },
-  { id: 'craft_dragonscale', nameRu: 'Ковать Драконью чешую', nameEn: 'Forge Dragonscale Armor', materials: [{ itemId: 'dragon_scale', quantity: 3 }, { itemId: 'iron_ore', quantity: 5 }], result: { itemId: 'dragonscale_armor', quantity: 1 }, icon: '🐉' },
-  { id: 'craft_void_staff', nameRu: 'Создать Посох Пустоты', nameEn: 'Create Void Staff', materials: [{ itemId: 'void_crystal', quantity: 2 }, { itemId: 'shadow_essence', quantity: 3 }], result: { itemId: 'void_staff', quantity: 1 }, icon: '🪄' },
-  { id: 'craft_greater_health', nameRu: 'Варить Сильное зелье', nameEn: 'Brew Greater Health Potion', materials: [{ itemId: 'health_potion', quantity: 2 }, { itemId: 'shadow_essence', quantity: 1 }], result: { itemId: 'greater_health', quantity: 1 }, icon: '🧪' },
-  { id: 'craft_frost_axe', nameRu: 'Ковать Ледяной топор', nameEn: 'Forge Frost Axe', materials: [{ itemId: 'dragon_scale', quantity: 2 }, { itemId: 'void_crystal', quantity: 1 }], result: { itemId: 'frost_axe', quantity: 1 }, icon: '🪓' },
-  { id: 'craft_crown_shard', nameRu: 'Собрать необработанный осколок Короны', nameEn: 'Assemble Raw Crown Shard', materials: [{ itemId: 'void_crystal', quantity: 3 }, { itemId: 'shadow_essence', quantity: 5 }], result: { itemId: 'crown_shard', quantity: 1 }, icon: '💠' },
-  { id: 'craft_elixir', nameRu: 'Варить Эликсир Мощи', nameEn: 'Brew Elixir of Power', materials: [{ itemId: 'shadow_essence', quantity: 2 }, { itemId: 'health_potion', quantity: 1 }], result: { itemId: 'elixir_power', quantity: 1 }, icon: '⚗️' },
+  { id: 'craft_steel_sword', nameRu: 'Ковать Стальной меч', nameEn: 'Forge Steel Sword', materials: [{ itemId: 'iron_ore', quantity: 3 }], result: { itemId: 'steel_sword', quantity: 1 }, icon: '⚒️', tier: 1, minLevel: 1 },
+  { id: 'craft_chainmail', nameRu: 'Ковать Кольчугу', nameEn: 'Forge Chainmail', materials: [{ itemId: 'iron_ore', quantity: 4 }], result: { itemId: 'chainmail', quantity: 1 }, icon: '⚒️', tier: 1, minLevel: 1 },
+  { id: 'craft_health_potion', nameRu: 'Варить Зелье здоровья', nameEn: 'Brew Health Potion', materials: [{ itemId: 'iron_ore', quantity: 1 }], result: { itemId: 'health_potion', quantity: 2 }, icon: '🧪', tier: 1, minLevel: 1 },
+  { id: 'craft_shadow_dagger', nameRu: 'Зачаровать Теневой кинжал', nameEn: 'Enchant Shadow Dagger', materials: [{ itemId: 'steel_sword', quantity: 1 }, { itemId: 'shadow_essence', quantity: 2 }], result: { itemId: 'shadow_dagger', quantity: 1 }, icon: '✨', tier: 2, minLevel: 5 },
+  { id: 'craft_flame_blade', nameRu: 'Ковать Пламенный клинок', nameEn: 'Forge Flame Blade', materials: [{ itemId: 'steel_sword', quantity: 1 }, { itemId: 'dragon_scale', quantity: 1 }], result: { itemId: 'flame_blade', quantity: 1 }, icon: '🔥', tier: 2, minLevel: 5 },
+  { id: 'craft_dragonscale', nameRu: 'Ковать Драконью чешую', nameEn: 'Forge Dragonscale Armor', materials: [{ itemId: 'dragon_scale', quantity: 3 }, { itemId: 'iron_ore', quantity: 5 }], result: { itemId: 'dragonscale_armor', quantity: 1 }, icon: '🐉', tier: 2, minLevel: 5 },
+  { id: 'craft_void_staff', nameRu: 'Создать Посох Пустоты', nameEn: 'Create Void Staff', materials: [{ itemId: 'void_crystal', quantity: 2 }, { itemId: 'shadow_essence', quantity: 3 }], result: { itemId: 'void_staff', quantity: 1 }, icon: '🪄', tier: 2, minLevel: 5 },
+  { id: 'craft_greater_health', nameRu: 'Варить Сильное зелье', nameEn: 'Brew Greater Health Potion', materials: [{ itemId: 'health_potion', quantity: 2 }, { itemId: 'shadow_essence', quantity: 1 }], result: { itemId: 'greater_health', quantity: 1 }, icon: '🧪', tier: 2, minLevel: 5 },
+  { id: 'craft_frost_axe', nameRu: 'Ковать Ледяной топор', nameEn: 'Forge Frost Axe', materials: [{ itemId: 'dragon_scale', quantity: 2 }, { itemId: 'void_crystal', quantity: 1 }], result: { itemId: 'frost_axe', quantity: 1 }, icon: '🪓', tier: 2, minLevel: 5 },
+  { id: 'craft_crown_shard', nameRu: 'Собрать необработанный осколок Короны', nameEn: 'Assemble Raw Crown Shard', materials: [{ itemId: 'void_crystal', quantity: 3 }, { itemId: 'shadow_essence', quantity: 5 }], result: { itemId: 'crown_shard', quantity: 1 }, icon: '💠', tier: 2, minLevel: 5 },
+  { id: 'craft_elixir', nameRu: 'Варить Эликсир Мощи', nameEn: 'Brew Elixir of Power', materials: [{ itemId: 'shadow_essence', quantity: 2 }, { itemId: 'health_potion', quantity: 1 }], result: { itemId: 'elixir_power', quantity: 1 }, icon: '⚗️', tier: 2, minLevel: 5 },
   // Осколок Короны (craft_crown_shard выше) до этих трёх рецептов был тупиковым
   // материалом — крафтился, но никуда не тратился, а cursed_king_blade/crown_armor/
   // crown_fragment (весь сюжетный сет Проклятого Короля) были при этом недостижимы
   // в принципе: ни одно существо их не роняет. Осколок теперь капстоун-ингредиент
-  // топ-тира снаряжения игры.
-  { id: 'craft_cursed_king_blade', nameRu: 'Сковать Клинок Проклятого Короля', nameEn: "Forge the Cursed King's Blade", materials: [{ itemId: 'crown_shard', quantity: 1 }, { itemId: 'dragon_scale', quantity: 2 }, { itemId: 'void_crystal', quantity: 2 }], result: { itemId: 'cursed_king_blade', quantity: 1 }, icon: '👑' },
-  { id: 'craft_crown_armor', nameRu: 'Сковать Броню Короны', nameEn: 'Forge Crown Armor', materials: [{ itemId: 'crown_shard', quantity: 1 }, { itemId: 'iron_ore', quantity: 5 }, { itemId: 'dragon_scale', quantity: 2 }], result: { itemId: 'crown_armor', quantity: 1 }, icon: '👑' },
-  { id: 'craft_crown_fragment', nameRu: 'Огранить Осколок Короны', nameEn: 'Cut the Crown Fragment', materials: [{ itemId: 'crown_shard', quantity: 1 }, { itemId: 'void_crystal', quantity: 2 }], result: { itemId: 'crown_fragment', quantity: 1 }, icon: '👑' },
+  // топ-тира снаряжения игры. Тир 3 — сверху требует изученный чертёж (см. поле
+  // requiresBlueprintId и POST /api/craft/learn), сами чертежи — редкий лут топ-боссов.
+  { id: 'craft_cursed_king_blade', nameRu: 'Сковать Клинок Проклятого Короля', nameEn: "Forge the Cursed King's Blade", materials: [{ itemId: 'crown_shard', quantity: 1 }, { itemId: 'dragon_scale', quantity: 2 }, { itemId: 'void_crystal', quantity: 2 }], result: { itemId: 'cursed_king_blade', quantity: 1 }, icon: '👑', tier: 3, minLevel: 10, requiresBlueprintId: 'blueprint_cursed_king_blade' },
+  { id: 'craft_crown_armor', nameRu: 'Сковать Броню Короны', nameEn: 'Forge Crown Armor', materials: [{ itemId: 'crown_shard', quantity: 1 }, { itemId: 'iron_ore', quantity: 5 }, { itemId: 'dragon_scale', quantity: 2 }], result: { itemId: 'crown_armor', quantity: 1 }, icon: '👑', tier: 3, minLevel: 10, requiresBlueprintId: 'blueprint_crown_armor' },
+  { id: 'craft_crown_fragment', nameRu: 'Огранить Осколок Короны', nameEn: 'Cut the Crown Fragment', materials: [{ itemId: 'crown_shard', quantity: 1 }, { itemId: 'void_crystal', quantity: 2 }], result: { itemId: 'crown_fragment', quantity: 1 }, icon: '👑', tier: 3, minLevel: 10, requiresBlueprintId: 'blueprint_crown_fragment' },
 ];
 
 // ===== RARITY COLORS =====

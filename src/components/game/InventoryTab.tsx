@@ -11,9 +11,10 @@ interface InventoryTabProps {
   loading: boolean;
   onEquip: (inventoryId: string) => void;
   onUseItem: (inventoryId: string) => void;
+  onLearnBlueprint: (inventoryId: string) => void;
 }
 
-export function InventoryTab({ player, loading, onEquip, onUseItem }: InventoryTabProps) {
+export function InventoryTab({ player, loading, onEquip, onUseItem, onLearnBlueprint }: InventoryTabProps) {
   const playerInventory = player?.inventory || [];
 
   return (
@@ -84,6 +85,7 @@ export function InventoryTab({ player, loading, onEquip, onUseItem }: InventoryT
                   const stats = parseStats(item.stats);
                   const canEquip = ['weapon', 'armor', 'accessory'].includes(item.type);
                   const canUse = item.type === 'consumable';
+                  const canLearn = item.type === 'blueprint';
                   return (
                     <div
                       key={item.id}
@@ -130,6 +132,17 @@ export function InventoryTab({ player, loading, onEquip, onUseItem }: InventoryT
                             disabled={loading}
                           >
                             Исп.
+                          </Button>
+                        )}
+                        {canLearn && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-6 text-[10px] px-2 border-gold/50 text-gold"
+                            onClick={() => onLearnBlueprint(item.id)}
+                            disabled={loading}
+                          >
+                            📜 Изучить
                           </Button>
                         )}
                       </div>

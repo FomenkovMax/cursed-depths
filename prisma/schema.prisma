@@ -54,6 +54,7 @@ model Player {
   creation        CharacterCreation?
   partyMember     PartyMember?
   achievements    PlayerAchievement[]
+  recipes         PlayerRecipe[]
 
   @@index([telegramId])
   @@index([locationId])
@@ -115,6 +116,21 @@ model PlayerAchievement {
   unlockedAt    DateTime @default(now())
 
   @@unique([playerId, achievementId])
+  @@index([playerId])
+}
+
+// Постоянно изученные рецепты тира 3 — изучаются один раз через POST /api/craft/learn,
+// расходуя предмет-чертёж (см. ITEMS type: 'blueprint' в game-data.ts). recipeId — id из
+// CRAFTING_RECIPES (game-data.ts), не строка из БД — рецепты статичны, как и всё остальное
+// игровое содержимое.
+model PlayerRecipe {
+  id         String   @id @default(cuid())
+  playerId   String
+  player     Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  recipeId   String
+  unlockedAt DateTime @default(now())
+
+  @@unique([playerId, recipeId])
   @@index([playerId])
 }
 

@@ -50,6 +50,11 @@ export default function CursedDepths() {
   const [party, setParty] = useState<PartyData | null>(null);
   const [partyCombatState, setPartyCombatState] = useState<PartyCombatStateResponse | null>(null);
   const [explorationEvent, setExplorationEvent] = useState<ExplorationEvent | null>(null);
+  // Изученные рецепты тира 3 (game-data.ts CRAFTING_RECIPES) — отдельный стейт, а не поле
+  // player: только GET /api/player включает player.recipes в ответ, остальные роуты
+  // (explore/combat/travel) — нет, и setPlayer(data.player) после них затёр бы это поле,
+  // если бы оно жило внутри PlayerData.
+  const [learnedRecipeIds, setLearnedRecipeIds] = useState<Set<string>>(new Set());
 
   // Character creation state
   const [creationStep, setCreationStep] = useState(0);
@@ -91,6 +96,9 @@ export default function CursedDepths() {
 
       if (data.exists && data.player) {
         setPlayer(data.player);
+        if (data.player.recipes) {
+          setLearnedRecipeIds(new Set(data.player.recipes.map((r: { recipeId: string }) => r.recipeId)));
+        }
         if (data.player.inCombat) {
           try {
             const logs = data.player.combatLog ? JSON.parse(data.player.combatLog) : [];
@@ -298,6 +306,9 @@ export default function CursedDepths() {
       const data = await fetch('/api/player', { headers }).then(r => r.json());
       if (data.player) {
         setPlayer(data.player);
+        if (data.player.recipes) {
+          setLearnedRecipeIds(new Set(data.player.recipes.map((r: { recipeId: string }) => r.recipeId)));
+        }
       }
     } catch {
       // silent
@@ -656,6 +667,25 @@ export default function CursedDepths() {
     setLoading(false);
   };
 
+  // ===== LEARN BLUEPRINT (тир 3 крафта — см. lib CRAFTING_RECIPES.requiresBlueprintId) =====
+  const handleLearnBlueprint = async (inventoryId: string) => {
+    if (!player) return;
+    setLoading(true);
+    try {
+      const data = await apiCall('/api/craft/learn', 'POST', { inventoryId });
+      if (data.error) {
+        setMessage({ text: data.error, type: 'error' });
+      } else {
+        setMessage({ text: data.message, type: 'success' });
+        if (data.player) setPlayer(data.player);
+        if (data.recipeId) setLearnedRecipeIds(prev => new Set(prev).add(data.recipeId));
+      }
+    } catch {
+      setMessage({ text: 'Ошибка изучения чертежа', type: 'error' });
+    }
+    setLoading(false);
+  };
+
   // ===== CLAIM QUEST =====
   const handleClaimQuest = async (questId: string) => {
     if (!player) return;
@@ -810,6 +840,14 @@ export default function CursedDepths() {
     return true;
   };
 
+  // ===== HELPER: Полная проверка доступности рецепта — материалы + уровень + чертёж =====
+  const canCraftRecipe = (recipe: typeof CRAFTING_RECIPES[0]) => {
+    if (!player) return false;
+    if (player.level < recipe.minLevel) return false;
+    if (recipe.requiresBlueprintId && !learnedRecipeIds.has(recipe.id)) return false;
+    return hasMaterials(recipe);
+  };
+
   // ===== RENDER: LOADING SCREEN =====
   if (screen === 'loading') {
     return <LoadingScreen />;
@@ -935,11 +973,11 @@ export default function CursedDepths() {
 
           <MapTab player={player} location={location} loading={loading} onTravel={handleTravel} />
 
-          <InventoryTab player={player} loading={loading} onEquip={handleEquip} onUseItem={handleUseItem} />
+          <InventoryTab player={player} loading={loading} onEquip={handleEquip} onUseItem={handleUseItem} onLearnBlueprint={handleLearnBlueprint} />
 
           <QuestsTab player={player} loading={loading} onClaimQuest={handleClaimQuest} />
 
-          <CraftTab player={player} loading={loading} hasMaterials={hasMaterials} onCraft={handleCraft} />
+          <CraftTab player={player} loading={loading} canCraftRecipe={canCraftRecipe} learnedRecipeIds={learnedRecipeIds} onCraft={handleCraft} />
 
           <LeaderboardTab player={player} leaderboard={leaderboard} loading={leaderboardLoading} />
 

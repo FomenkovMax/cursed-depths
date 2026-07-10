@@ -19,6 +19,7 @@ export async function GET(req: NextRequest) {
         creation: true,
         race: true,
         class: { include: { abilities: true } },
+        recipes: true,
       },
     });
 
@@ -38,6 +39,7 @@ export async function GET(req: NextRequest) {
           creation: true,
           race: true,
           class: { include: { abilities: true } },
+          recipes: true,
         },
       });
     }

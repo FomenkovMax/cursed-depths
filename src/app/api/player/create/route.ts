@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { validateTelegramRequest } from '@/lib/auth';
-import { issueDailyQuests } from '@/lib/quests';
+import { issueDailyQuests, issueChainQuests } from '@/lib/quests';
 
 export async function POST(req: NextRequest) {
   try {
@@ -76,6 +76,8 @@ export async function POST(req: NextRequest) {
 
       // Выдаём стартовый набор ежедневных квестов, чтобы вкладка "Квесты" не была пустой с первого входа
       await issueDailyQuests(tx, created.id, created.level);
+      // Первый шаг каждой квестовой цепочки — постоянный прогресс поверх ежедневных заданий
+      await issueChainQuests(tx, created.id);
 
       // Re-fetch player with inventory, quests, race and class included
       return tx.player.findUnique({

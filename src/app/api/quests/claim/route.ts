@@ -3,7 +3,7 @@ import { db } from '@/lib/db';
 import { ITEMS } from '@/lib/game-data';
 import { validateTelegramRequest } from '@/lib/auth';
 import { addItemToInventory } from '@/lib/inventory-utils';
-import { collectQuestItemId } from '@/lib/quests';
+import { collectQuestItemId, advanceChainOnClaim } from '@/lib/quests';
 
 /** Брошено внутри транзакции, если квест уже помечен полученным В МОМЕНТ фактической записи
  * (см. комментарий у updateMany ниже) — напр. параллельный дубликат того же запроса. */
@@ -76,6 +76,9 @@ export async function POST(req: NextRequest) {
         data: { claimed: true },
       });
       if (claimResult.count === 0) throw new AlreadyClaimedError();
+
+      // Если это шаг квестовой цепочки — выдаём следующий (см. lib/quest-chains.ts)
+      await advanceChainOnClaim(tx, player.id, quest.questId);
 
       // Give gold/XP rewards
       const updateData: Record<string, unknown> = {

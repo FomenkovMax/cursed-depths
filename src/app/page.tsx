@@ -18,6 +18,9 @@ import {
   AchievementEntry,
   CodexEntryView,
   MarketListingView,
+  PvpOpponentView,
+  PvpLeagueView,
+  PvpFightResultView,
   GuildData,
 } from '@/lib/game-types';
 import { LoadingScreen } from '@/components/game/LoadingScreen';
@@ -28,6 +31,7 @@ import { ExplorationEventModal } from '@/components/game/ExplorationEventModal';
 import { AchievementsTab } from '@/components/game/AchievementsTab';
 import { CodexTab } from '@/components/game/CodexTab';
 import { MarketTab } from '@/components/game/MarketTab';
+import { PvpTab } from '@/components/game/PvpTab';
 import { CombatTab } from '@/components/game/CombatTab';
 import { MapTab } from '@/components/game/MapTab';
 import { InventoryTab } from '@/components/game/InventoryTab';
@@ -60,6 +64,12 @@ export default function CursedDepths() {
   const [codexLoading, setCodexLoading] = useState(false);
   const [marketListings, setMarketListings] = useState<MarketListingView[]>([]);
   const [marketLoading, setMarketLoading] = useState(false);
+  const [pvpOpponents, setPvpOpponents] = useState<PvpOpponentView[]>([]);
+  const [pvpMyRating, setPvpMyRating] = useState(1000);
+  const [pvpMyLeague, setPvpMyLeague] = useState<PvpLeagueView | null>(null);
+  const [pvpMyWins, setPvpMyWins] = useState(0);
+  const [pvpMyLosses, setPvpMyLosses] = useState(0);
+  const [pvpLoading, setPvpLoading] = useState(false);
   const [party, setParty] = useState<PartyData | null>(null);
   const [guild, setGuild] = useState<GuildData | null>(null);
   const [guildLoading, setGuildLoading] = useState(false);
@@ -313,6 +323,47 @@ export default function CursedDepths() {
     if (tab !== 'market' || !telegramIdRef.current) return;
     refreshMarket();
   }, [tab, refreshMarket]);
+
+  // ===== PVP ARENA (lib/pvp.ts) =====
+  const refreshPvpOpponents = useCallback(() => {
+    setPvpLoading(true);
+    apiCall('/api/pvp/opponents')
+      .then(data => {
+        if (data.opponents) setPvpOpponents(data.opponents);
+        if (typeof data.myRating === 'number') setPvpMyRating(data.myRating);
+        if (data.myLeague) setPvpMyLeague(data.myLeague);
+        if (typeof data.myWins === 'number') setPvpMyWins(data.myWins);
+        if (typeof data.myLosses === 'number') setPvpMyLosses(data.myLosses);
+      })
+      .catch(() => setMessage({ text: 'Не удалось загрузить арену', type: 'error' }))
+      .finally(() => setPvpLoading(false));
+  }, [apiCall]);
+
+  useEffect(() => {
+    if (tab !== 'pvp' || !telegramIdRef.current) return;
+    refreshPvpOpponents();
+  }, [tab, refreshPvpOpponents]);
+
+  const handlePvpChallenge = async (opponentId: string): Promise<PvpFightResultView | null> => {
+    if (!player) return null;
+    setPvpLoading(true);
+    try {
+      const data = await apiCall('/api/pvp/challenge', 'POST', { opponentId });
+      if (data.error) {
+        setMessage({ text: data.error, type: 'error' });
+        return null;
+      }
+      setMessage({ text: data.won ? 'Победа на арене!' : 'Поражение на арене...', type: data.won ? 'success' : 'info' });
+      await refreshPlayer();
+      refreshPvpOpponents();
+      return data as PvpFightResultView;
+    } catch {
+      setMessage({ text: 'Ошибка боя на арене', type: 'error' });
+      return null;
+    } finally {
+      setPvpLoading(false);
+    }
+  };
 
   // ===== GUILD ===== гильдия — постоянная группа, не боевая сессия, поэтому без поллинга
   // раз в 2 сек как у Party — достаточно подгружать при открытии вкладки.
@@ -1132,7 +1183,7 @@ export default function CursedDepths() {
       {/* Main content */}
       <main className="flex-1 overflow-hidden">
         <Tabs value={tab} onValueChange={v => setTab(v as GameTab)} className="h-full flex flex-col">
-          <TabsList className="grid w-full grid-cols-12 bg-card rounded-none border-b border-border h-10 p-0">
+          <TabsList className="grid w-full grid-cols-13 bg-card rounded-none border-b border-border h-10 p-0">
             <TabsTrigger value="overview" className="text-xs py-2 data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
               🏠
             </TabsTrigger>
@@ -1171,6 +1222,9 @@ export default function CursedDepths() {
             </TabsTrigger>
             <TabsTrigger value="market" className="text-xs py-2 data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
               🏛️
+            </TabsTrigger>
+            <TabsTrigger value="pvp" className="text-xs py-2 data-[state=active]:bg-destructive/20 data-[state=active]:text-destructive">
+              ⚔️
             </TabsTrigger>
           </TabsList>
 
@@ -1254,6 +1308,16 @@ export default function CursedDepths() {
             onListItem={handleMarketListItem}
             onBuyItem={handleMarketBuyItem}
             onCancelListing={handleMarketCancelListing}
+          />
+
+          <PvpTab
+            opponents={pvpOpponents}
+            myRating={pvpMyRating}
+            myLeague={pvpMyLeague}
+            myWins={pvpMyWins}
+            myLosses={pvpMyLosses}
+            loading={pvpLoading}
+            onChallenge={handlePvpChallenge}
           />
         </Tabs>
       </main>

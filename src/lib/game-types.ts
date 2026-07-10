@@ -240,7 +240,7 @@ export interface PartyCombatStateResponse {
 }
 
 export type GameScreen = 'loading' | 'creation' | 'game';
-export type GameTab = 'overview' | 'combat' | 'map' | 'inventory' | 'quests' | 'craft' | 'leaderboard' | 'party' | 'achievements' | 'guild' | 'codex' | 'market';
+export type GameTab = 'overview' | 'combat' | 'map' | 'inventory' | 'quests' | 'craft' | 'leaderboard' | 'party' | 'achievements' | 'guild' | 'codex' | 'market' | 'pvp';
 
 export type GameMessage = { text: string; type: 'info' | 'success' | 'error' } | null;
 
@@ -266,6 +266,35 @@ export interface AchievementEntry {
   progress: number | null;
   unlocked: boolean;
   unlockedAt: string | null;
+}
+
+export interface PvpLeagueView {
+  id: string;
+  nameRu: string;
+  minRating: number;
+  icon: string;
+}
+
+export interface PvpOpponentView {
+  id: string;
+  name: string;
+  level: number;
+  pvpRating: number;
+  pvpWins: number;
+  pvpLosses: number;
+  league: PvpLeagueView;
+  class: { name: string; icon: string };
+}
+
+export interface PvpFightResultView {
+  won: boolean;
+  log: string[];
+  ratingDelta: number;
+  newRating: number;
+  league: PvpLeagueView;
+  goldGained: number;
+  xpGained: number;
+  leveledUp: boolean;
 }
 
 export interface MarketListingView {

@@ -1,5 +1,5 @@
 import { TabsContent } from '@/components/ui/tabs';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { PlayerData } from '@/lib/game-types';
 
@@ -13,21 +13,55 @@ export interface LeaderboardEntry {
   gold: number;
 }
 
+export interface SeasonWinnerEntry {
+  id: string;
+  rank: number;
+  playerId: string;
+  rewardGold: number;
+  rewardXp: number;
+  player: { name: string; class: { icon: string } | null };
+}
+
 interface LeaderboardTabProps {
   player: PlayerData | null;
   leaderboard: LeaderboardEntry[];
   loading: boolean;
+  currentSeason: string | null;
+  previousSeason: string | null;
+  previousSeasonWinners: SeasonWinnerEntry[];
 }
 
 const RANK_MEDALS = ['🥇', '🥈', '🥉'];
 
-export function LeaderboardTab({ player, leaderboard, loading }: LeaderboardTabProps) {
+export function LeaderboardTab({ player, leaderboard, loading, currentSeason, previousSeason, previousSeasonWinners }: LeaderboardTabProps) {
   return (
     <TabsContent value="leaderboard" className="flex-1 overflow-y-auto p-4 space-y-3 m-0">
       <div className="text-center mb-2">
         <h3 className="font-bold text-sm">Таблица лидеров</h3>
-        <p className="text-xs text-muted-foreground">Топ-10 искателей приключений по уровню</p>
+        <p className="text-xs text-muted-foreground">
+          Топ-10 искателей приключений по уровню{currentSeason ? ` • сезон ${currentSeason}` : ''}
+        </p>
       </div>
+
+      {/* Награды за прошлый сезон — топ-3 получают золото и опыт в начале каждого месяца
+          (см. GET /api/leaderboard, lib/seasons.ts). Прогресс игроков при этом НЕ сбрасывается. */}
+      {previousSeasonWinners.length > 0 && (
+        <Card className="border-gold/40 bg-gold/5">
+          <CardHeader className="pb-2 pt-3 px-4">
+            <CardTitle className="text-sm">🏆 Прошлый сезон {previousSeason}</CardTitle>
+          </CardHeader>
+          <CardContent className="px-4 pb-3 space-y-1.5">
+            {previousSeasonWinners.map(w => (
+              <div key={w.id} className="flex items-center gap-2 text-xs">
+                <span>{RANK_MEDALS[w.rank - 1] ?? `#${w.rank}`}</span>
+                <span className="flex-1 truncate">{w.player.class?.icon} {w.player.name}</span>
+                <span className="text-gold">+{w.rewardGold} 💰</span>
+                <span className="text-xp">+{w.rewardXp} XP</span>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
 
       {loading ? (
         <Card className="border-border">

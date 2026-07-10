@@ -29,7 +29,7 @@ import { MapTab } from '@/components/game/MapTab';
 import { InventoryTab } from '@/components/game/InventoryTab';
 import { QuestsTab } from '@/components/game/QuestsTab';
 import { CraftTab } from '@/components/game/CraftTab';
-import { LeaderboardTab, type LeaderboardEntry } from '@/components/game/LeaderboardTab';
+import { LeaderboardTab, type LeaderboardEntry, type SeasonWinnerEntry } from '@/components/game/LeaderboardTab';
 import { PartyTab } from '@/components/game/PartyTab';
 import { GuildTab } from '@/components/game/GuildTab';
 
@@ -47,6 +47,9 @@ export default function CursedDepths() {
   const [floatingDamage, setFloatingDamage] = useState<{ id: number; text: string; color: string }[]>([]);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [leaderboardLoading, setLeaderboardLoading] = useState(false);
+  const [currentSeason, setCurrentSeason] = useState<string | null>(null);
+  const [previousSeason, setPreviousSeason] = useState<string | null>(null);
+  const [previousSeasonWinners, setPreviousSeasonWinners] = useState<SeasonWinnerEntry[]>([]);
   const [achievements, setAchievements] = useState<AchievementEntry[]>([]);
   const [achievementsLoading, setAchievementsLoading] = useState(false);
   const [party, setParty] = useState<PartyData | null>(null);
@@ -247,7 +250,12 @@ export default function CursedDepths() {
     setLeaderboardLoading(true);
     fetch('/api/leaderboard')
       .then(res => res.json())
-      .then(data => setLeaderboard(data.leaderboard || []))
+      .then(data => {
+        setLeaderboard(data.leaderboard || []);
+        setCurrentSeason(data.currentSeason ?? null);
+        setPreviousSeason(data.previousSeason ?? null);
+        setPreviousSeasonWinners(data.previousSeasonWinners || []);
+      })
       .catch(() => setMessage({ text: 'Не удалось загрузить таблицу лидеров', type: 'error' }))
       .finally(() => setLeaderboardLoading(false));
   }, [tab]);
@@ -1048,7 +1056,14 @@ export default function CursedDepths() {
 
           <CraftTab player={player} loading={loading} canCraftRecipe={canCraftRecipe} learnedRecipeIds={learnedRecipeIds} onCraft={handleCraft} />
 
-          <LeaderboardTab player={player} leaderboard={leaderboard} loading={leaderboardLoading} />
+          <LeaderboardTab
+            player={player}
+            leaderboard={leaderboard}
+            loading={leaderboardLoading}
+            currentSeason={currentSeason}
+            previousSeason={previousSeason}
+            previousSeasonWinners={previousSeasonWinners}
+          />
 
           <PartyTab
             playerId={player?.id ?? null}

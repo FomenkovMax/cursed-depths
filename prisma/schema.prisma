@@ -56,6 +56,7 @@ model Player {
   achievements    PlayerAchievement[]
   recipes         PlayerRecipe[]
   guildMember     GuildMember?
+  seasonRewards   SeasonReward[]
 
   @@index([telegramId])
   @@index([locationId])
@@ -157,6 +158,23 @@ model PlayerRecipe {
 
   @@unique([playerId, recipeId])
   @@index([playerId])
+}
+
+// Награды за топ-3 места сезонного лидерборда — раздаются лениво раз в месяц, см.
+// lib/seasons.ts и GET /api/leaderboard. Один ряд = одна выданная награда одному игроку
+// за конкретный сезон ("2026-07"), список за сезон — история для "🏆 Прошлый сезон" в UI.
+model SeasonReward {
+  id         String   @id @default(cuid())
+  season     String
+  rank       Int
+  playerId   String
+  player     Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  rewardGold Int
+  rewardXp   Int
+  awardedAt  DateTime @default(now())
+
+  @@unique([season, rank])
+  @@index([season])
 }
 
 model Inventory {

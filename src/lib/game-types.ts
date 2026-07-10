@@ -268,6 +268,21 @@ export interface AchievementEntry {
   unlockedAt: string | null;
 }
 
+export interface StashItemView {
+  id: string;
+  itemId: string;
+  name: string;
+  type: string;
+  rarity: string;
+  stats: string | null;
+  icon: string | null;
+  itemLevel: number | null;
+  affixTier: string | null;
+  affixes: string | null;
+  enhancementLevel: number;
+  quantity: number;
+}
+
 export interface WorldBossContributorView {
   playerId: string;
   name: string;

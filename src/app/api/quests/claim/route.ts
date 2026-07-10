@@ -33,6 +33,7 @@ export async function POST(req: NextRequest) {
 
     const player = await db.player.findUnique({
       where: { telegramId },
+      include: { class: true },
     });
 
     if (!player) return NextResponse.json({ error: 'Персонаж не найден' }, { status: 404 });
@@ -78,7 +79,7 @@ export async function POST(req: NextRequest) {
       if (claimResult.count === 0) throw new AlreadyClaimedError();
 
       // Если это шаг квестовой цепочки — выдаём следующий (см. lib/quest-chains.ts)
-      await advanceChainOnClaim(tx, player.id, quest.questId);
+      await advanceChainOnClaim(tx, player.id, quest.questId, player.class.path);
 
       // Give gold/XP rewards
       const updateData: Record<string, unknown> = {

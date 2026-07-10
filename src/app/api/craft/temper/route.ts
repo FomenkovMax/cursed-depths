@@ -3,6 +3,7 @@ import { db } from '@/lib/db';
 import { validateTelegramRequest } from '@/lib/auth';
 import { isGearType } from '@/lib/item-affixes';
 import { applyTemper } from '@/lib/item-enhancement';
+import { incrementQuestProgress } from '@/lib/quests';
 
 const TEMPER_SCROLL_ITEM_ID = 'tempering_scroll';
 
@@ -58,6 +59,7 @@ export async function POST(req: NextRequest) {
           where: { id: target.id },
           data: { enhancementLevel: result.newLevel, stats: JSON.stringify(result.stats) },
         });
+        await incrementQuestProgress(tx, player.id, 'temper');
       }
     });
 

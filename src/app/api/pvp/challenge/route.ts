@@ -4,6 +4,7 @@ import { validateTelegramRequest } from '@/lib/auth';
 import { computeEquipmentBonuses } from '@/lib/equipment-stats';
 import { stageUnlockLevel, type PlayerCombatStats } from '@/lib/combat-engine';
 import { simulatePvpFight, eloDelta, clampRating, leagueForRating, type PvpCombatant } from '@/lib/pvp';
+import { incrementQuestProgress } from '@/lib/quests';
 
 async function buildCombatant(playerId: string) {
   const player = await db.player.findUnique({
@@ -116,6 +117,9 @@ export async function POST(req: NextRequest) {
           pvpLosses: { increment: attackerWon ? 1 : 0 },
         },
       });
+      if (attackerWon) {
+        await incrementQuestProgress(tx, attackerBuild.player.id, 'pvp_win');
+      }
     });
 
     return NextResponse.json({

@@ -15,12 +15,14 @@ import {
   PartyData,
   PartyCombatStateResponse,
   ExplorationEvent,
+  AchievementEntry,
 } from '@/lib/game-types';
 import { LoadingScreen } from '@/components/game/LoadingScreen';
 import { CharacterCreationScreen } from '@/components/game/CharacterCreationScreen';
 import { GameHeader } from '@/components/game/GameHeader';
 import { OverviewTab } from '@/components/game/OverviewTab';
 import { ExplorationEventModal } from '@/components/game/ExplorationEventModal';
+import { AchievementsTab } from '@/components/game/AchievementsTab';
 import { CombatTab } from '@/components/game/CombatTab';
 import { MapTab } from '@/components/game/MapTab';
 import { InventoryTab } from '@/components/game/InventoryTab';
@@ -43,6 +45,8 @@ export default function CursedDepths() {
   const [floatingDamage, setFloatingDamage] = useState<{ id: number; text: string; color: string }[]>([]);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [leaderboardLoading, setLeaderboardLoading] = useState(false);
+  const [achievements, setAchievements] = useState<AchievementEntry[]>([]);
+  const [achievementsLoading, setAchievementsLoading] = useState(false);
   const [party, setParty] = useState<PartyData | null>(null);
   const [partyCombatState, setPartyCombatState] = useState<PartyCombatStateResponse | null>(null);
   const [explorationEvent, setExplorationEvent] = useState<ExplorationEvent | null>(null);
@@ -235,6 +239,22 @@ export default function CursedDepths() {
       .catch(() => setMessage({ text: 'Не удалось загрузить таблицу лидеров', type: 'error' }))
       .finally(() => setLeaderboardLoading(false));
   }, [tab]);
+
+  // ===== ACHIEVEMENTS =====
+  useEffect(() => {
+    if (tab !== 'achievements' || !telegramIdRef.current) return;
+    setAchievementsLoading(true);
+    apiCall('/api/achievements')
+      .then(data => {
+        if (data.achievements) setAchievements(data.achievements);
+        if (data.newlyUnlocked?.length > 0) {
+          const names = data.newlyUnlocked.map((a: { icon: string; nameRu: string }) => `${a.icon} ${a.nameRu}`).join(', ');
+          setMessage({ text: `Новое достижение: ${names}!`, type: 'success' });
+        }
+      })
+      .catch(() => setMessage({ text: 'Не удалось загрузить достижения', type: 'error' }))
+      .finally(() => setAchievementsLoading(false));
+  }, [tab, apiCall]);
 
   // Приглашение по Telegram deep-link: бот присылает кнопку web_app с URL вида
   // "?joinParty=<id>" (см. src/app/api/telegram/webhook/route.ts) — при первом входе в игру
@@ -826,7 +846,7 @@ export default function CursedDepths() {
       {/* Main content */}
       <main className="flex-1 overflow-hidden">
         <Tabs value={tab} onValueChange={v => setTab(v as GameTab)} className="h-full flex flex-col">
-          <TabsList className="grid w-full grid-cols-8 bg-card rounded-none border-b border-border h-10 p-0">
+          <TabsList className="grid w-full grid-cols-9 bg-card rounded-none border-b border-border h-10 p-0">
             <TabsTrigger value="overview" className="text-xs py-2 data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
               🏠
             </TabsTrigger>
@@ -853,6 +873,9 @@ export default function CursedDepths() {
             </TabsTrigger>
             <TabsTrigger value="party" className="text-xs py-2 data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
               👥
+            </TabsTrigger>
+            <TabsTrigger value="achievements" className="text-xs py-2 data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
+              🏅
             </TabsTrigger>
           </TabsList>
 
@@ -906,6 +929,8 @@ export default function CursedDepths() {
             onStartCombat={handleStartPartyCombat}
             onCombatAction={handlePartyCombatAction}
           />
+
+          <AchievementsTab achievements={achievements} loading={achievementsLoading} />
         </Tabs>
       </main>
 

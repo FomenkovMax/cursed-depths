@@ -81,6 +81,7 @@ export async function POST(req: NextRequest) {
       }, tx);
 
       await incrementQuestProgress(tx, player.id, 'craft');
+      await tx.player.update({ where: { telegramId }, data: { totalCrafts: { increment: 1 } } });
     });
 
     return NextResponse.json({

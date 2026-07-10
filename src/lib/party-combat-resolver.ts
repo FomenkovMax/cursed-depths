@@ -825,6 +825,10 @@ export async function resolvePartyAction(
         xp: lvl.newXp,
         gold: { increment: goldGain },
       };
+      if (rewardTargets.includes(id)) {
+        updateData.totalKills = { increment: 1 };
+        updateData.partyWins = { increment: 1 };
+      }
       if (isActing) updateData.mp = playerMp;
       if (lvl.leveledUp) {
         updateData.level = lvl.newLevel;

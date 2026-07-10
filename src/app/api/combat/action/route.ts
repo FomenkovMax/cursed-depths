@@ -67,6 +67,7 @@ import { incrementQuestProgress } from '@/lib/quests';
 import { findDungeon } from '@/lib/dungeons';
 import { rollGearInstance, rollCurrencyDrop } from '@/lib/item-affixes';
 import { rollTemperScrollDrop } from '@/lib/item-enhancement';
+import { dungeonModifierEffect } from '@/lib/dungeon-modifiers';
 
 export async function POST(req: NextRequest) {
   const auth = validateTelegramRequest(req);
@@ -129,6 +130,9 @@ export async function POST(req: NextRequest) {
     let xpGained = 0;
     let goldGained = 0;
     const droppedItems: string[] = [];
+    // Модификатор забега по данжу (lib/dungeon-modifiers.ts) — множители 1 по всем осям, если
+    // игрок не в данже или выпал "чистый" забег без модификатора.
+    const dungeonEffect = player.dungeonId ? dungeonModifierEffect(player.dungeonModifierId) : dungeonModifierEffect(null);
 
     // Track deferred DB operations for transaction
     let itemToConsume: { id: string; delete: boolean } | null = null;
@@ -498,8 +502,8 @@ export async function POST(req: NextRequest) {
     if (enemyHp <= 0 && !combatOver) {
       combatOver = true;
       playerWon = true;
-      xpGained = enemyTemplate.xp;
-      goldGained = enemyTemplate.gold + rollDice('1d4') * Math.ceil(player.level / 2);
+      xpGained = Math.round(enemyTemplate.xp * dungeonEffect.xpMult);
+      goldGained = Math.round((enemyTemplate.gold + rollDice('1d4') * Math.ceil(player.level / 2)) * dungeonEffect.goldMult);
       droppedItems.push(...rollLoot(enemyTemplate.lootTable));
       const currencyDrop = rollCurrencyDrop(enemyTemplate.isBoss);
       if (currencyDrop) droppedItems.push(currencyDrop);
@@ -542,7 +546,7 @@ export async function POST(req: NextRequest) {
         + (isDefending ? onDefendDefenseBonus(playerPassives) : 0)
         + (fullyBlocked ? 0 : armedBlock.percent));
       const totalReduction = Math.min(0.9, enemyDamageReduction + passiveIncomingReduction);
-      const rawDamage = rollDice(enemyTemplate.damage) * (1 - totalReduction);
+      const rawDamage = rollDice(enemyTemplate.damage) * (1 - totalReduction) * dungeonEffect.enemyDamageMult;
       const baseEnemyDamage = Math.max(1, Math.round(mitigateDamage(rawDamage, effectiveVitality) - armorBonus));
 
       const turnResult = resolveBossTurn(enemyTemplate.mechanics, bossState, enemyHp, enemyMaxHp, baseEnemyDamage, effectiveMaxHp);
@@ -703,13 +707,13 @@ export async function POST(req: NextRequest) {
             const nextEnemyId = isBossRoom ? dungeon.bossEnemyId : dungeon.regularEnemyIds[nextRoomIndex % dungeon.regularEnemyIds.length];
             dungeonNextEnemy = ENEMIES.find(e => e.id === nextEnemyId) ?? null;
             if (dungeonNextEnemy) {
-              dungeonNextEnemyHp = dungeonNextEnemy.hp + Math.floor(Math.random() * 5);
+              dungeonNextEnemyHp = Math.round((dungeonNextEnemy.hp + Math.floor(Math.random() * 5)) * dungeonEffect.enemyHpMult);
               combatLog.push({ text: `Комната ${nextRoomIndex + 1}/${dungeon.roomCount}: ${dungeonNextEnemy.nameRu} появляется!`, turn: currentTurn + 3 });
             }
           } else {
             dungeonJustCompleted = true;
-            xpGained += dungeon.completionReward.xp;
-            goldGained += dungeon.completionReward.gold;
+            xpGained += Math.round(dungeon.completionReward.xp * dungeonEffect.xpMult);
+            goldGained += Math.round(dungeon.completionReward.gold * dungeonEffect.goldMult);
             for (const rewardItemId of dungeon.completionReward.items ?? []) {
               const rewardItemData = ITEMS.find(i => i.id === rewardItemId);
               if (rewardItemData) {
@@ -778,9 +782,19 @@ export async function POST(req: NextRequest) {
         // Забег окончен (пройден полностью, провален побегом или смертью) — сбрасываем.
         updateData.dungeonId = null;
         updateData.dungeonRoom = 0;
+        updateData.dungeonModifierId = null;
       }
 
       if (playerHp <= 0) {
+        // Смерть теперь имеет реальную цену — 10% текущего золота (не только сброс прогресса
+        // забега в данже выше). goldGained в этой ветке всегда 0 (playerWon=false), поэтому
+        // безопасно заменить increment на decrement для того же поля.
+        const goldLoss = Math.min(player.gold, Math.round(player.gold * 0.1));
+        updateData.gold = { decrement: goldLoss };
+        if (goldLoss > 0) {
+          combatLog.push({ text: `Вы потеряли ${goldLoss} золота при смерти.`, turn: currentTurn + 2 });
+          updateData.combatLog = JSON.stringify(combatLog);
+        }
         // Player died - teleport to town with 1 HP
         updateData.hp = 1;
         updateData.locationId = 'town';

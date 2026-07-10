@@ -80,6 +80,7 @@ export interface PlayerData {
   partyWins: number;
   dungeonId: string | null;
   dungeonRoom: number;
+  dungeonModifierId: string | null;
   inventory: InventoryItem[];
   quests: QuestData[];
   /** Только GET /api/player заполняет это поле — остальные роуты не включают его в ответ,

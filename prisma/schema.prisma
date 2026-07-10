@@ -46,6 +46,8 @@ model Player {
   partyWins       Int       @default(0)
   dungeonId       String?   // текущий забег по данжу (lib/dungeons.ts) — null, если не в данже
   dungeonRoom     Int       @default(0) // 0-based индекс текущей комнаты забега
+  dungeonModifierId String? // модификатор этого забега (lib/dungeon-modifiers.ts) — null, если
+                            // забега нет или выпал "чистый" забег без модификатора
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 

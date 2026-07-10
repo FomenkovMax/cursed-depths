@@ -5,6 +5,7 @@ import { validateTelegramRequest } from '@/lib/auth';
 import { initBossState } from '@/lib/boss-mechanics';
 import { isInActivePartyCombat } from '@/lib/party-guards';
 import { findDungeon } from '@/lib/dungeons';
+import { rollDungeonModifier, findDungeonModifier, dungeonModifierEffect } from '@/lib/dungeon-modifiers';
 
 export async function POST(req: NextRequest) {
   const auth = validateTelegramRequest(req);
@@ -36,7 +37,14 @@ export async function POST(req: NextRequest) {
     const enemy = ENEMIES.find(e => e.id === firstEnemyId);
     if (!enemy) return NextResponse.json({ error: 'Ошибка данжа: враг не найден' }, { status: 500 });
 
-    const enemyHp = enemy.hp + Math.floor(Math.random() * 5);
+    const modifierId = rollDungeonModifier();
+    const modifier = findDungeonModifier(modifierId);
+    const effect = dungeonModifierEffect(modifierId);
+
+    const enemyHp = Math.round((enemy.hp + Math.floor(Math.random() * 5)) * effect.enemyHpMult);
+    const introLog = [{ text: `Вы входите в ${dungeon.nameRu}. Комната 1/${dungeon.roomCount}: ${enemy.nameRu}!`, turn: 0 }];
+    if (modifier) introLog.push({ text: `Модификатор забега: ${modifier.icon} ${modifier.nameRu} — ${modifier.descriptionRu}`, turn: 0 });
+
     const updated = await db.player.update({
       where: { telegramId: auth.telegramId },
       data: {
@@ -44,17 +52,18 @@ export async function POST(req: NextRequest) {
         enemyId: enemy.id,
         enemyHp,
         enemyMaxHp: enemyHp,
-        combatLog: JSON.stringify([{ text: `Вы входите в ${dungeon.nameRu}. Комната 1/${dungeon.roomCount}: ${enemy.nameRu}!`, turn: 0 }]),
+        combatLog: JSON.stringify(introLog),
         bossState: JSON.stringify(initBossState(enemy.mechanics)),
         dungeonId: dungeon.id,
         dungeonRoom: 0,
+        dungeonModifierId: modifierId,
       },
       include: { inventory: true, quests: true, race: true, class: { include: { abilities: true } } },
     });
 
     return NextResponse.json({
       type: 'combat',
-      message: `Вы входите в ${dungeon.nameRu}!`,
+      message: modifier ? `Вы входите в ${dungeon.nameRu}! Модификатор: ${modifier.icon} ${modifier.nameRu}` : `Вы входите в ${dungeon.nameRu}!`,
       enemy: { ...enemy, hp: enemyHp, maxHp: enemyHp },
       player: updated,
     });

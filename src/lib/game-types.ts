@@ -240,7 +240,7 @@ export interface PartyCombatStateResponse {
 }
 
 export type GameScreen = 'loading' | 'creation' | 'game';
-export type GameTab = 'overview' | 'combat' | 'map' | 'inventory' | 'quests' | 'craft' | 'leaderboard' | 'party' | 'achievements' | 'guild';
+export type GameTab = 'overview' | 'combat' | 'map' | 'inventory' | 'quests' | 'craft' | 'leaderboard' | 'party' | 'achievements' | 'guild' | 'codex';
 
 export type GameMessage = { text: string; type: 'info' | 'success' | 'error' } | null;
 
@@ -264,6 +264,16 @@ export interface AchievementEntry {
   icon: string;
   target: number | null;
   progress: number | null;
+  unlocked: boolean;
+  unlockedAt: string | null;
+}
+
+export interface CodexEntryView {
+  id: string;
+  category: string;
+  titleRu: string;
+  icon: string;
+  textRu: string | null;
   unlocked: boolean;
   unlockedAt: string | null;
 }

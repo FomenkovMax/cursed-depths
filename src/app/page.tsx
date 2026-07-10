@@ -16,6 +16,7 @@ import {
   PartyCombatStateResponse,
   ExplorationEvent,
   AchievementEntry,
+  CodexEntryView,
   GuildData,
 } from '@/lib/game-types';
 import { LoadingScreen } from '@/components/game/LoadingScreen';
@@ -24,6 +25,7 @@ import { GameHeader } from '@/components/game/GameHeader';
 import { OverviewTab } from '@/components/game/OverviewTab';
 import { ExplorationEventModal } from '@/components/game/ExplorationEventModal';
 import { AchievementsTab } from '@/components/game/AchievementsTab';
+import { CodexTab } from '@/components/game/CodexTab';
 import { CombatTab } from '@/components/game/CombatTab';
 import { MapTab } from '@/components/game/MapTab';
 import { InventoryTab } from '@/components/game/InventoryTab';
@@ -52,6 +54,8 @@ export default function CursedDepths() {
   const [previousSeasonWinners, setPreviousSeasonWinners] = useState<SeasonWinnerEntry[]>([]);
   const [achievements, setAchievements] = useState<AchievementEntry[]>([]);
   const [achievementsLoading, setAchievementsLoading] = useState(false);
+  const [codexEntries, setCodexEntries] = useState<CodexEntryView[]>([]);
+  const [codexLoading, setCodexLoading] = useState(false);
   const [party, setParty] = useState<PartyData | null>(null);
   const [guild, setGuild] = useState<GuildData | null>(null);
   const [guildLoading, setGuildLoading] = useState(false);
@@ -274,6 +278,22 @@ export default function CursedDepths() {
       })
       .catch(() => setMessage({ text: 'Не удалось загрузить достижения', type: 'error' }))
       .finally(() => setAchievementsLoading(false));
+  }, [tab, apiCall]);
+
+  // ===== CODEX (лор-кодекс, см. lib/codex.ts) =====
+  useEffect(() => {
+    if (tab !== 'codex' || !telegramIdRef.current) return;
+    setCodexLoading(true);
+    apiCall('/api/codex')
+      .then(data => {
+        if (data.entries) setCodexEntries(data.entries);
+        if (data.newlyUnlocked?.length > 0) {
+          const names = data.newlyUnlocked.map((e: { icon: string; titleRu: string }) => `${e.icon} ${e.titleRu}`).join(', ');
+          setMessage({ text: `Новая запись в кодексе: ${names}!`, type: 'success' });
+        }
+      })
+      .catch(() => setMessage({ text: 'Не удалось загрузить кодекс', type: 'error' }))
+      .finally(() => setCodexLoading(false));
   }, [tab, apiCall]);
 
   // ===== GUILD ===== гильдия — постоянная группа, не боевая сессия, поэтому без поллинга
@@ -1039,7 +1059,7 @@ export default function CursedDepths() {
       {/* Main content */}
       <main className="flex-1 overflow-hidden">
         <Tabs value={tab} onValueChange={v => setTab(v as GameTab)} className="h-full flex flex-col">
-          <TabsList className="grid w-full grid-cols-10 bg-card rounded-none border-b border-border h-10 p-0">
+          <TabsList className="grid w-full grid-cols-11 bg-card rounded-none border-b border-border h-10 p-0">
             <TabsTrigger value="overview" className="text-xs py-2 data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
               🏠
             </TabsTrigger>
@@ -1072,6 +1092,9 @@ export default function CursedDepths() {
             </TabsTrigger>
             <TabsTrigger value="guild" className="text-xs py-2 data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
               🏰
+            </TabsTrigger>
+            <TabsTrigger value="codex" className="text-xs py-2 data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
+              📖
             </TabsTrigger>
           </TabsList>
 
@@ -1145,6 +1168,8 @@ export default function CursedDepths() {
             onCreateGuild={handleCreateGuild}
             onLeaveGuild={handleLeaveGuild}
           />
+
+          <CodexTab entries={codexEntries} loading={codexLoading} />
         </Tabs>
       </main>
 

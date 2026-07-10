@@ -438,6 +438,26 @@ export default function CursedDepths() {
     setLoading(false);
   };
 
+  // ===== DUNGEON =====
+  const handleStartDungeon = async (dungeonId: string) => {
+    if (!player || player.inCombat) return;
+    setLoading(true);
+    try {
+      const data = await apiCall('/api/dungeon/start', 'POST', { dungeonId });
+      if (data.error) {
+        setMessage({ text: data.error, type: 'error' });
+      } else {
+        setPlayer(data.player);
+        setCombatLog([{ text: data.message, turn: 0 }]);
+        setTab('combat');
+        setMessage({ text: data.message, type: 'info' });
+      }
+    } catch {
+      setMessage({ text: 'Ошибка входа в данж', type: 'error' });
+    }
+    setLoading(false);
+  };
+
   // ===== COMBAT ACTION =====
   const handleCombatAction = async (action: string, itemId?: string, abilityId?: string) => {
     if (!player || !player.inCombat) return;
@@ -461,7 +481,13 @@ export default function CursedDepths() {
       if (data.playerWon) {
         addFloatingDamage(`+${data.xpGained} XP`, '#60a5fa');
         addFloatingDamage(`+${data.goldGained} 💰`, '#fbbf24');
-        setMessage({ text: `Победа! +${data.xpGained} XP, +${data.goldGained} золота`, type: 'success' });
+        if (data.dungeonCompleted) {
+          setMessage({ text: `🏆 Данж пройден! +${data.xpGained} XP, +${data.goldGained} золота`, type: 'success' });
+        } else if (data.dungeonRoomCleared) {
+          setMessage({ text: `Комната пройдена! Следующий враг уже здесь...`, type: 'success' });
+        } else {
+          setMessage({ text: `Победа! +${data.xpGained} XP, +${data.goldGained} золота`, type: 'success' });
+        }
       } else if (data.playerFled) {
         setMessage({ text: 'Вы сбежали из боя!', type: 'info' });
         setTab('overview');
@@ -892,6 +918,7 @@ export default function CursedDepths() {
             onAllocateStat={handleAllocateStat}
             onBuyItem={handleBuyItem}
             onSellItem={handleSellItem}
+            onStartDungeon={handleStartDungeon}
           />
 
           <CombatTab

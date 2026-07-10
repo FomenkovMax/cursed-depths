@@ -7,6 +7,7 @@ import { PlayerData, STAT_SHORT_RU, SLOT_RU, ITEM_TYPE_RU, parseStats } from '@/
 import { computeEquipmentBonuses } from '@/lib/equipment-stats';
 import { stageUnlockLevel } from '@/lib/combat-engine';
 import { parsePassiveEffect } from '@/lib/passive-engine';
+import { dungeonForLocation } from '@/lib/dungeons';
 import { MarketPanel } from './MarketPanel';
 
 interface OverviewTabProps {
@@ -22,6 +23,7 @@ interface OverviewTabProps {
   onAllocateStat: (stat: string) => void;
   onBuyItem: (itemId: string) => void;
   onSellItem: (inventoryId: string) => void;
+  onStartDungeon: (dungeonId: string) => void;
 }
 
 export function OverviewTab({
@@ -37,9 +39,11 @@ export function OverviewTab({
   onAllocateStat,
   onBuyItem,
   onSellItem,
+  onStartDungeon,
 }: OverviewTabProps) {
   const playerInventory = player?.inventory || [];
   const gearBonuses = computeEquipmentBonuses(playerInventory);
+  const dungeon = player ? dungeonForLocation(player.locationId) : null;
 
   return (
     <TabsContent value="overview" className="flex-1 overflow-y-auto p-4 space-y-4 m-0">
@@ -101,6 +105,33 @@ export function OverviewTab({
           </div>
         </CardContent>
       </Card>
+
+      {/* Данж — разовый забег из нескольких комнат с боссом в конце (см. lib/dungeons.ts) */}
+      {player && dungeon && (
+        <Card className="border-gold/40 bg-gold/5">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3 mb-3">
+              <span className="text-3xl">{dungeon.icon}</span>
+              <div>
+                <h3 className="font-bold text-sm">{dungeon.nameRu}</h3>
+                <p className="text-xs text-muted-foreground">{dungeon.descriptionRu}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 mb-3 flex-wrap">
+              <Badge variant="outline" className="text-[10px] h-4 px-1">🚪 {dungeon.roomCount} комнат</Badge>
+              <Badge variant="outline" className="text-[10px] h-4 px-1">Ур. {dungeon.minLevel}+</Badge>
+              <Badge variant="outline" className="text-[10px] h-4 px-1 text-gold">🎁 +{dungeon.completionReward.xp} XP, +{dungeon.completionReward.gold} 💰</Badge>
+            </div>
+            <Button
+              className="w-full h-10 bg-gold/80 hover:bg-gold text-background"
+              onClick={() => onStartDungeon(dungeon.id)}
+              disabled={loading || player.inCombat || player.hp <= 0 || player.level < dungeon.minLevel}
+            >
+              {dungeon.icon} Войти в данж
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Market — только в Торговом дворе (см. lib/shop.ts) */}
       {player && player.locationId === 'market' && (

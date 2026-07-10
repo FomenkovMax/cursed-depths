@@ -7,6 +7,7 @@ import { ENEMIES } from '@/lib/game-data';
 import { manaCostForStage } from '@/lib/combat-engine';
 import type { BossFightState } from '@/lib/boss-mechanics';
 import { PlayerData, AbilityData, CombatLogEntry, parseStats } from '@/lib/game-types';
+import { findDungeon } from '@/lib/dungeons';
 
 const ACTIVE_EFFECT_LABELS: Record<string, string> = {
   player_damage_buff: 'Урон усилен',
@@ -57,10 +58,21 @@ export function CombatTab({
     try { bossState = JSON.parse(player.bossState); } catch { bossState = null; }
   }
 
+  const dungeon = player?.dungeonId ? findDungeon(player.dungeonId) : null;
+
   return (
     <TabsContent value="combat" className="flex-1 overflow-y-auto p-4 space-y-4 m-0">
       {player?.inCombat && enemy ? (
         <>
+          {/* Индикатор забега по данжу — см. lib/dungeons.ts */}
+          {dungeon && (
+            <div className="text-center">
+              <Badge className="text-[10px] h-5 bg-gold/20 text-gold">
+                {dungeon.icon} {dungeon.nameRu} — Комната {player.dungeonRoom + 1}/{dungeon.roomCount}
+              </Badge>
+            </div>
+          )}
+
           {/* Enemy card */}
           <Card className={`border-destructive/50 ${shaking ? 'animate-shake' : ''}`}>
             <CardContent className="p-4">

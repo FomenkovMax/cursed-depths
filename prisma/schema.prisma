@@ -44,6 +44,8 @@ model Player {
   totalExplores   Int       @default(0)
   totalCrafts     Int       @default(0)
   partyWins       Int       @default(0)
+  dungeonId       String?   // текущий забег по данжу (lib/dungeons.ts) — null, если не в данже
+  dungeonRoom     Int       @default(0) // 0-based индекс текущей комнаты забега
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 

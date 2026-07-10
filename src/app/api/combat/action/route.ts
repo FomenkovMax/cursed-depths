@@ -64,6 +64,7 @@ import {
 } from '@/lib/passive-runtime';
 import { computeEquipmentBonuses } from '@/lib/equipment-stats';
 import { incrementQuestProgress } from '@/lib/quests';
+import { findDungeon } from '@/lib/dungeons';
 
 export async function POST(req: NextRequest) {
   const auth = validateTelegramRequest(req);
@@ -678,6 +679,47 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Data (комната данжа) — переиспользует обычный движок одиночного боя целиком (см.
+    // lib/dungeons.ts): если игрок выиграл бой И в данже есть ещё комнаты, следующий враг
+    // спавнится сразу вместо завершения боя (combatOver остаётся true — этот КОНКРЕТНЫЙ бой
+    // с этим врагом окончен, — но inCombat ниже выставится обратно в true с новым врагом).
+    // Финальная комната (босс) даёт бонусную награду поверх обычной, забег завершается штатно.
+    let dungeonNextEnemy: typeof ENEMIES[0] | null = null;
+    let dungeonNextEnemyHp = 0;
+    let dungeonJustCompleted = false;
+    if (player.dungeonId && combatOver) {
+      const dungeon = findDungeon(player.dungeonId);
+      if (dungeon) {
+        if (playerWon) {
+          const nextRoomIndex = player.dungeonRoom + 1;
+          if (nextRoomIndex < dungeon.roomCount) {
+            const isBossRoom = nextRoomIndex === dungeon.roomCount - 1;
+            const nextEnemyId = isBossRoom ? dungeon.bossEnemyId : dungeon.regularEnemyIds[nextRoomIndex % dungeon.regularEnemyIds.length];
+            dungeonNextEnemy = ENEMIES.find(e => e.id === nextEnemyId) ?? null;
+            if (dungeonNextEnemy) {
+              dungeonNextEnemyHp = dungeonNextEnemy.hp + Math.floor(Math.random() * 5);
+              combatLog.push({ text: `Комната ${nextRoomIndex + 1}/${dungeon.roomCount}: ${dungeonNextEnemy.nameRu} появляется!`, turn: currentTurn + 3 });
+            }
+          } else {
+            dungeonJustCompleted = true;
+            xpGained += dungeon.completionReward.xp;
+            goldGained += dungeon.completionReward.gold;
+            for (const rewardItemId of dungeon.completionReward.items ?? []) {
+              const rewardItemData = ITEMS.find(i => i.id === rewardItemId);
+              if (rewardItemData) {
+                lootItems.push({ itemData: rewardItemData, quantity: 1 });
+                droppedItems.push(rewardItemId);
+                combatLog.push({ text: `Найдено: ${rewardItemData.nameRu}!`, turn: currentTurn + 3 });
+              }
+            }
+            combatLog.push({ text: `Данж «${dungeon.nameRu}» пройден! Бонус: +${dungeon.completionReward.xp} XP, +${dungeon.completionReward.gold} золота`, turn: currentTurn + 3 });
+          }
+        } else {
+          combatLog.push({ text: `Забег по данжу «${dungeon.nameRu}» прерван.`, turn: currentTurn + 3 });
+        }
+      }
+    }
+
     // Check level up
     let leveledUp = false;
     let newXp = player.xp + xpGained;
@@ -697,7 +739,7 @@ export async function POST(req: NextRequest) {
       hp: playerHp,
       mp: playerMp,
       combatLog: JSON.stringify(combatLog),
-      bossState: combatOver ? null : JSON.stringify(bossState),
+      bossState: combatOver && !dungeonNextEnemy ? null : JSON.stringify(bossState),
       xp: newXp,
       gold: { increment: goldGained },
       ...(playerWon ? { totalKills: { increment: 1 } } : {}),
@@ -712,11 +754,25 @@ export async function POST(req: NextRequest) {
       updateData.hp = newMaxHp + equipBonuses.hp; // Full heal on level up (с учётом бонуса экипировки)
     }
 
-    if (combatOver) {
+    if (dungeonNextEnemy) {
+      // Комната пройдена, но данж продолжается — следующий враг спавнится сразу.
+      updateData.inCombat = true;
+      updateData.enemyId = dungeonNextEnemy.id;
+      updateData.enemyHp = dungeonNextEnemyHp;
+      updateData.enemyMaxHp = dungeonNextEnemyHp;
+      updateData.bossState = JSON.stringify(initBossState(dungeonNextEnemy.mechanics));
+      updateData.dungeonRoom = player.dungeonRoom + 1;
+    } else if (combatOver) {
       updateData.inCombat = false;
       updateData.enemyId = null;
       updateData.enemyHp = null;
       updateData.enemyMaxHp = null;
+
+      if (player.dungeonId) {
+        // Забег окончен (пройден полностью, провален побегом или смертью) — сбрасываем.
+        updateData.dungeonId = null;
+        updateData.dungeonRoom = 0;
+      }
 
       if (playerHp <= 0) {
         // Player died - teleport to town with 1 HP
@@ -794,6 +850,8 @@ export async function POST(req: NextRequest) {
       goldGained,
       droppedItems,
       leveledUp,
+      dungeonRoomCleared: !!dungeonNextEnemy,
+      dungeonCompleted: dungeonJustCompleted,
     });
   } catch (error) {
     console.error('[API] Route error:', error);

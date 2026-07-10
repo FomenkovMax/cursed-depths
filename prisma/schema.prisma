@@ -56,6 +56,8 @@ model Player {
                             // при поражении НЕ трогаются, это асинхронный "призрачный бой"
   pvpWins         Int       @default(0)
   pvpLosses       Int       @default(0)
+  worldBossAttacksToday Int @default(0) // сбрасывается лениво при первой атаке нового дня
+  worldBossAttackDate   String? // "YYYY-MM-DD" последней атаки — тот же паттерн, что lastDailyReward
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
@@ -69,6 +71,7 @@ model Player {
   guildMember     GuildMember?
   seasonRewards   SeasonReward[]
   marketListings  MarketListing[]
+  worldBossHits   WorldBossContribution[]
 
   @@index([telegramId])
   @@index([locationId])
@@ -170,6 +173,39 @@ model MarketListing {
   createdAt        DateTime @default(now())
 
   @@index([sellerId])
+}
+
+// Мировой босс — единственная строка-синглтон (id всегда "current"), общая HP для ВСЕХ игроков
+// разом. Атака лениво роллится в POST /api/worldboss/attack (lib/world-boss.ts) — при 0 HP тут
+// же выдаёт награду всем участникам текущего incarnation пропорционально их урону и спавнит
+// следующего (incarnation+1, maxHp немного выше). Игрок не получает урон в ответ — это разовый
+// вклад в общую цель, а не полноценный бой (аналог "мировых боссов" в мобильных RPG).
+model WorldBoss {
+  id          String   @id
+  incarnation Int      @default(1)
+  name        String
+  hp          Int
+  maxHp       Int
+  spawnedAt   DateTime @default(now())
+
+  contributions WorldBossContribution[]
+}
+
+// Один удар одного игрока по текущему incarnation мирового босса — сумма по playerId даёт долю
+// награды при убийстве. Строки за ПРОШЛЫЕ incarnation удаляются сразу после раздачи наград
+// (см. lib/world-boss.ts) — это эфемерный игровой прогресс, не история для отображения.
+model WorldBossContribution {
+  id          String    @id @default(cuid())
+  bossId      String
+  boss        WorldBoss @relation(fields: [bossId], references: [id], onDelete: Cascade)
+  incarnation Int
+  playerId    String
+  player      Player    @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  damage      Int
+  createdAt   DateTime  @default(now())
+
+  @@index([bossId, incarnation])
+  @@index([playerId])
 }
 
 // Разблокированные ачивки — определения статичны в lib/achievements.ts, здесь только факт

@@ -268,6 +268,27 @@ export interface AchievementEntry {
   unlockedAt: string | null;
 }
 
+export interface WorldBossContributorView {
+  playerId: string;
+  name: string;
+  damage: number;
+}
+
+export interface WorldBossStateView {
+  boss: { incarnation: number; name: string; hp: number; maxHp: number };
+  topContributors: WorldBossContributorView[];
+  attacksLeftToday: number;
+}
+
+export interface WorldBossAttackResultView {
+  damageDealt: number;
+  bossHp: number;
+  bossMaxHp: number;
+  killed: boolean;
+  reward: { gold: number; xp: number } | null;
+  attacksLeftToday: number;
+}
+
 export interface PvpLeagueView {
   id: string;
   nameRu: string;

@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { GuildData } from '@/lib/game-types';
+import { Progress } from '@/components/ui/progress';
+import { GuildData, WorldBossStateView, WorldBossAttackResultView } from '@/lib/game-types';
 
 interface GuildTabProps {
   playerId: string | null;
@@ -13,12 +14,17 @@ interface GuildTabProps {
   botUsername: string | null;
   onCreateGuild: (name: string, tag: string) => void;
   onLeaveGuild: () => void;
+  worldBoss: WorldBossStateView | null;
+  worldBossLoading: boolean;
+  onAttackWorldBoss: () => Promise<WorldBossAttackResultView | null>;
 }
 
-export function GuildTab({ playerId, guild, loading, botUsername, onCreateGuild, onLeaveGuild }: GuildTabProps) {
+export function GuildTab({ playerId, guild, loading, botUsername, onCreateGuild, onLeaveGuild, worldBoss, worldBossLoading, onAttackWorldBoss }: GuildTabProps) {
   const [copied, setCopied] = useState(false);
   const [name, setName] = useState('');
   const [tag, setTag] = useState('');
+  const [lastAttack, setLastAttack] = useState<WorldBossAttackResultView | null>(null);
+  const [attacking, setAttacking] = useState(false);
 
   const inviteLink = guild && botUsername ? `https://t.me/${botUsername}?start=guild_${guild.id}` : null;
   const isLeader = !!guild && guild.leaderId === playerId;
@@ -34,8 +40,49 @@ export function GuildTab({ playerId, guild, loading, botUsername, onCreateGuild,
     }
   };
 
+  const handleAttack = async () => {
+    setAttacking(true);
+    const result = await onAttackWorldBoss();
+    if (result) setLastAttack(result);
+    setAttacking(false);
+  };
+
   return (
     <TabsContent value="guild" className="flex-1 overflow-y-auto p-4 space-y-4 m-0">
+      {/* Мировой босс — общая цель ВСЕХ игроков разом, не привязана к гильдии (lib/world-boss.ts).
+          Живёт здесь, а не отдельной вкладкой, чтобы не раздувать и без того тесную панель вкладок. */}
+      {worldBoss && (
+        <Card className="border-destructive/50 bg-destructive/5">
+          <CardHeader className="pb-2 pt-3 px-4">
+            <CardTitle className="text-sm">🌋 {worldBoss.boss.name} <span className="text-[10px] text-muted-foreground font-normal">(воплощение {worldBoss.boss.incarnation})</span></CardTitle>
+          </CardHeader>
+          <CardContent className="px-4 pb-3 space-y-2">
+            <div className="flex items-center gap-2">
+              <Progress value={(worldBoss.boss.hp / worldBoss.boss.maxHp) * 100} className="h-2.5 flex-1" />
+              <span className="text-[10px] text-muted-foreground shrink-0">{worldBoss.boss.hp}/{worldBoss.boss.maxHp}</span>
+            </div>
+            {worldBoss.topContributors.length > 0 && (
+              <div className="text-[10px] text-muted-foreground">
+                Лидеры урона: {worldBoss.topContributors.slice(0, 3).map(c => `${c.name} (${c.damage})`).join(', ')}
+              </div>
+            )}
+            {lastAttack && (
+              <div className={`text-xs rounded p-2 ${lastAttack.killed ? 'bg-gold/10 text-gold' : 'bg-secondary/30 text-muted-foreground'}`}>
+                Урон: {lastAttack.damageDealt}
+                {lastAttack.killed && lastAttack.reward && ` — Босс повержен! Награда: +${lastAttack.reward.gold} 💰 +${lastAttack.reward.xp} XP`}
+              </div>
+            )}
+            <Button
+              className="w-full h-9"
+              disabled={loading || worldBossLoading || attacking || worldBoss.attacksLeftToday <= 0}
+              onClick={handleAttack}
+            >
+              {worldBoss.attacksLeftToday > 0 ? `⚔️ Атаковать (осталось ${worldBoss.attacksLeftToday}/день)` : 'Атаки на сегодня закончились'}
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
       {!guild ? (
         <Card className="border-border">
           <CardContent className="p-6 text-center space-y-3">

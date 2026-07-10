@@ -215,9 +215,13 @@ export function CombatTab({
 
                 {/* Use item in combat */}
                 {playerInventory.filter(i => i.type === 'consumable').length > 0 && (
-                  <div className="col-span-2">
+                  <div className="col-span-2 border border-border/60 rounded-md p-2 bg-secondary/20">
                     <p className="text-xs text-muted-foreground mb-1">Использовать предмет:</p>
-                    <ScrollArea className="max-h-24">
+                    {/* Обычный overflow-y-auto, а не shadcn ScrollArea — Radix ScrollArea рендерит
+                        содержимое во внутреннем div с display:table для замера размеров, что ломает
+                        flex-wrap (кнопки перестают переноситься по строкам и вылезают за max-h,
+                        наезжая на способности ниже). Нативный скролл с flex-wrap работает корректно. */}
+                    <div className="max-h-28 overflow-y-auto pr-1">
                       <div className="flex gap-1 flex-wrap">
                         {playerInventory.filter(i => i.type === 'consumable').map(item => {
                           const stats = parseStats(item.stats);
@@ -235,13 +239,13 @@ export function CombatTab({
                           );
                         })}
                       </div>
-                    </ScrollArea>
+                    </div>
                   </div>
                 )}
 
                 {/* Class Abilities */}
                 {availableAbilities.length > 0 && (
-                  <div className="col-span-2 mt-2">
+                  <div className="col-span-2 mt-2 pt-2 border-t border-border">
                     <p className="text-xs text-muted-foreground mb-1.5">Способности:</p>
                     <div className="grid grid-cols-2 gap-1.5">
                       {availableAbilities.map((ability: AbilityData) => {

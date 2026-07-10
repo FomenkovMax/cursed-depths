@@ -240,7 +240,7 @@ export interface PartyCombatStateResponse {
 }
 
 export type GameScreen = 'loading' | 'creation' | 'game';
-export type GameTab = 'overview' | 'combat' | 'map' | 'inventory' | 'quests' | 'craft' | 'leaderboard' | 'party' | 'achievements' | 'guild' | 'codex';
+export type GameTab = 'overview' | 'combat' | 'map' | 'inventory' | 'quests' | 'craft' | 'leaderboard' | 'party' | 'achievements' | 'guild' | 'codex' | 'market';
 
 export type GameMessage = { text: string; type: 'info' | 'success' | 'error' } | null;
 
@@ -266,6 +266,25 @@ export interface AchievementEntry {
   progress: number | null;
   unlocked: boolean;
   unlockedAt: string | null;
+}
+
+export interface MarketListingView {
+  id: string;
+  itemId: string;
+  name: string;
+  type: string;
+  rarity: string;
+  stats: string | null;
+  icon: string | null;
+  itemLevel: number | null;
+  affixTier: string | null;
+  affixes: string | null;
+  enhancementLevel: number;
+  quantity: number;
+  price: number;
+  createdAt: string;
+  sellerName: string;
+  isOwn: boolean;
 }
 
 export interface CodexEntryView {

@@ -17,6 +17,7 @@ import {
   ExplorationEvent,
   AchievementEntry,
   CodexEntryView,
+  MarketListingView,
   GuildData,
 } from '@/lib/game-types';
 import { LoadingScreen } from '@/components/game/LoadingScreen';
@@ -26,6 +27,7 @@ import { OverviewTab } from '@/components/game/OverviewTab';
 import { ExplorationEventModal } from '@/components/game/ExplorationEventModal';
 import { AchievementsTab } from '@/components/game/AchievementsTab';
 import { CodexTab } from '@/components/game/CodexTab';
+import { MarketTab } from '@/components/game/MarketTab';
 import { CombatTab } from '@/components/game/CombatTab';
 import { MapTab } from '@/components/game/MapTab';
 import { InventoryTab } from '@/components/game/InventoryTab';
@@ -56,6 +58,8 @@ export default function CursedDepths() {
   const [achievementsLoading, setAchievementsLoading] = useState(false);
   const [codexEntries, setCodexEntries] = useState<CodexEntryView[]>([]);
   const [codexLoading, setCodexLoading] = useState(false);
+  const [marketListings, setMarketListings] = useState<MarketListingView[]>([]);
+  const [marketLoading, setMarketLoading] = useState(false);
   const [party, setParty] = useState<PartyData | null>(null);
   const [guild, setGuild] = useState<GuildData | null>(null);
   const [guildLoading, setGuildLoading] = useState(false);
@@ -295,6 +299,20 @@ export default function CursedDepths() {
       .catch(() => setMessage({ text: 'Не удалось загрузить кодекс', type: 'error' }))
       .finally(() => setCodexLoading(false));
   }, [tab, apiCall]);
+
+  // ===== MARKET (аукцион игрок-игроку, lib/inventory-utils.ts MarketListing) =====
+  const refreshMarket = useCallback(() => {
+    setMarketLoading(true);
+    apiCall('/api/market/listings')
+      .then(data => { if (data.listings) setMarketListings(data.listings); })
+      .catch(() => setMessage({ text: 'Не удалось загрузить аукцион', type: 'error' }))
+      .finally(() => setMarketLoading(false));
+  }, [apiCall]);
+
+  useEffect(() => {
+    if (tab !== 'market' || !telegramIdRef.current) return;
+    refreshMarket();
+  }, [tab, refreshMarket]);
 
   // ===== GUILD ===== гильдия — постоянная группа, не боевая сессия, поэтому без поллинга
   // раз в 2 сек как у Party — достаточно подгружать при открытии вкладки.
@@ -803,6 +821,61 @@ export default function CursedDepths() {
     setLoading(false);
   };
 
+  // ===== MARKET ACTIONS =====
+  const handleMarketListItem = async (inventoryId: string, price: number) => {
+    if (!player) return;
+    setLoading(true);
+    try {
+      const data = await apiCall('/api/market/list', 'POST', { inventoryId, price });
+      if (data.error) {
+        setMessage({ text: data.error, type: 'error' });
+      } else {
+        setMessage({ text: data.message, type: 'success' });
+        await refreshPlayer();
+        refreshMarket();
+      }
+    } catch {
+      setMessage({ text: 'Ошибка выставления на аукцион', type: 'error' });
+    }
+    setLoading(false);
+  };
+
+  const handleMarketBuyItem = async (listingId: string) => {
+    if (!player) return;
+    setLoading(true);
+    try {
+      const data = await apiCall('/api/market/buy', 'POST', { listingId });
+      if (data.error) {
+        setMessage({ text: data.error, type: 'error' });
+      } else {
+        setMessage({ text: data.message, type: 'success' });
+        await refreshPlayer();
+        refreshMarket();
+      }
+    } catch {
+      setMessage({ text: 'Ошибка покупки', type: 'error' });
+    }
+    setLoading(false);
+  };
+
+  const handleMarketCancelListing = async (listingId: string) => {
+    if (!player) return;
+    setLoading(true);
+    try {
+      const data = await apiCall('/api/market/cancel', 'POST', { listingId });
+      if (data.error) {
+        setMessage({ text: data.error, type: 'error' });
+      } else {
+        setMessage({ text: data.message, type: 'success' });
+        await refreshPlayer();
+        refreshMarket();
+      }
+    } catch {
+      setMessage({ text: 'Ошибка снятия лота', type: 'error' });
+    }
+    setLoading(false);
+  };
+
   // ===== CLAIM QUEST =====
   const handleClaimQuest = async (questId: string) => {
     if (!player) return;
@@ -1059,7 +1132,7 @@ export default function CursedDepths() {
       {/* Main content */}
       <main className="flex-1 overflow-hidden">
         <Tabs value={tab} onValueChange={v => setTab(v as GameTab)} className="h-full flex flex-col">
-          <TabsList className="grid w-full grid-cols-11 bg-card rounded-none border-b border-border h-10 p-0">
+          <TabsList className="grid w-full grid-cols-12 bg-card rounded-none border-b border-border h-10 p-0">
             <TabsTrigger value="overview" className="text-xs py-2 data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
               🏠
             </TabsTrigger>
@@ -1095,6 +1168,9 @@ export default function CursedDepths() {
             </TabsTrigger>
             <TabsTrigger value="codex" className="text-xs py-2 data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
               📖
+            </TabsTrigger>
+            <TabsTrigger value="market" className="text-xs py-2 data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
+              🏛️
             </TabsTrigger>
           </TabsList>
 
@@ -1170,6 +1246,15 @@ export default function CursedDepths() {
           />
 
           <CodexTab entries={codexEntries} loading={codexLoading} />
+
+          <MarketTab
+            player={player}
+            listings={marketListings}
+            loading={marketLoading}
+            onListItem={handleMarketListItem}
+            onBuyItem={handleMarketBuyItem}
+            onCancelListing={handleMarketCancelListing}
+          />
         </Tabs>
       </main>
 

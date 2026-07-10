@@ -64,6 +64,7 @@ model Player {
   recipes         PlayerRecipe[]
   guildMember     GuildMember?
   seasonRewards   SeasonReward[]
+  marketListings  MarketListing[]
 
   @@index([telegramId])
   @@index([locationId])
@@ -137,6 +138,34 @@ model GuildMember {
   joinedAt DateTime @default(now())
 
   @@index([guildId])
+}
+
+// Аукцион игрок-игроку — POE2-style trade, но без отдельного "сайта": предмет при выставлении
+// удаляется из Inventory продавца и его данные копируются сюда (эскроу) — гарантирует, что
+// выставленный предмет нельзя случайно надеть/скрафтить/использовать, пока он на аукционе.
+// При покупке/отмене строка удаляется, а предмет пересоздаётся в Inventory покупателя/
+// обратно продавца. Комиссия 10% при продаже — не откладывается никуда, чистый sink золота
+// (экономика уже получила несколько новых источников голда за эту сессию — крафт-валюта,
+// заточка, модификаторы данжей, Разлом — нужен противовес).
+model MarketListing {
+  id               String   @id @default(cuid())
+  sellerId         String
+  seller           Player   @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  itemId           String
+  name             String
+  type             String
+  rarity           String
+  stats            String?
+  icon             String?
+  itemLevel        Int?
+  affixTier        String?
+  affixes          String?
+  enhancementLevel Int      @default(0)
+  quantity         Int      @default(1)
+  price            Int
+  createdAt        DateTime @default(now())
+
+  @@index([sellerId])
 }
 
 // Разблокированные ачивки — определения статичны в lib/achievements.ts, здесь только факт

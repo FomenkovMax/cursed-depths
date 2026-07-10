@@ -21,6 +21,8 @@ import {
   PvpOpponentView,
   PvpLeagueView,
   PvpFightResultView,
+  WorldBossStateView,
+  WorldBossAttackResultView,
   GuildData,
 } from '@/lib/game-types';
 import { LoadingScreen } from '@/components/game/LoadingScreen';
@@ -70,6 +72,8 @@ export default function CursedDepths() {
   const [pvpMyWins, setPvpMyWins] = useState(0);
   const [pvpMyLosses, setPvpMyLosses] = useState(0);
   const [pvpLoading, setPvpLoading] = useState(false);
+  const [worldBoss, setWorldBoss] = useState<WorldBossStateView | null>(null);
+  const [worldBossLoading, setWorldBossLoading] = useState(false);
   const [party, setParty] = useState<PartyData | null>(null);
   const [guild, setGuild] = useState<GuildData | null>(null);
   const [guildLoading, setGuildLoading] = useState(false);
@@ -375,6 +379,41 @@ export default function CursedDepths() {
       .catch(() => setMessage({ text: 'Не удалось загрузить гильдию', type: 'error' }))
       .finally(() => setGuildLoading(false));
   }, [tab, apiCall]);
+
+  // ===== WORLD BOSS (lib/world-boss.ts) — живёт на вкладке "guild", см. GuildTab.tsx =====
+  const refreshWorldBoss = useCallback(() => {
+    setWorldBossLoading(true);
+    apiCall('/api/worldboss/state')
+      .then(data => { if (data.boss) setWorldBoss(data); })
+      .catch(() => setMessage({ text: 'Не удалось загрузить мирового босса', type: 'error' }))
+      .finally(() => setWorldBossLoading(false));
+  }, [apiCall]);
+
+  useEffect(() => {
+    if (tab !== 'guild' || !telegramIdRef.current) return;
+    refreshWorldBoss();
+  }, [tab, refreshWorldBoss]);
+
+  const handleAttackWorldBoss = async (): Promise<WorldBossAttackResultView | null> => {
+    if (!player) return null;
+    setWorldBossLoading(true);
+    try {
+      const data = await apiCall('/api/worldboss/attack', 'POST', {});
+      if (data.error) {
+        setMessage({ text: data.error, type: 'error' });
+        return null;
+      }
+      if (data.killed) setMessage({ text: 'Мировой босс повержен!', type: 'success' });
+      await refreshPlayer();
+      refreshWorldBoss();
+      return data as WorldBossAttackResultView;
+    } catch {
+      setMessage({ text: 'Ошибка атаки мирового босса', type: 'error' });
+      return null;
+    } finally {
+      setWorldBossLoading(false);
+    }
+  };
 
   // Приглашение по Telegram deep-link: бот присылает кнопку web_app с URL вида
   // "?joinParty=<id>" (см. src/app/api/telegram/webhook/route.ts) — при первом входе в игру
@@ -1297,6 +1336,9 @@ export default function CursedDepths() {
             botUsername={process.env.NEXT_PUBLIC_BOT_USERNAME ?? null}
             onCreateGuild={handleCreateGuild}
             onLeaveGuild={handleLeaveGuild}
+            worldBoss={worldBoss}
+            worldBossLoading={worldBossLoading}
+            onAttackWorldBoss={handleAttackWorldBoss}
           />
 
           <CodexTab entries={codexEntries} loading={codexLoading} />

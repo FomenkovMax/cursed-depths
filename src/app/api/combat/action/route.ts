@@ -892,6 +892,9 @@ export async function POST(req: NextRequest) {
       if (playerWon) {
         await incrementQuestProgress(tx, player.id, 'kill');
       }
+      if (dungeonJustCompleted) {
+        await incrementQuestProgress(tx, player.id, 'dungeon');
+      }
 
       // Update player state
       return tx.player.update({

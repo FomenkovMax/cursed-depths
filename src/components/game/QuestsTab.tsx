@@ -49,6 +49,9 @@ export function QuestsTab({ player, loading, onClaimQuest }: QuestsTabProps) {
                         {quest.type === 'kill' ? '⚔️'
                           : quest.type === 'explore' ? '🗺️'
                           : quest.type === 'craft' ? '⚒️'
+                          : quest.type === 'dungeon' ? '🌀'
+                          : quest.type === 'pvp_win' ? '🏟️'
+                          : quest.type === 'temper' ? '📯'
                           : quest.type.startsWith('collect_') ? '🎁'
                           : '📜'}
                       </span>

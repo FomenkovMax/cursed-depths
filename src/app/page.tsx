@@ -18,6 +18,7 @@ import {
   AchievementEntry,
   CodexEntryView,
   MarketListingView,
+  StashItemView,
   PvpOpponentView,
   PvpLeagueView,
   PvpFightResultView,
@@ -74,6 +75,9 @@ export default function CursedDepths() {
   const [pvpLoading, setPvpLoading] = useState(false);
   const [worldBoss, setWorldBoss] = useState<WorldBossStateView | null>(null);
   const [worldBossLoading, setWorldBossLoading] = useState(false);
+  const [stashItems, setStashItems] = useState<StashItemView[]>([]);
+  const [stashCapacity, setStashCapacity] = useState(60);
+  const [stashLoading, setStashLoading] = useState(false);
   const [party, setParty] = useState<PartyData | null>(null);
   const [guild, setGuild] = useState<GuildData | null>(null);
   const [guildLoading, setGuildLoading] = useState(false);
@@ -368,6 +372,23 @@ export default function CursedDepths() {
       setPvpLoading(false);
     }
   };
+
+  // ===== STASH fetch (панель "Хранилище" живёт внутри вкладки inventory, InventoryTab.tsx) =====
+  const refreshStash = useCallback(() => {
+    setStashLoading(true);
+    apiCall('/api/stash')
+      .then(data => {
+        if (data.items) setStashItems(data.items);
+        if (typeof data.capacity === 'number') setStashCapacity(data.capacity);
+      })
+      .catch(() => setMessage({ text: 'Не удалось загрузить хранилище', type: 'error' }))
+      .finally(() => setStashLoading(false));
+  }, [apiCall]);
+
+  useEffect(() => {
+    if (tab !== 'inventory' || !telegramIdRef.current) return;
+    refreshStash();
+  }, [tab, refreshStash]);
 
   // ===== GUILD ===== гильдия — постоянная группа, не боевая сессия, поэтому без поллинга
   // раз в 2 сек как у Party — достаточно подгружать при открытии вкладки.
@@ -875,6 +896,43 @@ export default function CursedDepths() {
     setLoading(false);
   };
 
+  // ===== STASH (сундук, отдельный от боевого инвентаря — lib/stash.ts) =====
+  const handleStoreItem = async (inventoryId: string) => {
+    if (!player) return;
+    setLoading(true);
+    try {
+      const data = await apiCall('/api/stash/store', 'POST', { inventoryId });
+      if (data.error) {
+        setMessage({ text: data.error, type: 'error' });
+      } else {
+        setMessage({ text: data.message, type: 'success' });
+        await refreshPlayer();
+        refreshStash();
+      }
+    } catch {
+      setMessage({ text: 'Ошибка перемещения в хранилище', type: 'error' });
+    }
+    setLoading(false);
+  };
+
+  const handleRetrieveItem = async (stashItemId: string) => {
+    if (!player) return;
+    setLoading(true);
+    try {
+      const data = await apiCall('/api/stash/retrieve', 'POST', { stashItemId });
+      if (data.error) {
+        setMessage({ text: data.error, type: 'error' });
+      } else {
+        setMessage({ text: data.message, type: 'success' });
+        await refreshPlayer();
+        refreshStash();
+      }
+    } catch {
+      setMessage({ text: 'Ошибка извлечения из хранилища', type: 'error' });
+    }
+    setLoading(false);
+  };
+
   // ===== APPLY CRAFT CURRENCY (Мастерская зачарования — lib/item-affixes.ts) =====
   const handleApplyCurrency = async (inventoryId: string, currencyItemId: string) => {
     if (!player) return;
@@ -1298,7 +1356,18 @@ export default function CursedDepths() {
 
           <MapTab player={player} location={location} loading={loading} onTravel={handleTravel} />
 
-          <InventoryTab player={player} loading={loading} onEquip={handleEquip} onUseItem={handleUseItem} onLearnBlueprint={handleLearnBlueprint} />
+          <InventoryTab
+            player={player}
+            loading={loading}
+            onEquip={handleEquip}
+            onUseItem={handleUseItem}
+            onLearnBlueprint={handleLearnBlueprint}
+            stashItems={stashItems}
+            stashCapacity={stashCapacity}
+            stashLoading={stashLoading}
+            onStoreItem={handleStoreItem}
+            onRetrieveItem={handleRetrieveItem}
+          />
 
           <QuestsTab player={player} loading={loading} onClaimQuest={handleClaimQuest} />
 

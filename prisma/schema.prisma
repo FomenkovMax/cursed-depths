@@ -72,6 +72,7 @@ model Player {
   seasonRewards   SeasonReward[]
   marketListings  MarketListing[]
   worldBossHits   WorldBossContribution[]
+  stashItems      StashItem[]
 
   @@index([telegramId])
   @@index([locationId])
@@ -205,6 +206,29 @@ model WorldBossContribution {
   createdAt   DateTime  @default(now())
 
   @@index([bossId, incarnation])
+  @@index([playerId])
+}
+
+// Хранилище (сундук) — отдельное от боевого Inventory место для коллекционирования, не
+// занимает боевые слоты и не расходуется/не экипируется напрямую (сначала нужно "достать"
+// обратно в Inventory через POST /api/stash/retrieve). Ограничено STASH_CAPACITY
+// (lib/stash.ts) — не безлимитный склад, а осмысленный выбор, что стоит сохранить.
+model StashItem {
+  id               String  @id @default(cuid())
+  playerId         String
+  player           Player  @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  itemId           String
+  name             String
+  type             String
+  rarity           String
+  stats            String?
+  icon             String?
+  itemLevel        Int?
+  affixTier        String?
+  affixes          String?
+  enhancementLevel Int     @default(0)
+  quantity         Int     @default(1)
+
   @@index([playerId])
 }
 

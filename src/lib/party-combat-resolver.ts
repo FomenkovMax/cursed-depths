@@ -41,6 +41,7 @@ import { addItemToInventory } from '@/lib/inventory-utils';
 import { incrementQuestProgress } from '@/lib/quests';
 import { computeEquipmentBonuses } from '@/lib/equipment-stats';
 import { rollGearInstance, rollCurrencyDrop } from '@/lib/item-affixes';
+import { rollTemperScrollDrop } from '@/lib/item-enhancement';
 import {
   basicAttackDamage,
   mitigateDamage,
@@ -800,6 +801,8 @@ export async function resolvePartyAction(
     const drops = rollLoot(enemyTemplate.lootTable);
     const currencyDrop = rollCurrencyDrop(enemyTemplate.isBoss);
     if (currencyDrop) drops.push(currencyDrop);
+    const scrollDrop = rollTemperScrollDrop(enemyTemplate.isBoss);
+    if (scrollDrop) drops.push(scrollDrop);
     droppedItemsByMember[id] = drops;
   }
 

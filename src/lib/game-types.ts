@@ -102,6 +102,7 @@ export interface InventoryItem {
   itemLevel: number | null;
   affixTier: string | null;
   affixes: string | null;
+  enhancementLevel: number;
 }
 
 export interface RolledAffixView {

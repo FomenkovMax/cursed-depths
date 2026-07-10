@@ -42,6 +42,7 @@ export function InventoryTab({ player, loading, onEquip, onUseItem, onLearnBluep
                     <div className="flex-1 min-w-0">
                       <div className="text-xs font-medium truncate" style={{ color: RARITY_COLORS[item.rarity] }}>
                         {item.name}
+                        {item.enhancementLevel > 0 && <span className="ml-1 text-gold">+{item.enhancementLevel}</span>}
                         {item.affixTier && AFFIX_TIER_RU[item.affixTier] && (
                           <span className="ml-1 text-[9px]" style={{ color: AFFIX_TIER_COLORS[item.affixTier] }}>
                             [{AFFIX_TIER_RU[item.affixTier]}]
@@ -104,6 +105,7 @@ export function InventoryTab({ player, loading, onEquip, onUseItem, onLearnBluep
                       <div className="flex-1 min-w-0">
                         <div className="text-xs font-medium truncate" style={{ color: RARITY_COLORS[item.rarity] }}>
                           {item.name} {item.quantity > 1 ? `x${item.quantity}` : ''}
+                          {item.enhancementLevel > 0 && <span className="ml-1 text-gold">+{item.enhancementLevel}</span>}
                           {item.affixTier && AFFIX_TIER_RU[item.affixTier] && (
                             <span className="ml-1 text-[9px]" style={{ color: AFFIX_TIER_COLORS[item.affixTier] }}>
                               [{AFFIX_TIER_RU[item.affixTier]}]

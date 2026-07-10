@@ -498,6 +498,9 @@ export const ITEMS: Item[] = [
   { id: 'aylet_tear', nameRu: 'Слеза Айлет', nameEn: "Aylet's Tear", type: 'currency', rarity: 'epic', stats: {}, descriptionRu: 'Поднимает предмет на ступень выше: обычный → зачарованный → редкий.', descriptionEn: 'Upgrades an item one rarity step up.', icon: '💧', value: 200 },
   { id: 'tornak_seal', nameRu: 'Печать Торнака', nameEn: "Tornak's Seal", type: 'currency', rarity: 'epic', stats: {}, descriptionRu: 'Добавляет ещё одно свойство редкому предмету, не трогая уже накатанные.', descriptionEn: 'Adds one more affix to a rare item without touching the others.', icon: '🗿', value: 300 },
   { id: 'kessara_whisper', nameRu: 'Шёпот Кессары', nameEn: "Kessara's Whisper", type: 'currency', rarity: 'artifact', stats: {}, descriptionRu: 'Рискованно перебрасывает все свойства и оскверняет предмет — есть шанс получить сверхкомплектное свойство, но крафтить его после этого будет уже нельзя.', descriptionEn: 'Risky full reroll that corrupts the item — a chance at a bonus affix, but no further crafting afterward.', icon: '🌑', value: 500 },
+
+  // === TEMPERING === заточка снаряжения через POST /api/craft/temper (lib/item-enhancement.ts).
+  { id: 'tempering_scroll', nameRu: 'Свиток Закалки', nameEn: 'Tempering Scroll', type: 'currency', rarity: 'rare', stats: {}, descriptionRu: 'Пытается закалить снаряжение на +1 уровень. Шанс успеха падает с каждым уровнем; при неудаче свиток тратится, но предмет не страдает.', descriptionEn: 'Attempts to temper equipment by +1 level. Success chance drops with each level; on failure the scroll is spent but the item is unharmed.', icon: '📯', value: 120 },
 ];
 
 // ===== ENEMIES =====

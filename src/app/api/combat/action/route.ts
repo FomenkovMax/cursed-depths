@@ -66,6 +66,7 @@ import { computeEquipmentBonuses } from '@/lib/equipment-stats';
 import { incrementQuestProgress } from '@/lib/quests';
 import { findDungeon } from '@/lib/dungeons';
 import { rollGearInstance, rollCurrencyDrop } from '@/lib/item-affixes';
+import { rollTemperScrollDrop } from '@/lib/item-enhancement';
 
 export async function POST(req: NextRequest) {
   const auth = validateTelegramRequest(req);
@@ -502,6 +503,8 @@ export async function POST(req: NextRequest) {
       droppedItems.push(...rollLoot(enemyTemplate.lootTable));
       const currencyDrop = rollCurrencyDrop(enemyTemplate.isBoss);
       if (currencyDrop) droppedItems.push(currencyDrop);
+      const scrollDrop = rollTemperScrollDrop(enemyTemplate.isBoss);
+      if (scrollDrop) droppedItems.push(scrollDrop);
       combatLog.push({ text: `${enemyTemplate.nameRu} повержен! +${xpGained} XP, +${goldGained} золота`, turn: currentTurn + 1 });
 
       const victoryHealPercent = onVictoryHealPercent(playerPassives);

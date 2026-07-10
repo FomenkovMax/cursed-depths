@@ -746,6 +746,24 @@ export default function CursedDepths() {
     setLoading(false);
   };
 
+  // ===== TEMPER (заточка — lib/item-enhancement.ts) =====
+  const handleTemper = async (inventoryId: string) => {
+    if (!player) return;
+    setLoading(true);
+    try {
+      const data = await apiCall('/api/craft/temper', 'POST', { inventoryId });
+      if (data.error) {
+        setMessage({ text: data.error, type: 'error' });
+      } else {
+        setMessage({ text: data.message, type: data.success ? 'success' : 'info' });
+        await refreshPlayer();
+      }
+    } catch {
+      setMessage({ text: 'Ошибка заточки', type: 'error' });
+    }
+    setLoading(false);
+  };
+
   // ===== CLAIM QUEST =====
   const handleClaimQuest = async (questId: string) => {
     if (!player) return;
@@ -1072,7 +1090,7 @@ export default function CursedDepths() {
 
           <QuestsTab player={player} loading={loading} onClaimQuest={handleClaimQuest} />
 
-          <CraftTab player={player} loading={loading} canCraftRecipe={canCraftRecipe} learnedRecipeIds={learnedRecipeIds} onCraft={handleCraft} onApplyCurrency={handleApplyCurrency} />
+          <CraftTab player={player} loading={loading} canCraftRecipe={canCraftRecipe} learnedRecipeIds={learnedRecipeIds} onCraft={handleCraft} onApplyCurrency={handleApplyCurrency} onTemper={handleTemper} />
 
           <LeaderboardTab
             player={player}

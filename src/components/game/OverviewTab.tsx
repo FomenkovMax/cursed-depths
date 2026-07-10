@@ -8,6 +8,7 @@ import { computeEquipmentBonuses } from '@/lib/equipment-stats';
 import { stageUnlockLevel } from '@/lib/combat-engine';
 import { parsePassiveEffect } from '@/lib/passive-engine';
 import { dungeonForLocation } from '@/lib/dungeons';
+import { ABYSS_LOCATION_ID, ABYSS_MIN_LEVEL } from '@/lib/abyss';
 import { MarketPanel } from './MarketPanel';
 
 interface OverviewTabProps {
@@ -24,6 +25,7 @@ interface OverviewTabProps {
   onBuyItem: (itemId: string) => void;
   onSellItem: (inventoryId: string) => void;
   onStartDungeon: (dungeonId: string) => void;
+  onStartAbyss: () => void;
 }
 
 export function OverviewTab({
@@ -40,10 +42,12 @@ export function OverviewTab({
   onBuyItem,
   onSellItem,
   onStartDungeon,
+  onStartAbyss,
 }: OverviewTabProps) {
   const playerInventory = player?.inventory || [];
   const gearBonuses = computeEquipmentBonuses(playerInventory);
   const dungeon = player ? dungeonForLocation(player.locationId) : null;
+  const canEnterAbyss = player && player.locationId === ABYSS_LOCATION_ID;
 
   return (
     <TabsContent value="overview" className="flex-1 overflow-y-auto p-4 space-y-4 m-0">
@@ -128,6 +132,34 @@ export function OverviewTab({
               disabled={loading || player.inCombat || player.hp <= 0 || player.level < dungeon.minLevel}
             >
               {dungeon.icon} Войти в данж
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Бездонный Разлом — бесконечный соло-эндгейм, доступен только из Верхней Глуби
+          (см. lib/abyss.ts). Никакого фиксированного конца — глубина растёт, пока не сбежишь
+          или не погибнешь; рекорд глубины сохраняется навсегда. */}
+      {canEnterAbyss && player && (
+        <Card className="border-destructive/40 bg-destructive/5">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3 mb-3">
+              <span className="text-3xl">🌀</span>
+              <div>
+                <h3 className="font-bold text-sm">Бездонный Разлом</h3>
+                <p className="text-xs text-muted-foreground">Бесконечный спуск — чем глубже, тем опаснее и тем богаче награда. Конца нет.</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 mb-3 flex-wrap">
+              <Badge variant="outline" className="text-[10px] h-4 px-1">Ур. {ABYSS_MIN_LEVEL}+</Badge>
+              <Badge variant="outline" className="text-[10px] h-4 px-1 text-gold">🏆 Рекорд: глубина {player.bestAbyssDepth}</Badge>
+            </div>
+            <Button
+              className="w-full h-10 bg-destructive/80 hover:bg-destructive text-background"
+              onClick={onStartAbyss}
+              disabled={loading || player.inCombat || player.hp <= 0 || player.level < ABYSS_MIN_LEVEL}
+            >
+              🌀 Спуститься в Разлом
             </Button>
           </CardContent>
         </Card>

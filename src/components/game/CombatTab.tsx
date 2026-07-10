@@ -9,6 +9,7 @@ import type { BossFightState } from '@/lib/boss-mechanics';
 import { PlayerData, AbilityData, CombatLogEntry, parseStats } from '@/lib/game-types';
 import { findDungeon } from '@/lib/dungeons';
 import { findDungeonModifier } from '@/lib/dungeon-modifiers';
+import { isEliteDepth } from '@/lib/abyss';
 
 const ACTIVE_EFFECT_LABELS: Record<string, string> = {
   player_damage_buff: 'Урон усилен',
@@ -78,6 +79,15 @@ export function CombatTab({
                   {dungeonModifier.icon} {dungeonModifier.nameRu}
                 </Badge>
               )}
+            </div>
+          )}
+
+          {/* Индикатор глубины Бездонного Разлома — см. lib/abyss.ts */}
+          {!dungeon && player && player.abyssDepth > 0 && (
+            <div className="text-center">
+              <Badge className={`text-[10px] h-5 ${isEliteDepth(player.abyssDepth) ? 'bg-destructive/20 text-destructive' : 'bg-destructive/10 text-destructive/80'}`}>
+                🌀 Разлом — Глубина {player.abyssDepth}{isEliteDepth(player.abyssDepth) ? ' ⚠️ Элита' : ''} (рекорд {player.bestAbyssDepth})
+              </Badge>
             </div>
           )}
 

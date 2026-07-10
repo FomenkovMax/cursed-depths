@@ -99,6 +99,20 @@ export interface InventoryItem {
   stats: string | null;
   quantity: number;
   icon: string | null;
+  itemLevel: number | null;
+  affixTier: string | null;
+  affixes: string | null;
+}
+
+export interface RolledAffixView {
+  labelRu: string;
+  statKey: string;
+  value: number;
+}
+
+export function parseAffixes(affixesStr: string | null): RolledAffixView[] {
+  if (!affixesStr) return [];
+  try { return JSON.parse(affixesStr); } catch { return []; }
 }
 
 export interface QuestData {
@@ -300,6 +314,21 @@ export const ITEM_TYPE_RU: Record<string, string> = {
   material: 'Материал',
   quest: 'Квестовый предмет',
   blueprint: 'Чертёж',
+  currency: 'Крафт-валюта',
+};
+
+/** Независимая от `rarity` ось — сколько случайных аффиксов накатано на конкретный экземпляр
+ * снаряжения (см. lib/item-affixes.ts). */
+export const AFFIX_TIER_RU: Record<string, string> = {
+  magic: 'Зачарованный',
+  rare: 'Редкий ролл',
+  corrupted: 'Осквернённый',
+};
+
+export const AFFIX_TIER_COLORS: Record<string, string> = {
+  magic: '#60a5fa',
+  rare: '#c084fc',
+  corrupted: '#ef4444',
 };
 
 export const SLOT_RU: Record<string, string> = {

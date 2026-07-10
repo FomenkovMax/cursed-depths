@@ -40,6 +40,7 @@ import { rollDice, rollLoot } from '@/lib/dice';
 import { addItemToInventory } from '@/lib/inventory-utils';
 import { incrementQuestProgress } from '@/lib/quests';
 import { computeEquipmentBonuses } from '@/lib/equipment-stats';
+import { rollGearInstance, rollCurrencyDrop } from '@/lib/item-affixes';
 import {
   basicAttackDamage,
   mitigateDamage,
@@ -796,7 +797,10 @@ export async function resolvePartyAction(
   const rewardTargets = partyWon ? aliveIds() : [];
   const rewardShare = Math.max(1, rewardTargets.length);
   for (const id of rewardTargets) {
-    droppedItemsByMember[id] = rollLoot(enemyTemplate.lootTable);
+    const drops = rollLoot(enemyTemplate.lootTable);
+    const currencyDrop = rollCurrencyDrop(enemyTemplate.isBoss);
+    if (currencyDrop) drops.push(currencyDrop);
+    droppedItemsByMember[id] = drops;
   }
 
   const updated = await db.$transaction(async (tx) => {
@@ -842,15 +846,19 @@ export async function resolvePartyAction(
       for (const itemId of droppedItemsByMember[id] ?? []) {
         const itemData = ITEMS.find(i => i.id === itemId);
         if (itemData) {
+          const rolled = rollGearInstance(itemData, row.level);
           await addItemToInventory({
             playerId: id,
             itemId: itemData.id,
-            name: itemData.nameRu,
+            name: rolled.name,
             type: itemData.type,
             rarity: itemData.rarity,
-            stats: JSON.stringify(itemData.stats),
+            stats: JSON.stringify(rolled.stats),
             icon: itemData.icon,
             quantity: 1,
+            itemLevel: rolled.itemLevel,
+            affixTier: rolled.affixTier,
+            affixes: rolled.affixes.length > 0 ? JSON.stringify(rolled.affixes) : null,
           }, tx);
         }
       }

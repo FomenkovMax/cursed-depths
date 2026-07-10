@@ -23,15 +23,19 @@ interface AddItemParams {
   quantity: number;
   equipped?: boolean;
   slot?: string | null;
+  /** Только для снаряжения, прошедшего через lib/item-affixes.ts rollGearInstance(). */
+  itemLevel?: number | null;
+  affixTier?: string | null;
+  affixes?: string | null;
 }
 
 export async function addItemToInventory(params: AddItemParams, client?: PrismaClientLike) {
   const prisma = client ?? db;
-  const { playerId, itemId, name, type, rarity, stats, icon, quantity, equipped, slot } = params;
+  const { playerId, itemId, name, type, rarity, stats, icon, quantity, equipped, slot, itemLevel, affixTier, affixes } = params;
 
   // For equippable items (weapons, armor), always create a new row — they can have different stats
-  // For stackable items (consumables, materials), stack with existing
-  const isStackable = type === 'consumable' || type === 'material';
+  // For stackable items (consumables, materials, craft currency), stack with existing
+  const isStackable = type === 'consumable' || type === 'material' || type === 'currency';
 
   if (isStackable) {
     // Find existing item with same itemId to stack
@@ -64,6 +68,9 @@ export async function addItemToInventory(params: AddItemParams, client?: PrismaC
       quantity,
       equipped: equipped || false,
       slot: slot || null,
+      itemLevel: itemLevel ?? null,
+      affixTier: affixTier ?? null,
+      affixes: affixes ?? null,
     },
   });
 

@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
     const item = player.inventory.find(i => i.id === inventoryId);
     if (!item) return NextResponse.json({ error: 'Предмет не найден' }, { status: 404 });
 
-    if (item.type === 'consumable' || item.type === 'material' || item.type === 'quest') {
+    if (item.type !== 'weapon' && item.type !== 'armor' && item.type !== 'accessory') {
       return NextResponse.json({ error: 'Нельзя экипировать предмет этого типа' }, { status: 400 });
     }
 

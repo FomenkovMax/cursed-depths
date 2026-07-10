@@ -511,6 +511,25 @@ export default function CursedDepths() {
     setLoading(false);
   };
 
+  const handleStartAbyss = async () => {
+    if (!player || player.inCombat) return;
+    setLoading(true);
+    try {
+      const data = await apiCall('/api/abyss/start', 'POST', {});
+      if (data.error) {
+        setMessage({ text: data.error, type: 'error' });
+      } else {
+        setPlayer(data.player);
+        setCombatLog([{ text: data.message, turn: 0 }]);
+        setTab('combat');
+        setMessage({ text: data.message, type: 'info' });
+      }
+    } catch {
+      setMessage({ text: 'Ошибка спуска в Разлом', type: 'error' });
+    }
+    setLoading(false);
+  };
+
   // ===== COMBAT ACTION =====
   const handleCombatAction = async (action: string, itemId?: string, abilityId?: string) => {
     if (!player || !player.inCombat) return;
@@ -1070,6 +1089,7 @@ export default function CursedDepths() {
             onBuyItem={handleBuyItem}
             onSellItem={handleSellItem}
             onStartDungeon={handleStartDungeon}
+            onStartAbyss={handleStartAbyss}
           />
 
           <CombatTab

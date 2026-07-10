@@ -81,6 +81,8 @@ export interface PlayerData {
   dungeonId: string | null;
   dungeonRoom: number;
   dungeonModifierId: string | null;
+  abyssDepth: number;
+  bestAbyssDepth: number;
   inventory: InventoryItem[];
   quests: QuestData[];
   /** Только GET /api/player заполняет это поле — остальные роуты не включают его в ответ,

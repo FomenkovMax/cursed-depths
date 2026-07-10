@@ -68,6 +68,7 @@ import { findDungeon } from '@/lib/dungeons';
 import { rollGearInstance, rollCurrencyDrop } from '@/lib/item-affixes';
 import { rollTemperScrollDrop } from '@/lib/item-enhancement';
 import { dungeonModifierEffect } from '@/lib/dungeon-modifiers';
+import { abyssScaling, abyssEnemyIdForDepth, isEliteDepth } from '@/lib/abyss';
 
 export async function POST(req: NextRequest) {
   const auth = validateTelegramRequest(req);
@@ -133,6 +134,9 @@ export async function POST(req: NextRequest) {
     // Модификатор забега по данжу (lib/dungeon-modifiers.ts) — множители 1 по всем осям, если
     // игрок не в данже или выпал "чистый" забег без модификатора.
     const dungeonEffect = player.dungeonId ? dungeonModifierEffect(player.dungeonModifierId) : dungeonModifierEffect(null);
+    // Масштабирование Бездонного Разлома (lib/abyss.ts) — растёт с глубиной, взаимоисключающе
+    // с dungeonEffect (игрок не может быть одновременно в данже и в Разломе).
+    const abyssEffect = player.abyssDepth > 0 ? abyssScaling(player.abyssDepth) : { hpMult: 1, damageMult: 1, goldMult: 1, xpMult: 1 };
 
     // Track deferred DB operations for transaction
     let itemToConsume: { id: string; delete: boolean } | null = null;
@@ -502,8 +506,8 @@ export async function POST(req: NextRequest) {
     if (enemyHp <= 0 && !combatOver) {
       combatOver = true;
       playerWon = true;
-      xpGained = Math.round(enemyTemplate.xp * dungeonEffect.xpMult);
-      goldGained = Math.round((enemyTemplate.gold + rollDice('1d4') * Math.ceil(player.level / 2)) * dungeonEffect.goldMult);
+      xpGained = Math.round(enemyTemplate.xp * dungeonEffect.xpMult * abyssEffect.xpMult);
+      goldGained = Math.round((enemyTemplate.gold + rollDice('1d4') * Math.ceil(player.level / 2)) * dungeonEffect.goldMult * abyssEffect.goldMult);
       droppedItems.push(...rollLoot(enemyTemplate.lootTable));
       const currencyDrop = rollCurrencyDrop(enemyTemplate.isBoss);
       if (currencyDrop) droppedItems.push(currencyDrop);
@@ -546,7 +550,7 @@ export async function POST(req: NextRequest) {
         + (isDefending ? onDefendDefenseBonus(playerPassives) : 0)
         + (fullyBlocked ? 0 : armedBlock.percent));
       const totalReduction = Math.min(0.9, enemyDamageReduction + passiveIncomingReduction);
-      const rawDamage = rollDice(enemyTemplate.damage) * (1 - totalReduction) * dungeonEffect.enemyDamageMult;
+      const rawDamage = rollDice(enemyTemplate.damage) * (1 - totalReduction) * dungeonEffect.enemyDamageMult * abyssEffect.damageMult;
       const baseEnemyDamage = Math.max(1, Math.round(mitigateDamage(rawDamage, effectiveVitality) - armorBonus));
 
       const turnResult = resolveBossTurn(enemyTemplate.mechanics, bossState, enemyHp, enemyMaxHp, baseEnemyDamage, effectiveMaxHp);
@@ -730,6 +734,28 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Бездонный Разлом (lib/abyss.ts) — тот же паттерн, что и у данжей выше, но без конца:
+    // при победе всегда спавнится следующая, более глубокая комната, пока игрок не сбежит
+    // или не погибнет. bestAbyssDepth обновляется отдельно ниже, в updateData.
+    let abyssNextEnemy: typeof ENEMIES[0] | null = null;
+    let abyssNextEnemyHp = 0;
+    let abyssNextDepth = 0;
+    if (player.abyssDepth > 0 && combatOver) {
+      if (playerWon) {
+        abyssNextDepth = player.abyssDepth + 1;
+        const nextEnemyId = abyssEnemyIdForDepth(abyssNextDepth);
+        abyssNextEnemy = nextEnemyId ? ENEMIES.find(e => e.id === nextEnemyId) ?? null : null;
+        if (abyssNextEnemy) {
+          const nextScaling = abyssScaling(abyssNextDepth);
+          abyssNextEnemyHp = Math.round((abyssNextEnemy.hp + Math.floor(Math.random() * 5)) * nextScaling.hpMult);
+          const eliteTag = isEliteDepth(abyssNextDepth) ? ' ⚠️ Элитный противник!' : '';
+          combatLog.push({ text: `Глубина ${abyssNextDepth}: ${abyssNextEnemy.nameRu} появляется!${eliteTag}`, turn: currentTurn + 3 });
+        }
+      } else {
+        combatLog.push({ text: `Спуск в Бездонный Разлом прерван на глубине ${player.abyssDepth}.`, turn: currentTurn + 3 });
+      }
+    }
+
     // Check level up
     let leveledUp = false;
     let newXp = player.xp + xpGained;
@@ -749,7 +775,7 @@ export async function POST(req: NextRequest) {
       hp: playerHp,
       mp: playerMp,
       combatLog: JSON.stringify(combatLog),
-      bossState: combatOver && !dungeonNextEnemy ? null : JSON.stringify(bossState),
+      bossState: combatOver && !dungeonNextEnemy && !abyssNextEnemy ? null : JSON.stringify(bossState),
       xp: newXp,
       gold: { increment: goldGained },
       ...(playerWon ? { totalKills: { increment: 1 } } : {}),
@@ -772,6 +798,15 @@ export async function POST(req: NextRequest) {
       updateData.enemyMaxHp = dungeonNextEnemyHp;
       updateData.bossState = JSON.stringify(initBossState(dungeonNextEnemy.mechanics));
       updateData.dungeonRoom = player.dungeonRoom + 1;
+    } else if (abyssNextEnemy) {
+      // Враг повержен, спуск в Разлом продолжается — следующая, более глубокая комната сразу.
+      updateData.inCombat = true;
+      updateData.enemyId = abyssNextEnemy.id;
+      updateData.enemyHp = abyssNextEnemyHp;
+      updateData.enemyMaxHp = abyssNextEnemyHp;
+      updateData.bossState = JSON.stringify(initBossState(abyssNextEnemy.mechanics));
+      updateData.abyssDepth = abyssNextDepth;
+      if (abyssNextDepth > player.bestAbyssDepth) updateData.bestAbyssDepth = abyssNextDepth;
     } else if (combatOver) {
       updateData.inCombat = false;
       updateData.enemyId = null;
@@ -783,6 +818,13 @@ export async function POST(req: NextRequest) {
         updateData.dungeonId = null;
         updateData.dungeonRoom = 0;
         updateData.dungeonModifierId = null;
+      }
+
+      if (player.abyssDepth > 0) {
+        // Спуск окончен (побег или смерть — победа никогда не завершает Разлом, см. блок выше) —
+        // рекорд глубины уже мог быть посчитан в бранче abyssNextEnemy на предыдущих ходах и
+        // сохранён в player.bestAbyssDepth, здесь просто сбрасываем текущий забег.
+        updateData.abyssDepth = 0;
       }
 
       if (playerHp <= 0) {

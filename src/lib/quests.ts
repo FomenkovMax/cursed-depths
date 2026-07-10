@@ -9,6 +9,7 @@
  */
 
 import { db } from '@/lib/db';
+import { QUEST_CHAINS, chainStepQuestId, parseChainStepQuestId } from '@/lib/quest-chains';
 
 type QuestClient = { playerQuest: typeof db.playerQuest };
 
@@ -90,4 +91,64 @@ export async function incrementQuestProgress(client: QuestClient, playerId: stri
       data: { progress: newProgress, completed: newProgress >= quest.target },
     });
   }
+}
+
+function chainStepTitle(chain: { nameRu: string; icon: string }, stepIndex: number, totalSteps: number): string {
+  return `${chain.icon} ${chain.nameRu} (${stepIndex + 1}/${totalSteps})`;
+}
+
+const CHAIN_TYPE_VERB: Record<string, string> = { kill: 'Победите', explore: 'Исследуйте локацию', craft: 'Скрафтите' };
+const CHAIN_TYPE_NOUN: Record<string, string> = { kill: 'врагов', explore: 'раз', craft: 'предметов' };
+
+function chainStepDescription(step: { type: string; target: number }): string {
+  return `${CHAIN_TYPE_VERB[step.type]} ${step.target} ${CHAIN_TYPE_NOUN[step.type]}.`;
+}
+
+/** Выдаёт первый шаг каждой цепочки, которую игрок ещё не начинал (нет ни одной строки
+ * PlayerQuest ни по одному её шагу — ни активной, ни уже полученной). Вызывается один раз
+ * при создании персонажа; повторный вызов безопасен и ничего не задублирует. */
+export async function issueChainQuests(client: QuestClient, playerId: string): Promise<void> {
+  for (const chain of QUEST_CHAINS) {
+    const anyStep = await client.playerQuest.findFirst({
+      where: { playerId, questId: { in: chain.steps.map((_, i) => chainStepQuestId(chain.id, i)) } },
+    });
+    if (anyStep) continue;
+
+    const step = chain.steps[0];
+    await client.playerQuest.create({
+      data: {
+        playerId,
+        questId: chainStepQuestId(chain.id, 0),
+        type: step.type,
+        title: chainStepTitle(chain, 0, chain.steps.length),
+        description: chainStepDescription(step),
+        target: step.target,
+        reward: JSON.stringify(step.reward),
+      },
+    });
+  }
+}
+
+/** Если claimedQuestId — шаг цепочки и в цепочке есть следующий шаг, выдаёт его. Вызывается
+ * после успешной выдачи награды за квест в /api/quests/claim. */
+export async function advanceChainOnClaim(client: QuestClient, playerId: string, claimedQuestId: string): Promise<void> {
+  const parsed = parseChainStepQuestId(claimedQuestId);
+  if (!parsed) return;
+  const chain = QUEST_CHAINS.find(c => c.id === parsed.chainId);
+  if (!chain) return;
+  const nextIndex = parsed.stepIndex + 1;
+  if (nextIndex >= chain.steps.length) return;
+
+  const step = chain.steps[nextIndex];
+  await client.playerQuest.create({
+    data: {
+      playerId,
+      questId: chainStepQuestId(chain.id, nextIndex),
+      type: step.type,
+      title: chainStepTitle(chain, nextIndex, chain.steps.length),
+      description: chainStepDescription(step),
+      target: step.target,
+      reward: JSON.stringify(step.reward),
+    },
+  });
 }

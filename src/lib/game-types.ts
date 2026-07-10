@@ -78,6 +78,8 @@ export interface PlayerData {
   totalExplores: number;
   totalCrafts: number;
   partyWins: number;
+  dungeonId: string | null;
+  dungeonRoom: number;
   inventory: InventoryItem[];
   quests: QuestData[];
 }

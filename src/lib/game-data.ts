@@ -490,6 +490,14 @@ export const ITEMS: Item[] = [
   { id: 'blueprint_cursed_king_blade', nameRu: 'Чертёж: Клинок Проклятого Короля', nameEn: "Blueprint: Cursed King's Blade", type: 'blueprint', rarity: 'legendary', stats: {}, descriptionRu: 'Изучите, чтобы навсегда открыть рецепт Клинка Проклятого Короля.', descriptionEn: "Learn to permanently unlock the Cursed King's Blade recipe.", icon: '📜', value: 0 },
   { id: 'blueprint_crown_armor', nameRu: 'Чертёж: Броня Короны', nameEn: 'Blueprint: Crown Armor', type: 'blueprint', rarity: 'legendary', stats: {}, descriptionRu: 'Изучите, чтобы навсегда открыть рецепт Брони Короны.', descriptionEn: 'Learn to permanently unlock the Crown Armor recipe.', icon: '📜', value: 0 },
   { id: 'blueprint_crown_fragment', nameRu: 'Чертёж: Осколок Короны', nameEn: 'Blueprint: Crown Fragment', type: 'blueprint', rarity: 'legendary', stats: {}, descriptionRu: 'Изучите, чтобы навсегда открыть рецепт огранки Осколка Короны.', descriptionEn: 'Learn to permanently unlock the Crown Fragment recipe.', icon: '📜', value: 0 },
+
+  // === CRAFT CURRENCY === применяются к снаряжению через POST /api/craft/currency
+  // (см. lib/item-affixes.ts applyCurrency) — переработка снаряжения с риском, аналог
+  // orb-крафта из POE2, названо по Столпам и Карсусу из Библии мира.
+  { id: 'ash_shard', nameRu: 'Осколок Пепла', nameEn: 'Ash Shard', type: 'currency', rarity: 'epic', stats: {}, descriptionRu: 'Перебрасывает все свойства зачарованного или редкого предмета заново.', descriptionEn: 'Rerolls all affixes on a magic or rare item.', icon: '🔥', value: 150 },
+  { id: 'aylet_tear', nameRu: 'Слеза Айлет', nameEn: "Aylet's Tear", type: 'currency', rarity: 'epic', stats: {}, descriptionRu: 'Поднимает предмет на ступень выше: обычный → зачарованный → редкий.', descriptionEn: 'Upgrades an item one rarity step up.', icon: '💧', value: 200 },
+  { id: 'tornak_seal', nameRu: 'Печать Торнака', nameEn: "Tornak's Seal", type: 'currency', rarity: 'epic', stats: {}, descriptionRu: 'Добавляет ещё одно свойство редкому предмету, не трогая уже накатанные.', descriptionEn: 'Adds one more affix to a rare item without touching the others.', icon: '🗿', value: 300 },
+  { id: 'kessara_whisper', nameRu: 'Шёпот Кессары', nameEn: "Kessara's Whisper", type: 'currency', rarity: 'artifact', stats: {}, descriptionRu: 'Рискованно перебрасывает все свойства и оскверняет предмет — есть шанс получить сверхкомплектное свойство, но крафтить его после этого будет уже нельзя.', descriptionEn: 'Risky full reroll that corrupts the item — a chance at a bonus affix, but no further crafting afterward.', icon: '🌑', value: 500 },
 ];
 
 // ===== ENEMIES =====

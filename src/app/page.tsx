@@ -728,6 +728,24 @@ export default function CursedDepths() {
     setLoading(false);
   };
 
+  // ===== APPLY CRAFT CURRENCY (Мастерская зачарования — lib/item-affixes.ts) =====
+  const handleApplyCurrency = async (inventoryId: string, currencyItemId: string) => {
+    if (!player) return;
+    setLoading(true);
+    try {
+      const data = await apiCall('/api/craft/currency', 'POST', { inventoryId, currencyItemId });
+      if (data.error) {
+        setMessage({ text: data.error, type: 'error' });
+      } else {
+        setMessage({ text: data.message, type: 'success' });
+        await refreshPlayer();
+      }
+    } catch {
+      setMessage({ text: 'Ошибка применения крафт-валюты', type: 'error' });
+    }
+    setLoading(false);
+  };
+
   // ===== CLAIM QUEST =====
   const handleClaimQuest = async (questId: string) => {
     if (!player) return;
@@ -1054,7 +1072,7 @@ export default function CursedDepths() {
 
           <QuestsTab player={player} loading={loading} onClaimQuest={handleClaimQuest} />
 
-          <CraftTab player={player} loading={loading} canCraftRecipe={canCraftRecipe} learnedRecipeIds={learnedRecipeIds} onCraft={handleCraft} />
+          <CraftTab player={player} loading={loading} canCraftRecipe={canCraftRecipe} learnedRecipeIds={learnedRecipeIds} onCraft={handleCraft} onApplyCurrency={handleApplyCurrency} />
 
           <LeaderboardTab
             player={player}

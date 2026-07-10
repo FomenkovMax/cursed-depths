@@ -1,10 +1,12 @@
+import { useState } from 'react';
 import { TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { CRAFTING_RECIPES, ITEMS, RARITY_COLORS } from '@/lib/game-data';
-import { PlayerData } from '@/lib/game-types';
+import { PlayerData, AFFIX_TIER_RU, AFFIX_TIER_COLORS, parseStats, parseAffixes } from '@/lib/game-types';
+import { CURRENCY_IDS } from '@/lib/item-affixes';
 
 interface CraftTabProps {
   player: PlayerData | null;
@@ -12,13 +14,18 @@ interface CraftTabProps {
   canCraftRecipe: (recipe: typeof CRAFTING_RECIPES[0]) => boolean;
   learnedRecipeIds: Set<string>;
   onCraft: (recipeId: string) => void;
+  onApplyCurrency: (inventoryId: string, currencyItemId: string) => void;
 }
 
 const TIER_LABELS: Record<number, string> = { 1: 'Тир I', 2: 'Тир II', 3: 'Тир III' };
 const TIER_COLORS: Record<number, string> = { 1: '#9ca3af', 2: '#3b82f6', 3: '#f59e0b' };
 
-export function CraftTab({ player, loading, canCraftRecipe, learnedRecipeIds, onCraft }: CraftTabProps) {
+export function CraftTab({ player, loading, canCraftRecipe, learnedRecipeIds, onCraft, onApplyCurrency }: CraftTabProps) {
   const playerInventory = player?.inventory || [];
+  const [selectedTargetId, setSelectedTargetId] = useState<string | null>(null);
+  const gearItems = playerInventory.filter(i => !i.equipped && ['weapon', 'armor', 'accessory'].includes(i.type));
+  const currencyItems = playerInventory.filter(i => i.type === 'currency');
+  const selectedTarget = gearItems.find(i => i.id === selectedTargetId) ?? null;
 
   return (
     <TabsContent value="craft" className="flex-1 overflow-y-auto p-4 space-y-3 m-0">
@@ -47,6 +54,91 @@ export function CraftTab({ player, loading, canCraftRecipe, learnedRecipeIds, on
                 </div>
               ))}
             </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Мастерская зачарования — крафт-валюта, катает случайные аффиксы на снаряжении.
+          См. lib/item-affixes.ts: rarity предмета не трогается, affixTier — независимая ось. */}
+      <Card className="border-border">
+        <CardHeader className="pb-2 pt-3 px-4">
+          <CardTitle className="text-sm">🔮 Мастерская зачарования</CardTitle>
+        </CardHeader>
+        <CardContent className="px-4 pb-3 space-y-2">
+          {gearItems.length === 0 ? (
+            <p className="text-xs text-muted-foreground text-center">Нет снаряжения для переработки (снимите экипированное)</p>
+          ) : (
+            <>
+              <p className="text-xs text-muted-foreground">Выберите предмет:</p>
+              <div className="max-h-28 overflow-y-auto pr-1">
+                <div className="flex gap-1 flex-wrap">
+                  {gearItems.map(item => (
+                    <Button
+                      key={item.id}
+                      variant="outline"
+                      size="sm"
+                      className={`h-8 text-xs border-border ${selectedTargetId === item.id ? 'border-gold text-gold' : ''}`}
+                      onClick={() => setSelectedTargetId(item.id === selectedTargetId ? null : item.id)}
+                    >
+                      {item.icon} {item.name}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+
+              {selectedTarget && (
+                <div className="rounded-md border border-border/60 p-2 bg-secondary/20">
+                  <div className="text-xs font-medium" style={{ color: RARITY_COLORS[selectedTarget.rarity] }}>
+                    {selectedTarget.name}
+                    {selectedTarget.affixTier && AFFIX_TIER_RU[selectedTarget.affixTier] && (
+                      <span className="ml-1 text-[9px]" style={{ color: AFFIX_TIER_COLORS[selectedTarget.affixTier] }}>
+                        [{AFFIX_TIER_RU[selectedTarget.affixTier]}]
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex gap-1 mt-1 flex-wrap">
+                    {Object.entries(parseStats(selectedTarget.stats)).map(([k, v]) => (
+                      <Badge key={k} variant="outline" className="text-[9px] h-4 px-1">{k} +{v}</Badge>
+                    ))}
+                  </div>
+                  {parseAffixes(selectedTarget.affixes).length > 0 && (
+                    <p className="text-[10px] text-muted-foreground mt-1">
+                      Свойства: {parseAffixes(selectedTarget.affixes).map(a => a.labelRu).join(', ')}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              <p className="text-xs text-muted-foreground pt-1">Крафт-валюта:</p>
+              {currencyItems.length === 0 ? (
+                <p className="text-xs text-muted-foreground text-center">Крафт-валюта пока не найдена — падает с врагов и в исследованиях</p>
+              ) : (
+                <div className="space-y-1.5">
+                  {CURRENCY_IDS.map(currencyId => {
+                    const currencyDef = ITEMS.find(i => i.id === currencyId);
+                    const owned = currencyItems.find(i => i.itemId === currencyId);
+                    if (!currencyDef) return null;
+                    return (
+                      <div key={currencyId} className="flex items-center gap-2 p-1.5 rounded bg-secondary/10">
+                        <span className="text-lg shrink-0">{currencyDef.icon}</span>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-xs font-medium">{currencyDef.nameRu} {owned ? `x${owned.quantity}` : 'x0'}</div>
+                          <div className="text-[10px] text-muted-foreground">{currencyDef.descriptionRu}</div>
+                        </div>
+                        <Button
+                          size="sm"
+                          className="h-7 text-xs shrink-0"
+                          disabled={!selectedTarget || !owned || loading}
+                          onClick={() => selectedTarget && onApplyCurrency(selectedTarget.id, currencyId)}
+                        >
+                          Применить
+                        </Button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </>
           )}
         </CardContent>
       </Card>

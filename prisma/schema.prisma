@@ -190,6 +190,14 @@ model Inventory {
   stats      String? // JSON string with bonuses
   quantity   Int     @default(1)
   icon       String? // emoji or image path
+  itemLevel  Int?    // уровень предмета в момент выпадения — определяет доступные тиры аффиксов
+                      // (см. lib/item-affixes.ts). null у предметов, не проходивших через ролл
+                      // (материалы, куплен в магазине, скрафчен, квестовая награда).
+  affixTier  String? // normal | magic | rare | corrupted — независимая от `rarity` ось: сколько
+                      // случайных аффиксов накатано на этот конкретный экземпляр снаряжения.
+                      // `rarity` остаётся как есть — это базовая ценность шаблона предмета.
+  affixes    String? // JSON RolledAffix[] — какие именно аффиксы накатаны, для отображения и
+                      // для крафт-валют (lib/item-affixes.ts, POST /api/craft/currency).
 
   @@index([playerId])
   @@index([itemId])

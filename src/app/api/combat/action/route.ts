@@ -65,6 +65,7 @@ import {
 import { computeEquipmentBonuses } from '@/lib/equipment-stats';
 import { incrementQuestProgress } from '@/lib/quests';
 import { findDungeon } from '@/lib/dungeons';
+import { rollGearInstance, rollCurrencyDrop } from '@/lib/item-affixes';
 
 export async function POST(req: NextRequest) {
   const auth = validateTelegramRequest(req);
@@ -499,6 +500,8 @@ export async function POST(req: NextRequest) {
       xpGained = enemyTemplate.xp;
       goldGained = enemyTemplate.gold + rollDice('1d4') * Math.ceil(player.level / 2);
       droppedItems.push(...rollLoot(enemyTemplate.lootTable));
+      const currencyDrop = rollCurrencyDrop(enemyTemplate.isBoss);
+      if (currencyDrop) droppedItems.push(currencyDrop);
       combatLog.push({ text: `${enemyTemplate.nameRu} повержен! +${xpGained} XP, +${goldGained} золота`, turn: currentTurn + 1 });
 
       const victoryHealPercent = onVictoryHealPercent(playerPassives);
@@ -811,15 +814,19 @@ export async function POST(req: NextRequest) {
 
       // Add loot items to inventory
       for (const loot of lootItems) {
+        const rolled = rollGearInstance(loot.itemData, player.level);
         await addItemToInventory({
           playerId: player.id,
           itemId: loot.itemData.id,
-          name: loot.itemData.nameRu,
+          name: rolled.name,
           type: loot.itemData.type,
           rarity: loot.itemData.rarity,
-          stats: JSON.stringify(loot.itemData.stats),
+          stats: JSON.stringify(rolled.stats),
           icon: loot.itemData.icon,
           quantity: loot.quantity,
+          itemLevel: rolled.itemLevel,
+          affixTier: rolled.affixTier,
+          affixes: rolled.affixes.length > 0 ? JSON.stringify(rolled.affixes) : null,
         }, tx);
       }
 

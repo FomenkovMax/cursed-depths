@@ -13,6 +13,7 @@ import { outOfCombatRegen } from '@/lib/passive-runtime';
 import { computeEquipmentBonuses } from '@/lib/equipment-stats';
 import { isInActivePartyCombat } from '@/lib/party-guards';
 import { EXPLORATION_EVENTS } from '@/lib/exploration-events';
+import { rollGearInstance } from '@/lib/item-affixes';
 
 export async function POST(req: NextRequest) {
   const auth = validateTelegramRequest(req);
@@ -164,16 +165,20 @@ export async function POST(req: NextRequest) {
       if (commonItems.length > 0 && Math.random() < 0.3) {
         const item = commonItems[Math.floor(Math.random() * commonItems.length)];
         foundItems.push(item.id);
+        const rolled = rollGearInstance(item, player.level);
 
         await addItemToInventory({
           playerId: player.id,
           itemId: item.id,
-          name: item.nameRu,
+          name: rolled.name,
           type: item.type,
           rarity: item.rarity,
-          stats: JSON.stringify(item.stats),
+          stats: JSON.stringify(rolled.stats),
           icon: item.icon,
           quantity: 1,
+          itemLevel: rolled.itemLevel,
+          affixTier: rolled.affixTier,
+          affixes: rolled.affixes.length > 0 ? JSON.stringify(rolled.affixes) : null,
         }, tx);
       }
 

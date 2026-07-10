@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { RARITY_COLORS, RARITY_NAMES_RU } from '@/lib/game-data';
-import { PlayerData, SLOT_RU, ITEM_TYPE_RU, parseStats } from '@/lib/game-types';
+import { PlayerData, SLOT_RU, ITEM_TYPE_RU, AFFIX_TIER_RU, AFFIX_TIER_COLORS, parseStats, parseAffixes } from '@/lib/game-types';
 
 interface InventoryTabProps {
   player: PlayerData | null;
@@ -31,6 +31,7 @@ export function InventoryTab({ player, loading, onEquip, onUseItem, onLearnBluep
             <div className="space-y-2">
               {playerInventory.filter(i => i.equipped).map(item => {
                 const stats = parseStats(item.stats);
+                const affixes = parseAffixes(item.affixes);
                 return (
                   <div
                     key={item.id}
@@ -41,9 +42,15 @@ export function InventoryTab({ player, loading, onEquip, onUseItem, onLearnBluep
                     <div className="flex-1 min-w-0">
                       <div className="text-xs font-medium truncate" style={{ color: RARITY_COLORS[item.rarity] }}>
                         {item.name}
+                        {item.affixTier && AFFIX_TIER_RU[item.affixTier] && (
+                          <span className="ml-1 text-[9px]" style={{ color: AFFIX_TIER_COLORS[item.affixTier] }}>
+                            [{AFFIX_TIER_RU[item.affixTier]}]
+                          </span>
+                        )}
                       </div>
                       <div className="text-[10px] text-muted-foreground">
                         {SLOT_RU[item.slot || ''] || ITEM_TYPE_RU[item.type]} • {RARITY_NAMES_RU[item.rarity]}
+                        {affixes.length > 0 && ` • ${affixes.map(a => a.labelRu).join(', ')}`}
                       </div>
                     </div>
                     <div className="flex items-center gap-1">
@@ -83,6 +90,7 @@ export function InventoryTab({ player, loading, onEquip, onUseItem, onLearnBluep
               <div className="space-y-2 pr-2">
                 {playerInventory.filter(i => !i.equipped).map(item => {
                   const stats = parseStats(item.stats);
+                  const affixes = parseAffixes(item.affixes);
                   const canEquip = ['weapon', 'armor', 'accessory'].includes(item.type);
                   const canUse = item.type === 'consumable';
                   const canLearn = item.type === 'blueprint';
@@ -96,10 +104,16 @@ export function InventoryTab({ player, loading, onEquip, onUseItem, onLearnBluep
                       <div className="flex-1 min-w-0">
                         <div className="text-xs font-medium truncate" style={{ color: RARITY_COLORS[item.rarity] }}>
                           {item.name} {item.quantity > 1 ? `x${item.quantity}` : ''}
+                          {item.affixTier && AFFIX_TIER_RU[item.affixTier] && (
+                            <span className="ml-1 text-[9px]" style={{ color: AFFIX_TIER_COLORS[item.affixTier] }}>
+                              [{AFFIX_TIER_RU[item.affixTier]}]
+                            </span>
+                          )}
                         </div>
                         <div className="flex items-center gap-1">
                           <span className="text-[10px] text-muted-foreground">
                             {ITEM_TYPE_RU[item.type]} • {RARITY_NAMES_RU[item.rarity]}
+                            {affixes.length > 0 && ` • ${affixes.map(a => a.labelRu).join(', ')}`}
                           </span>
                         </div>
                         {Object.keys(stats).length > 0 && (

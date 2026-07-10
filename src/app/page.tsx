@@ -16,6 +16,7 @@ import {
   PartyCombatStateResponse,
   ExplorationEvent,
   AchievementEntry,
+  GuildData,
 } from '@/lib/game-types';
 import { LoadingScreen } from '@/components/game/LoadingScreen';
 import { CharacterCreationScreen } from '@/components/game/CharacterCreationScreen';
@@ -30,6 +31,7 @@ import { QuestsTab } from '@/components/game/QuestsTab';
 import { CraftTab } from '@/components/game/CraftTab';
 import { LeaderboardTab, type LeaderboardEntry } from '@/components/game/LeaderboardTab';
 import { PartyTab } from '@/components/game/PartyTab';
+import { GuildTab } from '@/components/game/GuildTab';
 
 // ===== MAIN COMPONENT =====
 export default function CursedDepths() {
@@ -48,6 +50,8 @@ export default function CursedDepths() {
   const [achievements, setAchievements] = useState<AchievementEntry[]>([]);
   const [achievementsLoading, setAchievementsLoading] = useState(false);
   const [party, setParty] = useState<PartyData | null>(null);
+  const [guild, setGuild] = useState<GuildData | null>(null);
+  const [guildLoading, setGuildLoading] = useState(false);
   const [partyCombatState, setPartyCombatState] = useState<PartyCombatStateResponse | null>(null);
   const [explorationEvent, setExplorationEvent] = useState<ExplorationEvent | null>(null);
   // Изученные рецепты тира 3 (game-data.ts CRAFTING_RECIPES) — отдельный стейт, а не поле
@@ -264,6 +268,17 @@ export default function CursedDepths() {
       .finally(() => setAchievementsLoading(false));
   }, [tab, apiCall]);
 
+  // ===== GUILD ===== гильдия — постоянная группа, не боевая сессия, поэтому без поллинга
+  // раз в 2 сек как у Party — достаточно подгружать при открытии вкладки.
+  useEffect(() => {
+    if (tab !== 'guild' || !telegramIdRef.current) return;
+    setGuildLoading(true);
+    apiCall('/api/guild/state')
+      .then(data => { if (data.guild !== undefined) setGuild(data.guild); })
+      .catch(() => setMessage({ text: 'Не удалось загрузить гильдию', type: 'error' }))
+      .finally(() => setGuildLoading(false));
+  }, [tab, apiCall]);
+
   // Приглашение по Telegram deep-link: бот присылает кнопку web_app с URL вида
   // "?joinParty=<id>" (см. src/app/api/telegram/webhook/route.ts) — при первом входе в игру
   // с таким параметром автоматически вступаем в пати (сам переход по ссылке уже
@@ -282,6 +297,25 @@ export default function CursedDepths() {
         setParty(data.party);
         setTab('party');
         setMessage({ text: 'Вы вступили в пати!', type: 'success' });
+      }
+    });
+  }, [screen, apiCall]);
+
+  // То же самое для гильдии — "?joinGuild=<id>" (см. webhook/route.ts).
+  const joinGuildChecked = useRef(false);
+  useEffect(() => {
+    if (screen !== 'game' || joinGuildChecked.current || !telegramIdRef.current) return;
+    joinGuildChecked.current = true;
+    const guildId = new URLSearchParams(window.location.search).get('joinGuild');
+    if (!guildId) return;
+    window.history.replaceState({}, '', window.location.pathname);
+    apiCall('/api/guild/join', 'POST', { guildId }).then(data => {
+      if (data.error) {
+        setMessage({ text: data.error, type: 'error' });
+      } else {
+        setGuild(data.guild);
+        setTab('guild');
+        setMessage({ text: 'Вы вступили в гильдию!', type: 'success' });
       }
     });
   }, [screen, apiCall]);
@@ -742,6 +776,38 @@ export default function CursedDepths() {
     setLoading(false);
   };
 
+  // ===== GUILD: CREATE / LEAVE =====
+  const handleCreateGuild = async (name: string, tag: string) => {
+    setLoading(true);
+    try {
+      const data = await apiCall('/api/guild/create', 'POST', { name, tag });
+      if (data.error) {
+        setMessage({ text: data.error, type: 'error' });
+      } else {
+        setGuild(data.guild);
+        setMessage({ text: 'Гильдия создана!', type: 'success' });
+      }
+    } catch {
+      setMessage({ text: 'Не удалось создать гильдию', type: 'error' });
+    }
+    setLoading(false);
+  };
+
+  const handleLeaveGuild = async () => {
+    setLoading(true);
+    try {
+      const data = await apiCall('/api/guild/leave', 'POST');
+      if (data.error) {
+        setMessage({ text: data.error, type: 'error' });
+      } else {
+        setGuild(null);
+      }
+    } catch {
+      setMessage({ text: 'Не удалось покинуть гильдию', type: 'error' });
+    }
+    setLoading(false);
+  };
+
   const handleStartPartyCombat = async () => {
     setLoading(true);
     try {
@@ -910,7 +976,7 @@ export default function CursedDepths() {
       {/* Main content */}
       <main className="flex-1 overflow-hidden">
         <Tabs value={tab} onValueChange={v => setTab(v as GameTab)} className="h-full flex flex-col">
-          <TabsList className="grid w-full grid-cols-9 bg-card rounded-none border-b border-border h-10 p-0">
+          <TabsList className="grid w-full grid-cols-10 bg-card rounded-none border-b border-border h-10 p-0">
             <TabsTrigger value="overview" className="text-xs py-2 data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
               🏠
             </TabsTrigger>
@@ -940,6 +1006,9 @@ export default function CursedDepths() {
             </TabsTrigger>
             <TabsTrigger value="achievements" className="text-xs py-2 data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
               🏅
+            </TabsTrigger>
+            <TabsTrigger value="guild" className="text-xs py-2 data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
+              🏰
             </TabsTrigger>
           </TabsList>
 
@@ -996,6 +1065,15 @@ export default function CursedDepths() {
           />
 
           <AchievementsTab achievements={achievements} loading={achievementsLoading} />
+
+          <GuildTab
+            playerId={player?.id ?? null}
+            guild={guild}
+            loading={guildLoading}
+            botUsername={process.env.NEXT_PUBLIC_BOT_USERNAME ?? null}
+            onCreateGuild={handleCreateGuild}
+            onLeaveGuild={handleLeaveGuild}
+          />
         </Tabs>
       </main>
 

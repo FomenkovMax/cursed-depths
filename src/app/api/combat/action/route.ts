@@ -700,6 +700,7 @@ export async function POST(req: NextRequest) {
       bossState: combatOver ? null : JSON.stringify(bossState),
       xp: newXp,
       gold: { increment: goldGained },
+      ...(playerWon ? { totalKills: { increment: 1 } } : {}),
     };
 
     if (leveledUp) {

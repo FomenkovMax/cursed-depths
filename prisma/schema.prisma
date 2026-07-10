@@ -40,6 +40,10 @@ model Player {
   lastDailyReward String?   // ISO date string
   consumableAttackBonus  Int @default(0) // временный бонус к атаке от Эликсира Мощи (elixir_power)
   consumableFightsLeft   Int @default(0) // на сколько ещё боёв действует consumableAttackBonus
+  totalKills      Int       @default(0) // счётчики за всё время — база для ачивок (achievements.ts)
+  totalExplores   Int       @default(0)
+  totalCrafts     Int       @default(0)
+  partyWins       Int       @default(0)
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
@@ -47,6 +51,7 @@ model Player {
   quests          PlayerQuest[]
   creation        CharacterCreation?
   partyMember     PartyMember?
+  achievements    PlayerAchievement[]
 
   @@index([telegramId])
   @@index([locationId])
@@ -96,6 +101,19 @@ model PartyCombat {
   status     String   @default("active") // active | won | lost
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+}
+
+// Разблокированные ачивки — определения статичны в lib/achievements.ts, здесь только факт
+// разблокировки конкретным игроком (проверяется лениво на GET /api/achievements).
+model PlayerAchievement {
+  id            String   @id @default(cuid())
+  playerId      String
+  player        Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  achievementId String
+  unlockedAt    DateTime @default(now())
+
+  @@unique([playerId, achievementId])
+  @@index([playerId])
 }
 
 model Inventory {

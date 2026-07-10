@@ -74,6 +74,10 @@ export interface PlayerData {
   lastDailyReward: string | null;
   consumableAttackBonus: number;
   consumableFightsLeft: number;
+  totalKills: number;
+  totalExplores: number;
+  totalCrafts: number;
+  partyWins: number;
   inventory: InventoryItem[];
   quests: QuestData[];
 }
@@ -192,7 +196,7 @@ export interface PartyCombatStateResponse {
 }
 
 export type GameScreen = 'loading' | 'creation' | 'game';
-export type GameTab = 'overview' | 'combat' | 'map' | 'inventory' | 'quests' | 'craft' | 'leaderboard' | 'party';
+export type GameTab = 'overview' | 'combat' | 'map' | 'inventory' | 'quests' | 'craft' | 'leaderboard' | 'party' | 'achievements';
 
 export type GameMessage = { text: string; type: 'info' | 'success' | 'error' } | null;
 
@@ -207,6 +211,17 @@ export interface ExplorationEvent {
   icon: string;
   textRu: string;
   choices: EventChoice[];
+}
+
+export interface AchievementEntry {
+  id: string;
+  nameRu: string;
+  descriptionRu: string;
+  icon: string;
+  target: number | null;
+  progress: number | null;
+  unlocked: boolean;
+  unlockedAt: string | null;
 }
 
 // Telegram WebApp SDK types

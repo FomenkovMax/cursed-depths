@@ -66,7 +66,7 @@ export async function POST(req: NextRequest) {
         await incrementQuestProgress(tx, player.id, 'explore');
         return tx.player.update({
           where: { telegramId },
-          data: { gold: { increment: goldFound } },
+          data: { gold: { increment: goldFound }, totalExplores: { increment: 1 } },
           include: { inventory: true, quests: true, race: true, class: { include: { abilities: true } } },
         });
       });
@@ -89,7 +89,7 @@ export async function POST(req: NextRequest) {
         await incrementQuestProgress(tx, player.id, 'explore');
         return tx.player.update({
           where: { telegramId },
-          data: {},
+          data: { totalExplores: { increment: 1 } },
           include: { inventory: true, quests: true, race: true, class: { include: { abilities: true } } },
         });
       });
@@ -109,7 +109,7 @@ export async function POST(req: NextRequest) {
           await incrementQuestProgress(tx, player.id, 'explore');
           return tx.player.update({
             where: { telegramId },
-            data: {},
+            data: { totalExplores: { increment: 1 } },
             include: { inventory: true, quests: true, race: true, class: { include: { abilities: true } } },
           });
         });
@@ -138,6 +138,7 @@ export async function POST(req: NextRequest) {
             enemyMaxHp: enemyHp,
             combatLog: JSON.stringify([{ text: `${enemy.nameRu} появляется!`, turn: 0 }]),
             bossState: JSON.stringify(initBossState(enemy.mechanics)),
+            totalExplores: { increment: 1 },
           },
           include: { inventory: true, quests: true, race: true, class: { include: { abilities: true } } },
         });
@@ -180,7 +181,7 @@ export async function POST(req: NextRequest) {
 
       return tx.player.update({
         where: { telegramId },
-        data: { gold: { increment: goldFound } },
+        data: { gold: { increment: goldFound }, totalExplores: { increment: 1 } },
         include: { inventory: true, quests: true, race: true, class: { include: { abilities: true } } },
       });
     });

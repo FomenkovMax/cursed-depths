@@ -60,6 +60,7 @@ model Player {
   creation        CharacterCreation?
   partyMember     PartyMember?
   achievements    PlayerAchievement[]
+  codexEntries    PlayerCodexEntry[]
   recipes         PlayerRecipe[]
   guildMember     GuildMember?
   seasonRewards   SeasonReward[]
@@ -148,6 +149,19 @@ model PlayerAchievement {
   unlockedAt    DateTime @default(now())
 
   @@unique([playerId, achievementId])
+  @@index([playerId])
+}
+
+// Разблокированные записи лор-кодекса — определения статичны в lib/codex.ts, здесь только
+// факт разблокировки (проверяется лениво на GET /api/codex, тот же паттерн, что и ачивки).
+model PlayerCodexEntry {
+  id         String   @id @default(cuid())
+  playerId   String
+  player     Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  entryId    String
+  unlockedAt DateTime @default(now())
+
+  @@unique([playerId, entryId])
   @@index([playerId])
 }
 

@@ -7,6 +7,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { CRAFTING_RECIPES, ITEMS, RARITY_COLORS } from '@/lib/game-data';
 import { PlayerData, AFFIX_TIER_RU, AFFIX_TIER_COLORS, parseStats, parseAffixes } from '@/lib/game-types';
 import { CURRENCY_IDS } from '@/lib/item-affixes';
+import { MAX_ENHANCEMENT_LEVEL, temperSuccessChance } from '@/lib/item-enhancement';
 
 interface CraftTabProps {
   player: PlayerData | null;
@@ -15,12 +16,14 @@ interface CraftTabProps {
   learnedRecipeIds: Set<string>;
   onCraft: (recipeId: string) => void;
   onApplyCurrency: (inventoryId: string, currencyItemId: string) => void;
+  onTemper: (inventoryId: string) => void;
 }
 
 const TIER_LABELS: Record<number, string> = { 1: 'Тир I', 2: 'Тир II', 3: 'Тир III' };
 const TIER_COLORS: Record<number, string> = { 1: '#9ca3af', 2: '#3b82f6', 3: '#f59e0b' };
+const TEMPER_SCROLL_ITEM_ID = 'tempering_scroll';
 
-export function CraftTab({ player, loading, canCraftRecipe, learnedRecipeIds, onCraft, onApplyCurrency }: CraftTabProps) {
+export function CraftTab({ player, loading, canCraftRecipe, learnedRecipeIds, onCraft, onApplyCurrency, onTemper }: CraftTabProps) {
   const playerInventory = player?.inventory || [];
   const [selectedTargetId, setSelectedTargetId] = useState<string | null>(null);
   const gearItems = playerInventory.filter(i => !i.equipped && ['weapon', 'armor', 'accessory'].includes(i.type));
@@ -90,6 +93,7 @@ export function CraftTab({ player, loading, canCraftRecipe, learnedRecipeIds, on
                 <div className="rounded-md border border-border/60 p-2 bg-secondary/20">
                   <div className="text-xs font-medium" style={{ color: RARITY_COLORS[selectedTarget.rarity] }}>
                     {selectedTarget.name}
+                    {selectedTarget.enhancementLevel > 0 && <span className="ml-1 text-gold">+{selectedTarget.enhancementLevel}</span>}
                     {selectedTarget.affixTier && AFFIX_TIER_RU[selectedTarget.affixTier] && (
                       <span className="ml-1 text-[9px]" style={{ color: AFFIX_TIER_COLORS[selectedTarget.affixTier] }}>
                         [{AFFIX_TIER_RU[selectedTarget.affixTier]}]
@@ -139,6 +143,49 @@ export function CraftTab({ player, loading, canCraftRecipe, learnedRecipeIds, on
                 </div>
               )}
             </>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Закалка — риск-система заточки, см. lib/item-enhancement.ts. Использует тот же
+          selectedTarget, что и Мастерская зачарования выше — один и тот же предмет можно
+          и перекатать, и закалить. */}
+      <Card className="border-border">
+        <CardHeader className="pb-2 pt-3 px-4">
+          <CardTitle className="text-sm">⚔️ Закалка</CardTitle>
+        </CardHeader>
+        <CardContent className="px-4 pb-3 space-y-2">
+          {!selectedTarget ? (
+            <p className="text-xs text-muted-foreground text-center">Выберите предмет в Мастерской зачарования выше</p>
+          ) : (
+            (() => {
+              const scroll = playerInventory.find(i => i.itemId === TEMPER_SCROLL_ITEM_ID && i.type === 'currency');
+              const atMax = selectedTarget.enhancementLevel >= MAX_ENHANCEMENT_LEVEL;
+              const chance = Math.round(temperSuccessChance(selectedTarget.enhancementLevel) * 100);
+              return (
+                <div className="flex items-center gap-2 p-1.5 rounded bg-secondary/10">
+                  <span className="text-lg shrink-0">📯</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-xs font-medium">
+                      Свиток Закалки {scroll ? `x${scroll.quantity}` : 'x0'}
+                    </div>
+                    <div className="text-[10px] text-muted-foreground">
+                      {atMax
+                        ? `Максимальный уровень (+${MAX_ENHANCEMENT_LEVEL}) уже достигнут`
+                        : `Текущий уровень +${selectedTarget.enhancementLevel} → +${selectedTarget.enhancementLevel + 1}, шанс успеха ${chance}%. При неудаче предмет не пострадает.`}
+                    </div>
+                  </div>
+                  <Button
+                    size="sm"
+                    className="h-7 text-xs shrink-0"
+                    disabled={!scroll || atMax || loading}
+                    onClick={() => onTemper(selectedTarget.id)}
+                  >
+                    Закалить
+                  </Button>
+                </div>
+              );
+            })()
           )}
         </CardContent>
       </Card>

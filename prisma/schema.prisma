@@ -198,6 +198,9 @@ model Inventory {
                       // `rarity` остаётся как есть — это базовая ценность шаблона предмета.
   affixes    String? // JSON RolledAffix[] — какие именно аффиксы накатаны, для отображения и
                       // для крафт-валют (lib/item-affixes.ts, POST /api/craft/currency).
+  enhancementLevel Int @default(0) // "заточка" 0-10 — см. lib/item-enhancement.ts. Каждый
+                      // успешный уровень прибавляет +1 к каждому числовому ключу в `stats`
+                      // (уже включён в сумму `stats`, как и аффиксы).
 
   @@index([playerId])
   @@index([itemId])

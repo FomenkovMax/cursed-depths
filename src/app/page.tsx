@@ -14,11 +14,13 @@ import {
   TelegramGlobal,
   PartyData,
   PartyCombatStateResponse,
+  ExplorationEvent,
 } from '@/lib/game-types';
 import { LoadingScreen } from '@/components/game/LoadingScreen';
 import { CharacterCreationScreen } from '@/components/game/CharacterCreationScreen';
 import { GameHeader } from '@/components/game/GameHeader';
 import { OverviewTab } from '@/components/game/OverviewTab';
+import { ExplorationEventModal } from '@/components/game/ExplorationEventModal';
 import { CombatTab } from '@/components/game/CombatTab';
 import { MapTab } from '@/components/game/MapTab';
 import { InventoryTab } from '@/components/game/InventoryTab';
@@ -43,6 +45,7 @@ export default function CursedDepths() {
   const [leaderboardLoading, setLeaderboardLoading] = useState(false);
   const [party, setParty] = useState<PartyData | null>(null);
   const [partyCombatState, setPartyCombatState] = useState<PartyCombatStateResponse | null>(null);
+  const [explorationEvent, setExplorationEvent] = useState<ExplorationEvent | null>(null);
 
   // Character creation state
   const [creationStep, setCreationStep] = useState(0);
@@ -375,9 +378,42 @@ export default function CursedDepths() {
         setPlayer(data.player);
         addFloatingDamage(`+${data.goldFound} 💰`, '#fbbf24');
         setMessage({ text: data.message, type: 'success' });
+      } else if (data.type === 'event') {
+        setPlayer(data.player);
+        setExplorationEvent(data.event);
       }
     } catch {
       setMessage({ text: 'Ошибка исследования', type: 'error' });
+    }
+    setLoading(false);
+  };
+
+  const handleEventChoice = async (choiceId: string) => {
+    if (!explorationEvent) return;
+    setLoading(true);
+    try {
+      const data = await apiCall('/api/explore/event', 'POST', { eventId: explorationEvent.id, choiceId });
+      setExplorationEvent(null);
+      if (data.error) {
+        setMessage({ text: data.error, type: 'error' });
+      } else if (data.type === 'combat') {
+        setPlayer(data.player);
+        setCombatLog([{ text: data.message, turn: 0 }]);
+        setTab('combat');
+        setMessage({ text: data.message, type: 'info' });
+      } else {
+        setPlayer(data.player);
+        if (data.goldDelta > 0) addFloatingDamage(`+${data.goldDelta} 💰`, '#fbbf24');
+        else if (data.goldDelta < 0) addFloatingDamage(`${data.goldDelta} 💰`, '#ef4444');
+        setMessage({ text: data.message, type: data.negative ? 'error' : 'success' });
+        if (data.leveledUp) {
+          setLevelUpAnimation(true);
+          setTimeout(() => setLevelUpAnimation(false), 1500);
+        }
+      }
+    } catch {
+      setExplorationEvent(null);
+      setMessage({ text: 'Ошибка события', type: 'error' });
     }
     setLoading(false);
   };
@@ -784,6 +820,8 @@ export default function CursedDepths() {
           </div>
         </div>
       )}
+
+      <ExplorationEventModal event={explorationEvent} loading={loading} onChoose={handleEventChoice} />
 
       {/* Main content */}
       <main className="flex-1 overflow-hidden">

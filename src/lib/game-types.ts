@@ -196,6 +196,19 @@ export type GameTab = 'overview' | 'combat' | 'map' | 'inventory' | 'quests' | '
 
 export type GameMessage = { text: string; type: 'info' | 'success' | 'error' } | null;
 
+export interface EventChoice {
+  id: string;
+  label: string;
+  hint: string;
+}
+
+export interface ExplorationEvent {
+  id: string;
+  icon: string;
+  textRu: string;
+  choices: EventChoice[];
+}
+
 // Telegram WebApp SDK types
 export type TelegramWebApp = {
   ready: () => void;

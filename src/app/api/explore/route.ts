@@ -12,6 +12,7 @@ import { parsePassiveEffect, type PassiveEffect } from '@/lib/passive-engine';
 import { outOfCombatRegen } from '@/lib/passive-runtime';
 import { computeEquipmentBonuses } from '@/lib/equipment-stats';
 import { isInActivePartyCombat } from '@/lib/party-guards';
+import { EXPLORATION_EVENTS } from '@/lib/exploration-events';
 
 export async function POST(req: NextRequest) {
   const auth = validateTelegramRequest(req);
@@ -77,9 +78,24 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // Dangerous location - random encounter chance
-    const encounterChance = 0.6;
-    if (Math.random() < encounterChance) {
+    // Dangerous location - roll between combat / narrative event / gold-loot
+    const roll = Math.random();
+    if (roll < 0.25) {
+      // Narrative mini-event with a choice — resolved separately via /api/explore/event,
+      // see lib/exploration-events.ts. Player state isn't touched yet, only the "explore"
+      // quest counter, since the event itself is what the player was looking for.
+      const event = EXPLORATION_EVENTS[Math.floor(Math.random() * EXPLORATION_EVENTS.length)];
+      const updated = await db.$transaction(async (tx) => {
+        await incrementQuestProgress(tx, player.id, 'explore');
+        return tx.player.update({
+          where: { telegramId },
+          data: {},
+          include: { inventory: true, quests: true, race: true, class: { include: { abilities: true } } },
+        });
+      });
+      return NextResponse.json({ type: 'event', event, player: updated });
+    }
+    if (roll < 0.65) {
       // Combat encounter - fetch enemies with caching
       const cacheKey = `enemies:locationId:${player.locationId}`;
       let locationEnemies = getCached<typeof ENEMIES>(cacheKey);

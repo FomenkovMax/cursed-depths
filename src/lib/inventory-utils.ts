@@ -27,11 +27,14 @@ interface AddItemParams {
   itemLevel?: number | null;
   affixTier?: string | null;
   affixes?: string | null;
+  /** Уровень заточки (lib/item-enhancement.ts) — переносится, например, при покупке
+   * закалённого предмета с аукциона (POST /api/market/buy). */
+  enhancementLevel?: number;
 }
 
 export async function addItemToInventory(params: AddItemParams, client?: PrismaClientLike) {
   const prisma = client ?? db;
-  const { playerId, itemId, name, type, rarity, stats, icon, quantity, equipped, slot, itemLevel, affixTier, affixes } = params;
+  const { playerId, itemId, name, type, rarity, stats, icon, quantity, equipped, slot, itemLevel, affixTier, affixes, enhancementLevel } = params;
 
   // For equippable items (weapons, armor), always create a new row — they can have different stats
   // For stackable items (consumables, materials, craft currency), stack with existing
@@ -71,6 +74,7 @@ export async function addItemToInventory(params: AddItemParams, client?: PrismaC
       itemLevel: itemLevel ?? null,
       affixTier: affixTier ?? null,
       affixes: affixes ?? null,
+      enhancementLevel: enhancementLevel ?? 0,
     },
   });
 

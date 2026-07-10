@@ -150,6 +150,26 @@ export interface PartyData {
   combat: PartyCombatData | null;
 }
 
+export interface GuildMemberData {
+  id: string;
+  playerId: string;
+  joinedAt: string;
+  player: {
+    id: string;
+    name: string;
+    level: number;
+    class: { name: string; icon: string };
+  };
+}
+
+export interface GuildData {
+  id: string;
+  name: string;
+  tag: string;
+  leaderId: string;
+  members: GuildMemberData[];
+}
+
 export interface PartyCombatLogEntry {
   text: string;
   turn: number;
@@ -202,7 +222,7 @@ export interface PartyCombatStateResponse {
 }
 
 export type GameScreen = 'loading' | 'creation' | 'game';
-export type GameTab = 'overview' | 'combat' | 'map' | 'inventory' | 'quests' | 'craft' | 'leaderboard' | 'party' | 'achievements';
+export type GameTab = 'overview' | 'combat' | 'map' | 'inventory' | 'quests' | 'craft' | 'leaderboard' | 'party' | 'achievements' | 'guild';
 
 export type GameMessage = { text: string; type: 'info' | 'success' | 'error' } | null;
 

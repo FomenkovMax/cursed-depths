@@ -1,0 +1,120 @@
+import { useState } from 'react';
+import { TabsContent } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { GuildData } from '@/lib/game-types';
+
+interface GuildTabProps {
+  playerId: string | null;
+  guild: GuildData | null;
+  loading: boolean;
+  botUsername: string | null;
+  onCreateGuild: (name: string, tag: string) => void;
+  onLeaveGuild: () => void;
+}
+
+export function GuildTab({ playerId, guild, loading, botUsername, onCreateGuild, onLeaveGuild }: GuildTabProps) {
+  const [copied, setCopied] = useState(false);
+  const [name, setName] = useState('');
+  const [tag, setTag] = useState('');
+
+  const inviteLink = guild && botUsername ? `https://t.me/${botUsername}?start=guild_${guild.id}` : null;
+  const isLeader = !!guild && guild.leaderId === playerId;
+
+  const handleCopyInvite = async () => {
+    if (!inviteLink) return;
+    try {
+      await navigator.clipboard.writeText(inviteLink);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Буфер обмена недоступен — ссылка всё равно видна в карточке ниже.
+    }
+  };
+
+  return (
+    <TabsContent value="guild" className="flex-1 overflow-y-auto p-4 space-y-4 m-0">
+      {!guild ? (
+        <Card className="border-border">
+          <CardContent className="p-6 text-center space-y-3">
+            <div className="text-3xl">🏰</div>
+            <p className="text-sm text-muted-foreground">
+              Вы не состоите в гильдии — постоянном сообществе искателей, в отличие от временной пати для боя.
+            </p>
+            <div className="space-y-2 text-left">
+              <Input
+                placeholder="Название гильдии (3-24 символа)"
+                value={name}
+                onChange={e => setName(e.target.value)}
+                maxLength={24}
+              />
+              <Input
+                placeholder="Тег (2-6 символов, напр. ASH)"
+                value={tag}
+                onChange={e => setTag(e.target.value.toUpperCase())}
+                maxLength={6}
+              />
+            </div>
+            <Button
+              className="w-full"
+              onClick={() => onCreateGuild(name.trim(), tag.trim())}
+              disabled={loading || name.trim().length < 3 || tag.trim().length < 2}
+            >
+              Создать гильдию
+            </Button>
+          </CardContent>
+        </Card>
+      ) : (
+        <>
+          <Card className="border-border">
+            <CardHeader className="pb-2 pt-3 px-4">
+              <CardTitle className="text-sm flex items-center justify-between">
+                <span>🏰 {guild.name} <Badge variant="outline" className="text-[10px] h-4 border-border ml-1">[{guild.tag}]</Badge></span>
+                <Badge variant="outline" className="text-[10px] h-5 border-border">{guild.members.length}/30</Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="px-4 pb-3 space-y-1.5">
+              {guild.members.map(m => (
+                <div key={m.id} className="flex items-center gap-2.5 py-1">
+                  <span className="text-xl">{m.player.class.icon}</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-xs font-medium truncate">
+                      {m.player.name}
+                      {m.playerId === guild.leaderId && <Badge className="ml-1 text-[9px] h-4 px-1 bg-gold/20 text-gold">лидер</Badge>}
+                      {m.playerId === playerId && <Badge className="ml-1 text-[9px] h-4 px-1 bg-primary/20 text-primary">вы</Badge>}
+                    </div>
+                    <div className="text-[10px] text-muted-foreground truncate">
+                      Ур. {m.player.level} • {m.player.class.name}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+
+          <Card className="border-border">
+            <CardContent className="p-4 space-y-2">
+              <p className="text-xs text-muted-foreground">Пригласите друзей ссылкой — она откроет бота и предложит вступить в гильдию.</p>
+              {inviteLink ? (
+                <>
+                  <div className="text-[10px] break-all bg-secondary rounded p-2 text-muted-foreground">{inviteLink}</div>
+                  <Button variant="outline" className="w-full border-border" onClick={handleCopyInvite}>
+                    {copied ? '✅ Скопировано' : '🔗 Скопировать ссылку-приглашение'}
+                  </Button>
+                </>
+              ) : (
+                <p className="text-[10px] text-muted-foreground">Приглашения временно недоступны.</p>
+              )}
+            </CardContent>
+          </Card>
+
+          <Button variant="outline" className="w-full border-border" onClick={onLeaveGuild} disabled={loading}>
+            {isLeader && guild.members.length > 1 ? 'Покинуть гильдию (лидерство перейдёт другому)' : 'Покинуть гильдию'}
+          </Button>
+        </>
+      )}
+    </TabsContent>
+  );
+}

@@ -55,6 +55,7 @@ model Player {
   partyMember     PartyMember?
   achievements    PlayerAchievement[]
   recipes         PlayerRecipe[]
+  guildMember     GuildMember?
 
   @@index([telegramId])
   @@index([locationId])
@@ -104,6 +105,30 @@ model PartyCombat {
   status     String   @default("active") // active | won | lost
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+}
+
+// Гильдия — постоянная социальная группа (в отличие от Party, которая существует только на
+// время одного совместного боя). Приглашение — тот же Telegram deep-link паттерн, что и у
+// пати (t.me/bot?start=guild_<id>), см. webhook/route.ts.
+model Guild {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  tag       String   // короткий тег 2-6 символов, показывается рядом с именем игрока
+  leaderId  String   // Player.id
+  createdAt DateTime @default(now())
+
+  members   GuildMember[]
+}
+
+model GuildMember {
+  id       String   @id @default(cuid())
+  guildId  String
+  guild    Guild    @relation(fields: [guildId], references: [id], onDelete: Cascade)
+  playerId String   @unique // игрок состоит максимум в одной гильдии одновременно
+  player   Player   @relation(fields: [playerId], references: [id])
+  joinedAt DateTime @default(now())
+
+  @@index([guildId])
 }
 
 // Разблокированные ачивки — определения статичны в lib/achievements.ts, здесь только факт

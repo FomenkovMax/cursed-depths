@@ -33,6 +33,17 @@ export async function POST(req: NextRequest) {
 
     if (!player) return NextResponse.json({ error: 'Персонаж не найден' }, { status: 404 });
 
+    if (player.level < recipe.minLevel) {
+      return NextResponse.json({ error: `Рецепт доступен с ${recipe.minLevel} уровня` }, { status: 400 });
+    }
+
+    if (recipe.requiresBlueprintId) {
+      const learned = await db.playerRecipe.findUnique({
+        where: { playerId_recipeId: { playerId: player.id, recipeId: recipe.id } },
+      });
+      if (!learned) return NextResponse.json({ error: 'Сначала изучите чертёж этого рецепта' }, { status: 400 });
+    }
+
     // Check materials
     for (const mat of recipe.materials) {
       const inventoryItem = player.inventory.find(i => i.itemId === mat.itemId);
@@ -45,6 +56,12 @@ export async function POST(req: NextRequest) {
     // Add result item
     const resultItem = ITEMS.find(i => i.id === recipe.result.itemId);
     if (!resultItem) return NextResponse.json({ error: 'Результат крафта не найден' }, { status: 500 });
+
+    // Шанс бонусного результата растёт с тиром рецепта — тир 1 никогда не даёт бонус,
+    // тир 2/3 иногда удваивают выход крафта.
+    const bonusChance = recipe.tier === 3 ? 0.25 : recipe.tier === 2 ? 0.15 : 0;
+    const isBonus = Math.random() < bonusChance;
+    const resultQuantity = isBonus ? recipe.result.quantity * 2 : recipe.result.quantity;
 
     // Wrap material removal + item creation in a transaction. Список материалов игрока выше —
     // снимок ДО транзакции, использовать его как единственную проверку небезопасно: два
@@ -77,7 +94,7 @@ export async function POST(req: NextRequest) {
         rarity: resultItem.rarity,
         stats: JSON.stringify(resultItem.stats),
         icon: resultItem.icon,
-        quantity: recipe.result.quantity,
+        quantity: resultQuantity,
       }, tx);
 
       await incrementQuestProgress(tx, player.id, 'craft');
@@ -85,8 +102,12 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json({
-      message: `Вы скрафтили ${resultItem.nameRu}!`,
+      message: isBonus
+        ? `Удача! Вы скрафтили ${resultQuantity}x ${resultItem.nameRu} вместо обычного количества!`
+        : `Вы скрафтили ${resultItem.nameRu}!`,
       item: resultItem,
+      quantity: resultQuantity,
+      isBonus,
     });
   } catch (error) {
     if (error instanceof InsufficientMaterialError) {

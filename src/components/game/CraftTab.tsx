@@ -9,11 +9,15 @@ import { PlayerData } from '@/lib/game-types';
 interface CraftTabProps {
   player: PlayerData | null;
   loading: boolean;
-  hasMaterials: (recipe: typeof CRAFTING_RECIPES[0]) => boolean;
+  canCraftRecipe: (recipe: typeof CRAFTING_RECIPES[0]) => boolean;
+  learnedRecipeIds: Set<string>;
   onCraft: (recipeId: string) => void;
 }
 
-export function CraftTab({ player, loading, hasMaterials, onCraft }: CraftTabProps) {
+const TIER_LABELS: Record<number, string> = { 1: 'Тир I', 2: 'Тир II', 3: 'Тир III' };
+const TIER_COLORS: Record<number, string> = { 1: '#9ca3af', 2: '#3b82f6', 3: '#f59e0b' };
+
+export function CraftTab({ player, loading, canCraftRecipe, learnedRecipeIds, onCraft }: CraftTabProps) {
   const playerInventory = player?.inventory || [];
 
   return (
@@ -51,8 +55,11 @@ export function CraftTab({ player, loading, hasMaterials, onCraft }: CraftTabPro
       <ScrollArea className="max-h-[55vh]">
         <div className="space-y-2 pr-2">
           {CRAFTING_RECIPES.map(recipe => {
-            const canCraft = hasMaterials(recipe);
+            const canCraft = canCraftRecipe(recipe);
             const resultItem = ITEMS.find(i => i.id === recipe.result.itemId);
+            const levelLocked = (player?.level ?? 0) < recipe.minLevel;
+            const blueprintLocked = !!recipe.requiresBlueprintId && !learnedRecipeIds.has(recipe.id);
+            const blueprintItem = recipe.requiresBlueprintId ? ITEMS.find(i => i.id === recipe.requiresBlueprintId) : null;
 
             return (
               <Card key={recipe.id} className={`border-border ${canCraft ? '' : 'opacity-60'}`}>
@@ -60,7 +67,26 @@ export function CraftTab({ player, loading, hasMaterials, onCraft }: CraftTabPro
                   <div className="flex items-start gap-3">
                     <span className="text-2xl">{recipe.icon}</span>
                     <div className="flex-1 min-w-0">
-                      <h4 className="font-bold text-sm">{recipe.nameRu}</h4>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <h4 className="font-bold text-sm">{recipe.nameRu}</h4>
+                        <Badge
+                          variant="outline"
+                          className="text-[9px] h-4 px-1"
+                          style={{ color: TIER_COLORS[recipe.tier], borderColor: TIER_COLORS[recipe.tier] + '50' }}
+                        >
+                          {TIER_LABELS[recipe.tier]}
+                        </Badge>
+                        {levelLocked && (
+                          <Badge variant="outline" className="text-[9px] h-4 px-1 text-destructive border-destructive/30">
+                            🔒 Ур. {recipe.minLevel}+
+                          </Badge>
+                        )}
+                        {blueprintLocked && (
+                          <Badge variant="outline" className="text-[9px] h-4 px-1 text-gold border-gold/30">
+                            📜 Нужен чертёж: {blueprintItem?.nameRu ?? ''}
+                          </Badge>
+                        )}
+                      </div>
 
                       {/* Materials needed */}
                       <div className="flex gap-1 mt-1 flex-wrap">
@@ -89,6 +115,9 @@ export function CraftTab({ player, loading, hasMaterials, onCraft }: CraftTabPro
                             {resultItem.icon} {resultItem.nameRu}
                             {recipe.result.quantity > 1 ? ` x${recipe.result.quantity}` : ''}
                           </span>
+                        )}
+                        {recipe.tier > 1 && (
+                          <span className="text-[10px] text-gold">🍀 шанс бонуса</span>
                         )}
                       </div>
 

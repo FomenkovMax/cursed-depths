@@ -82,6 +82,10 @@ export interface PlayerData {
   dungeonRoom: number;
   inventory: InventoryItem[];
   quests: QuestData[];
+  /** Только GET /api/player заполняет это поле — остальные роуты не включают его в ответ,
+   * поэтому в page.tsx изученные рецепты хранятся отдельным стейтом (learnedRecipeIds), а
+   * не читаются отсюда после каждого действия. */
+  recipes?: { recipeId: string }[];
 }
 
 export interface InventoryItem {
@@ -275,6 +279,7 @@ export const ITEM_TYPE_RU: Record<string, string> = {
   consumable: 'Расходуемое',
   material: 'Материал',
   quest: 'Квестовый предмет',
+  blueprint: 'Чертёж',
 };
 
 export const SLOT_RU: Record<string, string> = {

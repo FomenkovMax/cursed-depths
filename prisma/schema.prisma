@@ -58,6 +58,8 @@ model Player {
   pvpLosses       Int       @default(0)
   worldBossAttacksToday Int @default(0) // сбрасывается лениво при первой атаке нового дня
   worldBossAttackDate   String? // "YYYY-MM-DD" последней атаки — тот же паттерн, что lastDailyReward
+  fortressAssaultsToday Int @default(0) // штурмы Крепости (lib/fortress.ts) — тот же паттерн
+  fortressAssaultDate   String?
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
@@ -73,6 +75,7 @@ model Player {
   marketListings  MarketListing[]
   worldBossHits   WorldBossContribution[]
   stashItems      StashItem[]
+  fortressAssaults FortressContribution[]
 
   @@index([telegramId])
   @@index([locationId])
@@ -135,6 +138,7 @@ model Guild {
   createdAt DateTime @default(now())
 
   members   GuildMember[]
+  fortressAssaults FortressContribution[]
 }
 
 model GuildMember {
@@ -229,6 +233,39 @@ model StashItem {
   enhancementLevel Int     @default(0)
   quantity         Int     @default(1)
 
+  @@index([playerId])
+}
+
+// Крепость — единственный синглтон-объект territory-control между ГИЛЬДИЯМИ (в отличие от
+// WorldBoss, который общий для всех игроков разом, здесь соревнуются гильдии между собой).
+// Недельный цикл (ISO-неделя, lib/fortress.ts currentWeekId) — гильдия с наибольшей суммой
+// очков штурма за цикл коронуется контролирующей и её участники получают +10% золота с любого
+// боя до конца следующего цикла (см. combat/action.ts). Если за цикл никто не штурмовал —
+// контроль остаётся у прежнего владельца (некому оспорить).
+model Fortress {
+  id                 String  @id
+  cycleId            String  // "YYYY-Www"
+  controllingGuildId String?
+
+  contributions FortressContribution[]
+}
+
+// Один штурм одного игрока в текущем цикле — сумма по guildId даёт итог для коронации в конце
+// цикла. Строки за ПРОШЛЫЙ цикл удаляются сразу после коронации (см. lib/fortress.ts) — как и
+// WorldBossContribution, это эфемерный прогресс, не история.
+model FortressContribution {
+  id         String   @id @default(cuid())
+  fortressId String
+  fortress   Fortress @relation(fields: [fortressId], references: [id], onDelete: Cascade)
+  cycleId    String
+  guildId    String
+  guild      Guild    @relation(fields: [guildId], references: [id], onDelete: Cascade)
+  playerId   String
+  player     Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  points     Int
+  createdAt  DateTime @default(now())
+
+  @@index([cycleId, guildId])
   @@index([playerId])
 }
 

@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { GuildData, WorldBossStateView, WorldBossAttackResultView } from '@/lib/game-types';
+import { GuildData, WorldBossStateView, WorldBossAttackResultView, FortressStateView, FortressAssaultResultView } from '@/lib/game-types';
 
 interface GuildTabProps {
   playerId: string | null;
@@ -17,14 +17,23 @@ interface GuildTabProps {
   worldBoss: WorldBossStateView | null;
   worldBossLoading: boolean;
   onAttackWorldBoss: () => Promise<WorldBossAttackResultView | null>;
+  fortress: FortressStateView | null;
+  fortressLoading: boolean;
+  onAssaultFortress: () => Promise<FortressAssaultResultView | null>;
 }
 
-export function GuildTab({ playerId, guild, loading, botUsername, onCreateGuild, onLeaveGuild, worldBoss, worldBossLoading, onAttackWorldBoss }: GuildTabProps) {
+export function GuildTab({
+  playerId, guild, loading, botUsername, onCreateGuild, onLeaveGuild,
+  worldBoss, worldBossLoading, onAttackWorldBoss,
+  fortress, fortressLoading, onAssaultFortress,
+}: GuildTabProps) {
   const [copied, setCopied] = useState(false);
   const [name, setName] = useState('');
   const [tag, setTag] = useState('');
   const [lastAttack, setLastAttack] = useState<WorldBossAttackResultView | null>(null);
   const [attacking, setAttacking] = useState(false);
+  const [lastAssault, setLastAssault] = useState<FortressAssaultResultView | null>(null);
+  const [assaulting, setAssaulting] = useState(false);
 
   const inviteLink = guild && botUsername ? `https://t.me/${botUsername}?start=guild_${guild.id}` : null;
   const isLeader = !!guild && guild.leaderId === playerId;
@@ -45,6 +54,13 @@ export function GuildTab({ playerId, guild, loading, botUsername, onCreateGuild,
     const result = await onAttackWorldBoss();
     if (result) setLastAttack(result);
     setAttacking(false);
+  };
+
+  const handleAssault = async () => {
+    setAssaulting(true);
+    const result = await onAssaultFortress();
+    if (result) setLastAssault(result);
+    setAssaulting(false);
   };
 
   return (
@@ -79,6 +95,50 @@ export function GuildTab({ playerId, guild, loading, botUsername, onCreateGuild,
             >
               {worldBoss.attacksLeftToday > 0 ? `⚔️ Атаковать (осталось ${worldBoss.attacksLeftToday}/день)` : 'Атаки на сегодня закончились'}
             </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Крепость — гильдия-против-гильдии соревнование за территорию (lib/fortress.ts),
+          в отличие от мирового босса выше (общий КООП для всех). Видна всем, штурмовать
+          может только член гильдии. */}
+      {fortress && (
+        <Card className="border-gold/50 bg-gold/5">
+          <CardHeader className="pb-2 pt-3 px-4">
+            <CardTitle className="text-sm">🏯 Крепость <span className="text-[10px] text-muted-foreground font-normal">(цикл {fortress.cycleId})</span></CardTitle>
+          </CardHeader>
+          <CardContent className="px-4 pb-3 space-y-2">
+            <div className="text-xs">
+              {fortress.controllingGuild ? (
+                <span>Контролирует: <span className="font-medium text-gold">🏰 {fortress.controllingGuild.name} [{fortress.controllingGuild.tag}]</span></span>
+              ) : (
+                <span className="text-muted-foreground">Крепость свободна — ни одна гильдия ещё не заявила права</span>
+              )}
+              {fortress.myGuildId && fortress.controllingGuild?.id === fortress.myGuildId && (
+                <Badge className="ml-1 text-[9px] h-4 px-1 bg-gold/20 text-gold">+10% золота вашей гильдии</Badge>
+              )}
+            </div>
+            {fortress.standings.length > 0 && (
+              <div className="text-[10px] text-muted-foreground">
+                Лидеры цикла: {fortress.standings.slice(0, 3).map(s => `${s.name} [${s.tag}] (${s.points})`).join(', ')}
+              </div>
+            )}
+            {lastAssault && (
+              <div className="text-xs rounded p-2 bg-secondary/30 text-muted-foreground">
+                Урон по Крепости: +{lastAssault.pointsDealt} очков вашей гильдии
+              </div>
+            )}
+            {fortress.myGuildId ? (
+              <Button
+                className="w-full h-9"
+                disabled={loading || fortressLoading || assaulting || fortress.assaultsLeftToday <= 0}
+                onClick={handleAssault}
+              >
+                {fortress.assaultsLeftToday > 0 ? `🏯 Штурмовать (осталось ${fortress.assaultsLeftToday}/день)` : 'Штурмы на сегодня закончились'}
+              </Button>
+            ) : (
+              <p className="text-[10px] text-muted-foreground text-center">Вступите в гильдию, чтобы штурмовать Крепость</p>
+            )}
           </CardContent>
         </Card>
       )}

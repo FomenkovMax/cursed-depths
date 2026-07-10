@@ -24,6 +24,8 @@ import {
   PvpFightResultView,
   WorldBossStateView,
   WorldBossAttackResultView,
+  FortressStateView,
+  FortressAssaultResultView,
   GuildData,
 } from '@/lib/game-types';
 import { LoadingScreen } from '@/components/game/LoadingScreen';
@@ -75,6 +77,8 @@ export default function CursedDepths() {
   const [pvpLoading, setPvpLoading] = useState(false);
   const [worldBoss, setWorldBoss] = useState<WorldBossStateView | null>(null);
   const [worldBossLoading, setWorldBossLoading] = useState(false);
+  const [fortress, setFortress] = useState<FortressStateView | null>(null);
+  const [fortressLoading, setFortressLoading] = useState(false);
   const [stashItems, setStashItems] = useState<StashItemView[]>([]);
   const [stashCapacity, setStashCapacity] = useState(60);
   const [stashLoading, setStashLoading] = useState(false);
@@ -433,6 +437,39 @@ export default function CursedDepths() {
       return null;
     } finally {
       setWorldBossLoading(false);
+    }
+  };
+
+  // ===== FORTRESS (гильд-война за территорию — lib/fortress.ts) =====
+  const refreshFortress = useCallback(() => {
+    setFortressLoading(true);
+    apiCall('/api/fortress/state')
+      .then(data => { if (data.cycleId) setFortress(data); })
+      .catch(() => setMessage({ text: 'Не удалось загрузить состояние Крепости', type: 'error' }))
+      .finally(() => setFortressLoading(false));
+  }, [apiCall]);
+
+  useEffect(() => {
+    if (tab !== 'guild' || !telegramIdRef.current) return;
+    refreshFortress();
+  }, [tab, refreshFortress]);
+
+  const handleAssaultFortress = async (): Promise<FortressAssaultResultView | null> => {
+    if (!player) return null;
+    setFortressLoading(true);
+    try {
+      const data = await apiCall('/api/fortress/assault', 'POST', {});
+      if (data.error) {
+        setMessage({ text: data.error, type: 'error' });
+        return null;
+      }
+      refreshFortress();
+      return data as FortressAssaultResultView;
+    } catch {
+      setMessage({ text: 'Ошибка штурма Крепости', type: 'error' });
+      return null;
+    } finally {
+      setFortressLoading(false);
     }
   };
 
@@ -1408,6 +1445,9 @@ export default function CursedDepths() {
             worldBoss={worldBoss}
             worldBossLoading={worldBossLoading}
             onAttackWorldBoss={handleAttackWorldBoss}
+            fortress={fortress}
+            fortressLoading={fortressLoading}
+            onAssaultFortress={handleAssaultFortress}
           />
 
           <CodexTab entries={codexEntries} loading={codexLoading} />

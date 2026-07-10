@@ -268,6 +268,32 @@ export interface AchievementEntry {
   unlockedAt: string | null;
 }
 
+export interface FortressGuildRef {
+  id: string;
+  name: string;
+  tag: string;
+}
+
+export interface FortressStandingView {
+  guildId: string;
+  name: string;
+  tag: string;
+  points: number;
+}
+
+export interface FortressStateView {
+  cycleId: string;
+  controllingGuild: FortressGuildRef | null;
+  standings: FortressStandingView[];
+  myGuildId: string | null;
+  assaultsLeftToday: number;
+}
+
+export interface FortressAssaultResultView {
+  pointsDealt: number;
+  attacksLeftToday: number;
+}
+
 export interface StashItemView {
   id: string;
   itemId: string;

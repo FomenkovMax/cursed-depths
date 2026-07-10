@@ -69,6 +69,7 @@ import { rollGearInstance, rollCurrencyDrop } from '@/lib/item-affixes';
 import { rollTemperScrollDrop } from '@/lib/item-enhancement';
 import { dungeonModifierEffect } from '@/lib/dungeon-modifiers';
 import { abyssScaling, abyssEnemyIdForDepth, isEliteDepth } from '@/lib/abyss';
+import { FORTRESS_ID, CONTROL_GOLD_BONUS } from '@/lib/fortress';
 
 export async function POST(req: NextRequest) {
   const auth = validateTelegramRequest(req);
@@ -84,7 +85,7 @@ export async function POST(req: NextRequest) {
 
     const player = await db.player.findUnique({
       where: { telegramId },
-      include: { inventory: true, class: { include: { abilities: true } } },
+      include: { inventory: true, class: { include: { abilities: true } }, guildMember: true },
     });
 
     if (!player) return NextResponse.json({ error: 'Персонаж не найден' }, { status: 404 });
@@ -137,6 +138,16 @@ export async function POST(req: NextRequest) {
     // Масштабирование Бездонного Разлома (lib/abyss.ts) — растёт с глубиной, взаимоисключающе
     // с dungeonEffect (игрок не может быть одновременно в данже и в Разломе).
     const abyssEffect = player.abyssDepth > 0 ? abyssScaling(player.abyssDepth) : { hpMult: 1, damageMult: 1, goldMult: 1, xpMult: 1 };
+    // Крепость (lib/fortress.ts) — гильдия, контролирующая Крепость на текущей неделе, даёт
+    // всем своим участникам +10% золота с ЛЮБОГО боя (не только в данже/Разломе), независимо
+    // от dungeonEffect/abyssEffect выше — умножается поверх них.
+    let fortressGoldMult = 1;
+    if (player.guildMember) {
+      const fortress = await db.fortress.findUnique({ where: { id: FORTRESS_ID } });
+      if (fortress?.controllingGuildId === player.guildMember.guildId) {
+        fortressGoldMult = 1 + CONTROL_GOLD_BONUS;
+      }
+    }
 
     // Track deferred DB operations for transaction
     let itemToConsume: { id: string; delete: boolean } | null = null;
@@ -507,7 +518,7 @@ export async function POST(req: NextRequest) {
       combatOver = true;
       playerWon = true;
       xpGained = Math.round(enemyTemplate.xp * dungeonEffect.xpMult * abyssEffect.xpMult);
-      goldGained = Math.round((enemyTemplate.gold + rollDice('1d4') * Math.ceil(player.level / 2)) * dungeonEffect.goldMult * abyssEffect.goldMult);
+      goldGained = Math.round((enemyTemplate.gold + rollDice('1d4') * Math.ceil(player.level / 2)) * dungeonEffect.goldMult * abyssEffect.goldMult * fortressGoldMult);
       droppedItems.push(...rollLoot(enemyTemplate.lootTable));
       const currencyDrop = rollCurrencyDrop(enemyTemplate.isBoss);
       if (currencyDrop) droppedItems.push(currencyDrop);
@@ -717,7 +728,7 @@ export async function POST(req: NextRequest) {
           } else {
             dungeonJustCompleted = true;
             xpGained += Math.round(dungeon.completionReward.xp * dungeonEffect.xpMult);
-            goldGained += Math.round(dungeon.completionReward.gold * dungeonEffect.goldMult);
+            goldGained += Math.round(dungeon.completionReward.gold * dungeonEffect.goldMult * fortressGoldMult);
             for (const rewardItemId of dungeon.completionReward.items ?? []) {
               const rewardItemData = ITEMS.find(i => i.id === rewardItemId);
               if (rewardItemData) {

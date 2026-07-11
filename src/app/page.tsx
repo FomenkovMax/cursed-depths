@@ -31,6 +31,7 @@ import {
   GuildData,
   PremiumShopStateView,
   FortuneSpinResultView,
+  PetsStateView,
 } from '@/lib/game-types';
 import { LoadingScreen } from '@/components/game/LoadingScreen';
 import { CharacterCreationScreen } from '@/components/game/CharacterCreationScreen';
@@ -92,6 +93,10 @@ export default function CursedDepths() {
   const [buyingPackId, setBuyingPackId] = useState<string | null>(null);
   const [spinningWheel, setSpinningWheel] = useState(false);
   const [changingRace, setChangingRace] = useState(false);
+  const [petsState, setPetsState] = useState<PetsStateView | null>(null);
+  const [petsLoading, setPetsLoading] = useState(false);
+  const [buyingPetId, setBuyingPetId] = useState<string | null>(null);
+  const [activatingPetId, setActivatingPetId] = useState<string | null>(null);
   const [stashItems, setStashItems] = useState<StashItemView[]>([]);
   const [stashCapacity, setStashCapacity] = useState(60);
   const [stashLoading, setStashLoading] = useState(false);
@@ -516,6 +521,63 @@ export default function CursedDepths() {
     if (screen !== 'game' || !telegramIdRef.current) return;
     refreshPremiumState();
   }, [screen, refreshPremiumState]);
+
+  // ===== ПИТОМЦЫ-КОМПАНЬОНЫ (lib/pets.ts) — тот же паттерн загрузки, что и премиум-магазин:
+  // сразу при входе (для activePetId в GameHeader/OverviewTab) и при каждом открытии вкладки. =====
+  const refreshPetsState = useCallback(() => {
+    setPetsLoading(true);
+    apiCall('/api/pets/state')
+      .then(data => { if (data.catalog) setPetsState(data); })
+      .catch(() => setMessage({ text: 'Не удалось загрузить питомцев', type: 'error' }))
+      .finally(() => setPetsLoading(false));
+  }, [apiCall]);
+
+  useEffect(() => {
+    if (tab !== 'premium' || !telegramIdRef.current) return;
+    refreshPetsState();
+  }, [tab, refreshPetsState]);
+
+  useEffect(() => {
+    if (screen !== 'game' || !telegramIdRef.current) return;
+    refreshPetsState();
+  }, [screen, refreshPetsState]);
+
+  const handleBuyPet = async (petId: string) => {
+    if (!player) return;
+    setBuyingPetId(petId);
+    try {
+      const data = await apiCall('/api/pets/buy', 'POST', { petId });
+      if (data.error) {
+        setMessage({ text: data.error, type: 'error' });
+      } else {
+        setPlayer(data.player);
+        setMessage({ text: data.message, type: 'success' });
+        refreshPetsState();
+      }
+    } catch {
+      setMessage({ text: 'Ошибка покупки питомца', type: 'error' });
+    } finally {
+      setBuyingPetId(null);
+    }
+  };
+
+  const handleActivatePet = async (petId: string | null) => {
+    if (!player) return;
+    setActivatingPetId(petId ?? 'none');
+    try {
+      const data = await apiCall('/api/pets/activate', 'POST', { petId });
+      if (data.error) {
+        setMessage({ text: data.error, type: 'error' });
+      } else {
+        setPlayer(data.player);
+        refreshPetsState();
+      }
+    } catch {
+      setMessage({ text: 'Ошибка активации питомца', type: 'error' });
+    } finally {
+      setActivatingPetId(null);
+    }
+  };
 
   const handleBuyShardPack = async (packId: string) => {
     if (!player) return;
@@ -1479,6 +1541,7 @@ export default function CursedDepths() {
         locationIcon={location?.icon}
         locationName={location?.nameRu}
         crownShards={premiumState?.crownShards ?? 0}
+        activePetId={petsState?.activePetId ?? null}
         onOpenPremium={() => setTab('premium')}
       />
 
@@ -1531,6 +1594,7 @@ export default function CursedDepths() {
             onStartDungeon={handleStartDungeon}
             onStartAbyss={handleStartAbyss}
             onStartTrial={handleStartTrial}
+            activePetId={petsState?.activePetId ?? null}
           />
 
           <CombatTab
@@ -1615,6 +1679,12 @@ export default function CursedDepths() {
             onSpinWheel={handleSpinFortuneWheel}
             changingRace={changingRace}
             onChangeRace={handleChangeRace}
+            petsState={petsState}
+            petsLoading={petsLoading}
+            buyingPetId={buyingPetId}
+            activatingPetId={activatingPetId}
+            onBuyPet={handleBuyPet}
+            onActivatePet={handleActivatePet}
           />
 
           <CodexTab entries={codexEntries} loading={codexLoading} />

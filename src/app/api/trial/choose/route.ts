@@ -8,6 +8,7 @@ import { addItemToInventory } from '@/lib/inventory-utils';
 import { rollDice } from '@/lib/dice';
 import { findTrial } from '@/lib/trials';
 import { bossIntroLine } from '@/lib/exploration-flavor';
+import { findPet } from '@/lib/pets';
 
 export async function POST(req: NextRequest) {
   const auth = validateTelegramRequest(req);
@@ -59,7 +60,8 @@ export async function POST(req: NextRequest) {
     }
 
     // reward / trap — резолвится мгновенно, без боя, комната сразу считается пройденной.
-    const equipBonuses = computeEquipmentBonuses(player.inventory);
+    const activePet = player.activePetId ? findPet(player.activePetId) : null;
+    const equipBonuses = computeEquipmentBonuses(player.inventory, activePet);
     const effectiveMaxHp = player.maxHp + equipBonuses.hp;
     const goldDelta = option.type === 'reward' ? rollDice('2d6') * (option.goldMult ?? 1) * player.level : 0;
     // Событие никогда не убивает напрямую — минимум 1 HP, тот же принцип, что в exploration-events.ts.

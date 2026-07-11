@@ -4,6 +4,7 @@ import { validateTelegramRequest } from '@/lib/auth';
 import { computeEquipmentBonuses } from '@/lib/equipment-stats';
 import { ITEMS } from '@/lib/game-data';
 import { minLevelForRarity } from '@/lib/item-affixes';
+import { findPet } from '@/lib/pets';
 
 export async function POST(req: NextRequest) {
   const auth = validateTelegramRequest(req);
@@ -113,10 +114,11 @@ export async function POST(req: NextRequest) {
  * лечения. Возвращает только изменившиеся поля (или null, если клампить нечего).
  */
 function clampHpMpTo(
-  player: { hp: number; mp: number; maxHp: number; maxMp: number },
+  player: { hp: number; mp: number; maxHp: number; maxMp: number; activePetId: string | null },
   inventoryAfterChange: { equipped: boolean; stats: string | null }[]
 ): { hp?: number; mp?: number } | null {
-  const bonuses = computeEquipmentBonuses(inventoryAfterChange);
+  const activePet = player.activePetId ? findPet(player.activePetId) : null;
+  const bonuses = computeEquipmentBonuses(inventoryAfterChange, activePet);
   const effectiveMaxHp = player.maxHp + bonuses.hp;
   const effectiveMaxMp = player.maxMp + bonuses.mp;
 

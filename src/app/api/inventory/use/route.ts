@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { validateTelegramRequest } from '@/lib/auth';
 import { computeEquipmentBonuses } from '@/lib/equipment-stats';
+import { findPet } from '@/lib/pets';
 
 export async function POST(req: NextRequest) {
   const auth = validateTelegramRequest(req);
@@ -35,7 +36,8 @@ export async function POST(req: NextRequest) {
     }
 
     const updateData: Record<string, unknown> = {};
-    const bonuses = computeEquipmentBonuses(player.inventory);
+    const activePet = player.activePetId ? findPet(player.activePetId) : null;
+    const bonuses = computeEquipmentBonuses(player.inventory, activePet);
     let applied = false;
 
     if (stats.healHp) {

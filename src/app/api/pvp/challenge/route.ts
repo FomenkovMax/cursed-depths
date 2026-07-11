@@ -6,6 +6,7 @@ import { stageUnlockLevel, type PlayerCombatStats } from '@/lib/combat-engine';
 import { simulatePvpFight, eloDelta, clampRating, leagueForRating, type PvpCombatant } from '@/lib/pvp';
 import { incrementQuestProgress } from '@/lib/quests';
 import { isDeathDebuffActive, DEATH_DEBUFF_XP_MULT } from '@/lib/premium-shop';
+import { findPet } from '@/lib/pets';
 
 async function buildCombatant(playerId: string) {
   const player = await db.player.findUnique({
@@ -14,7 +15,8 @@ async function buildCombatant(playerId: string) {
   });
   if (!player) return null;
 
-  const equipBonuses = computeEquipmentBonuses(player.inventory);
+  const activePet = player.activePetId ? findPet(player.activePetId) : null;
+  const equipBonuses = computeEquipmentBonuses(player.inventory, activePet);
   const stats: PlayerCombatStats = {
     strength: player.strength + equipBonuses.strength,
     dexterity: player.dexterity + equipBonuses.dexterity,

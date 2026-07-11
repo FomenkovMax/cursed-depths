@@ -5,6 +5,7 @@ import { computeEquipmentBonuses } from '@/lib/equipment-stats';
 import type { PlayerCombatStats } from '@/lib/combat-engine';
 import { ensureWorldBossSpawned, worldBossAttackDamage, rewardForShare, maxHpForIncarnation, dailyAttackCapFor, WORLD_BOSS_NAME } from '@/lib/world-boss';
 import { isPremiumActive, isDeathDebuffActive, DEATH_DEBUFF_XP_MULT } from '@/lib/premium-shop';
+import { findPet } from '@/lib/pets';
 
 export async function POST(req: NextRequest) {
   const auth = validateTelegramRequest(req);
@@ -29,7 +30,8 @@ export async function POST(req: NextRequest) {
     const boss = await ensureWorldBossSpawned(db);
     if (boss.hp <= 0) return NextResponse.json({ error: 'Босс уже повержен — обновите страницу' }, { status: 409 });
 
-    const equipBonuses = computeEquipmentBonuses(player.inventory);
+    const activePet = player.activePetId ? findPet(player.activePetId) : null;
+    const equipBonuses = computeEquipmentBonuses(player.inventory, activePet);
     const stats: PlayerCombatStats = {
       strength: player.strength + equipBonuses.strength,
       dexterity: player.dexterity + equipBonuses.dexterity,

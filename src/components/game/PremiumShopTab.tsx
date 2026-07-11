@@ -2,9 +2,10 @@ import { TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { PremiumShopStateView, PlayerData, FortuneSpinResultView } from '@/lib/game-types';
+import { PremiumShopStateView, PlayerData, FortuneSpinResultView, PetsStateView } from '@/lib/game-types';
 import { FortuneWheelVisual } from '@/components/game/FortuneWheel';
 import { RaceChangePanel } from '@/components/game/RaceChangePanel';
+import { PetsPanel } from '@/components/game/PetsPanel';
 
 interface PremiumShopTabProps {
   state: PremiumShopStateView | null;
@@ -17,6 +18,12 @@ interface PremiumShopTabProps {
   onSpinWheel: () => Promise<FortuneSpinResultView | null>;
   changingRace: boolean;
   onChangeRace: (raceSlug: string, classSlug: string) => void;
+  petsState: PetsStateView | null;
+  petsLoading: boolean;
+  buyingPetId: string | null;
+  activatingPetId: string | null;
+  onBuyPet: (petId: string) => void;
+  onActivatePet: (petId: string | null) => void;
 }
 
 function formatPremiumUntil(iso: string | null): string {
@@ -29,6 +36,7 @@ export function PremiumShopTab({
   state, loading, buyingPackId, onBuyPack, onRedeemSku,
   player, spinningWheel, onSpinWheel,
   changingRace, onChangeRace,
+  petsState, petsLoading, buyingPetId, activatingPetId, onBuyPet, onActivatePet,
 }: PremiumShopTabProps) {
   const races = state?.raceChange.races ?? [];
 
@@ -151,6 +159,25 @@ export function PremiumShopTab({
             crownShards={state?.crownShards ?? 0}
             changingRace={changingRace}
             onChangeRace={onChangeRace}
+          />
+        </CardContent>
+      </Card>
+
+      {/* Питомцы-компаньоны — коллекционные, покупаются за Осколки (lib/pets.ts), активный
+          даёт пассивный бонус к статам в бою. Владеть можно многими сразу — коллекционирование
+          ради самого коллекционирования, а не только ради сильнейшего бонуса. */}
+      <Card className="border-border">
+        <CardHeader className="pb-2 pt-3 px-4">
+          <CardTitle className="text-sm">🐾 Питомцы-компаньоны</CardTitle>
+        </CardHeader>
+        <CardContent className="px-4 pb-3">
+          <PetsPanel
+            state={petsState}
+            loading={petsLoading}
+            buyingPetId={buyingPetId}
+            activatingPetId={activatingPetId}
+            onBuyPet={onBuyPet}
+            onActivatePet={onActivatePet}
           />
         </CardContent>
       </Card>

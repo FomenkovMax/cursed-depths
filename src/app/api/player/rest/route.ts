@@ -4,6 +4,7 @@ import { validateTelegramRequest } from '@/lib/auth';
 import { computeEquipmentBonuses } from '@/lib/equipment-stats';
 import { isInActivePartyCombat } from '@/lib/party-guards';
 import { restMessage } from '@/lib/exploration-flavor';
+import { findPet } from '@/lib/pets';
 
 export async function POST(req: NextRequest) {
   const auth = validateTelegramRequest(req);
@@ -21,7 +22,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Нельзя отдыхать во время боя пати' }, { status: 400 });
     }
 
-    const bonuses = computeEquipmentBonuses(player.inventory);
+    const activePet = player.activePetId ? findPet(player.activePetId) : null;
+    const bonuses = computeEquipmentBonuses(player.inventory, activePet);
     const updated = await db.player.update({
       where: { telegramId },
       data: { hp: player.maxHp + bonuses.hp, mp: player.maxMp + bonuses.mp },

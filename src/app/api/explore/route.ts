@@ -15,6 +15,7 @@ import { isInActivePartyCombat } from '@/lib/party-guards';
 import { EXPLORATION_EVENTS } from '@/lib/exploration-events';
 import { rollGearInstance } from '@/lib/item-affixes';
 import { goldFindMessage, encounterMessage } from '@/lib/exploration-flavor';
+import { findPet } from '@/lib/pets';
 
 export async function POST(req: NextRequest) {
   const auth = validateTelegramRequest(req);
@@ -44,7 +45,8 @@ export async function POST(req: NextRequest) {
       .filter((e): e is PassiveEffect => e !== null);
     const regen = outOfCombatRegen(passives);
     if (regen.hpPercent > 0 || regen.mpPercent > 0) {
-      const equipBonuses = computeEquipmentBonuses(player.inventory);
+      const activePet = player.activePetId ? findPet(player.activePetId) : null;
+      const equipBonuses = computeEquipmentBonuses(player.inventory, activePet);
       const effectiveMaxHp = player.maxHp + equipBonuses.hp;
       const effectiveMaxMp = player.maxMp + equipBonuses.mp;
       const newHp = Math.min(effectiveMaxHp, player.hp + Math.round(effectiveMaxHp * regen.hpPercent));

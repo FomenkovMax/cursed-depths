@@ -446,6 +446,23 @@ export interface PremiumShopStateView {
   raceChange: RaceChangeStateView;
 }
 
+export interface PetView {
+  id: string;
+  nameRu: string;
+  icon: string;
+  rarity: 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary' | 'mythic';
+  descriptionRu: string;
+  costShards: number;
+  bonus: Record<string, number>;
+}
+
+export interface PetsStateView {
+  crownShards: number;
+  catalog: PetView[];
+  ownedPetIds: string[];
+  activePetId: string | null;
+}
+
 export interface FortuneSpinResultView {
   id: string;
   nameRu: string;

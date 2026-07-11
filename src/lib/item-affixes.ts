@@ -303,3 +303,57 @@ export function applyCurrency(
     affixes: newAffixes,
   };
 }
+
+// ===== МАСТЕРСКАЯ ЗАЧАРОВАНИЯ (премиум, api/craft/enchant) =====
+// В отличие от applyCurrency('ash_shard', ...) выше, который перебрасывает ВСЕ аффиксы
+// предмета разом, здесь перебрасывается только ОДИН выбранный — остальные остаются как есть.
+// Платится не крафт-валютой с дропа, а Осколками Короны (премиум-валюта) — эксклюзивный
+// премиум-сервис поверх уже существующей системы аффиксов, а не новая система с нуля.
+export const ENCHANT_COST_BY_TIER: Record<string, number> = {
+  magic: 100,
+  rare: 200,
+};
+
+export function enchantCostForTier(tier: AffixTierName): number | null {
+  return ENCHANT_COST_BY_TIER[tier] ?? null;
+}
+
+export type SingleRerollResult =
+  | { ok: true; name: string; stats: Record<string, number>; affixes: RolledAffix[] }
+  | { ok: false; error: string };
+
+/** Перебрасывает ровно один аффикс по индексу в currentAffixes, оставляя остальные нетронутыми.
+ * Новый аффикс того же вида (prefix/suffix), что и заменяемый, но статы уже занятые ДРУГИМИ
+ * аффиксами предмета исключены — как и в rollAffixSet, повторов на одном предмете не бывает. */
+export function rerollSingleAffix(
+  baseNameRu: string,
+  baseStats: Record<string, number>,
+  slot: GearSlot,
+  itemLevel: number,
+  currentTier: AffixTierName,
+  currentAffixes: RolledAffix[],
+  affixIndex: number
+): SingleRerollResult {
+  if (currentTier === 'corrupted') {
+    return { ok: false, error: 'Осквернённый предмет больше нельзя изменять.' };
+  }
+  if (affixIndex < 0 || affixIndex >= currentAffixes.length) {
+    return { ok: false, error: 'Такого свойства нет на предмете.' };
+  }
+  const target = currentAffixes[affixIndex];
+  const usedKeys = new Set(currentAffixes.filter((_, i) => i !== affixIndex).map(a => a.statKey));
+  const pool = eligibleAffixes(slot, target.kind, itemLevel, usedKeys);
+  if (pool.length === 0) {
+    return { ok: false, error: 'Нет доступных альтернатив для этого свойства.' };
+  }
+  const def = pool[Math.floor(Math.random() * pool.length)];
+  const newAffix = rollOneAffix(def, itemLevel);
+  const newAffixes = currentAffixes.map((a, i) => (i === affixIndex ? newAffix : a));
+
+  return {
+    ok: true,
+    name: nameWithAffixes(baseNameRu, newAffixes),
+    stats: mergeStats(baseStats, newAffixes),
+    affixes: newAffixes,
+  };
+}

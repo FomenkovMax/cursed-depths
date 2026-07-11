@@ -4,6 +4,7 @@ import { rollDice } from '@/lib/dice';
 import { validateTelegramRequest } from '@/lib/auth';
 import { addItemToInventory } from '@/lib/inventory-utils';
 import { issueDailyQuests } from '@/lib/quests';
+import { isDeathDebuffActive, DEATH_DEBUFF_XP_MULT } from '@/lib/premium-shop';
 
 /** Брошено внутри транзакции, если ежедневная награда уже забрана СЕГОДНЯ В МОМЕНТ фактической
  * записи (см. комментарий у updateMany ниже) — напр. параллельный дубликат того же запроса. */
@@ -28,7 +29,8 @@ export async function POST(req: NextRequest) {
     }
 
     const goldReward = rollDice('2d6') * player.level;
-    const xpReward = 10 * player.level;
+    const xpDebuffMult = isDeathDebuffActive(player.deathDebuffUntil, player.premiumUntil) ? DEATH_DEBUFF_XP_MULT : 1;
+    const xpReward = Math.round(10 * player.level * xpDebuffMult);
 
     // Левел-ап при пересечении порога XP — как в combat/action и quests/claim. Раньше это поле
     // просто инкрементировалось без проверки порога, и уровень/statPoints/maxHp не росли, пока

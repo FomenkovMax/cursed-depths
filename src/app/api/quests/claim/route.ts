@@ -4,6 +4,7 @@ import { ITEMS } from '@/lib/game-data';
 import { validateTelegramRequest } from '@/lib/auth';
 import { addItemToInventory } from '@/lib/inventory-utils';
 import { collectQuestItemId, advanceChainOnClaim } from '@/lib/quests';
+import { isDeathDebuffActive, DEATH_DEBUFF_XP_MULT } from '@/lib/premium-shop';
 
 /** Брошено внутри транзакции, если квест уже помечен полученным В МОМЕНТ фактической записи
  * (см. комментарий у updateMany ниже) — напр. параллельный дубликат того же запроса. */
@@ -51,7 +52,8 @@ export async function POST(req: NextRequest) {
     }
 
     // Level up if the XP reward pushes past the threshold (как в combat/action и daily)
-    let newXp = player.xp + (reward.xp || 0);
+    const xpDebuffMult = isDeathDebuffActive(player.deathDebuffUntil, player.premiumUntil) ? DEATH_DEBUFF_XP_MULT : 1;
+    let newXp = player.xp + Math.round((reward.xp || 0) * xpDebuffMult);
     let newLevel = player.level;
     let newXpToNext = player.xpToNext;
     let newStatPoints = player.statPoints;

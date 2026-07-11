@@ -7,6 +7,7 @@ import { addItemToInventory } from '@/lib/inventory-utils';
 import { initBossState } from '@/lib/boss-mechanics';
 import { computeEquipmentBonuses } from '@/lib/equipment-stats';
 import { isInActivePartyCombat } from '@/lib/party-guards';
+import { isDeathDebuffActive, DEATH_DEBUFF_XP_MULT } from '@/lib/premium-shop';
 
 export async function POST(req: NextRequest) {
   const auth = validateTelegramRequest(req);
@@ -87,7 +88,9 @@ export async function POST(req: NextRequest) {
     const newMp = Math.max(0, Math.min(effectiveMaxMp, player.mp + Math.round(effectiveMaxMp * resolution.mpDeltaPercent)));
     const newGold = Math.max(0, player.gold + resolution.goldDelta);
 
-    let newXp = player.xp + resolution.xpDelta;
+    // Дебафф смерти (-15% опыта, премиум иммунен) действует на любой источник опыта, не только бой.
+    const xpDebuffMult = isDeathDebuffActive(player.deathDebuffUntil, player.premiumUntil) ? DEATH_DEBUFF_XP_MULT : 1;
+    let newXp = player.xp + Math.round(resolution.xpDelta * xpDebuffMult);
     let newLevel = player.level;
     let newXpToNext = player.xpToNext;
     let newStatPoints = player.statPoints;

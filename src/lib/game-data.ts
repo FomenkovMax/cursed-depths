@@ -541,23 +541,23 @@ export const ENEMIES: EnemyTemplate[] = [
   // Храм Велариона (Level 1-2)
   { id: 'corrupted_acolyte', nameRu: 'Осквернённый послушник', nameEn: 'Corrupted Acolyte', hp: 18, ac: 9, attack: 4, damage: '1d6+1', xp: 18, gold: 8, lootTable: [{ itemId: 'mana_potion', chance: 0.3 }, { itemId: 'antidote', chance: 0.2 }], locationId: 'velarion_temple', isBoss: false, icon: '🕯️' },
   { id: 'ashen_guardian', nameRu: 'Пепельный страж', nameEn: 'Ashen Guardian', hp: 24, ac: 11, attack: 5, damage: '1d6+2', xp: 24, gold: 10, lootTable: [{ itemId: 'iron_sword', chance: 0.15 }, { itemId: 'iron_ore', chance: 0.3 }], locationId: 'velarion_temple', isBoss: false, icon: '🗿' },
-  { id: 'keeper_of_ashes', nameRu: 'Хранитель Пепла', nameEn: 'Keeper of Ashes', hp: 42, ac: 12, attack: 7, damage: '1d8+3', xp: 70, gold: 30, lootTable: [{ itemId: 'ashen_amulet', chance: 0.4 }, { itemId: 'greater_health', chance: 0.3 }, { itemId: 'celestial_robe', chance: 0.1 }], locationId: 'velarion_temple', isBoss: true, icon: '⚱️' },
+  { id: 'keeper_of_ashes', nameRu: 'Хранитель Пепла', nameEn: 'Keeper of Ashes', hp: 42, ac: 12, attack: 7, damage: '1d8+3', xp: 70, gold: 30, lootTable: [{ itemId: 'ashen_amulet', chance: 0.18 }, { itemId: 'greater_health', chance: 0.21 }, { itemId: 'celestial_robe', chance: 0.022 }], locationId: 'velarion_temple', isBoss: true, icon: '⚱️' },
 
   // Тракт Скорби (Level 2)
-  { id: 'road_bandit', nameRu: 'Разбойник Тракта', nameEn: 'Road Bandit', hp: 20, ac: 9, attack: 5, damage: '1d6+2', xp: 20, gold: 15, lootTable: [{ itemId: 'iron_sword', chance: 0.2 }, { itemId: 'chainmail', chance: 0.1 }], locationId: 'sorrow_road', isBoss: false, icon: '🗡️' },
-  { id: 'mourning_wraith', nameRu: 'Скорбный дух', nameEn: 'Mourning Wraith', hp: 19, ac: 11, attack: 5, damage: '1d6+2', xp: 23, gold: 6, lootTable: [{ itemId: 'shadow_essence', chance: 0.25 }, { itemId: 'mana_potion', chance: 0.3 }], locationId: 'sorrow_road', isBoss: false, icon: '👻' },
+  { id: 'road_bandit', nameRu: 'Разбойник Тракта', nameEn: 'Road Bandit', hp: 20, ac: 9, attack: 5, damage: '1d6+2', xp: 20, gold: 15, lootTable: [{ itemId: 'iron_sword', chance: 0.2 }, { itemId: 'chainmail', chance: 0.07 }], locationId: 'sorrow_road', isBoss: false, icon: '🗡️' },
+  { id: 'mourning_wraith', nameRu: 'Скорбный дух', nameEn: 'Mourning Wraith', hp: 19, ac: 11, attack: 5, damage: '1d6+2', xp: 23, gold: 6, lootTable: [{ itemId: 'shadow_essence', chance: 0.175 }, { itemId: 'mana_potion', chance: 0.3 }], locationId: 'sorrow_road', isBoss: false, icon: '👻' },
   { id: 'ashen_crow_flock', nameRu: 'Стая пепельных воронов', nameEn: 'Ashen Crow Flock', hp: 14, ac: 8, attack: 4, damage: '1d4+2', xp: 15, gold: 4, lootTable: [{ itemId: 'antidote', chance: 0.2 }], locationId: 'sorrow_road', isBoss: false, icon: '🐦' },
 
   // Пепельная крепость (Level 2-3)
-  { id: 'possessed_guard', nameRu: 'Одержимый страж крепости', nameEn: 'Possessed Fortress Guard', hp: 30, ac: 12, attack: 6, damage: '1d8+3', xp: 30, gold: 16, lootTable: [{ itemId: 'chainmail', chance: 0.2 }, { itemId: 'steel_sword', chance: 0.1 }], locationId: 'ashen_fortress', isBoss: false, icon: '🛡️' },
-  { id: 'renegade_mage', nameRu: 'Скверный маг-отступник', nameEn: 'Blight-touched Renegade', hp: 26, ac: 10, attack: 7, damage: '1d8+2', xp: 32, gold: 18, lootTable: [{ itemId: 'mana_potion', chance: 0.4 }, { itemId: 'scroll_fireball', chance: 0.1 }], locationId: 'ashen_fortress', isBoss: false, icon: '🧙' },
-  { id: 'fortress_ash_golem', nameRu: 'Пепельный голем крепости', nameEn: 'Fortress Ash Golem', hp: 45, ac: 13, attack: 8, damage: '1d10+3', xp: 48, gold: 25, lootTable: [{ itemId: 'iron_ore', chance: 0.5 }, { itemId: 'dwarven_plate', chance: 0.05 }], locationId: 'ashen_fortress', isBoss: false, icon: '🗿' },
+  { id: 'possessed_guard', nameRu: 'Одержимый страж крепости', nameEn: 'Possessed Fortress Guard', hp: 30, ac: 12, attack: 6, damage: '1d8+3', xp: 30, gold: 16, lootTable: [{ itemId: 'chainmail', chance: 0.14 }, { itemId: 'steel_sword', chance: 0.07 }], locationId: 'ashen_fortress', isBoss: false, icon: '🛡️' },
+  { id: 'renegade_mage', nameRu: 'Скверный маг-отступник', nameEn: 'Blight-touched Renegade', hp: 26, ac: 10, attack: 7, damage: '1d8+2', xp: 32, gold: 18, lootTable: [{ itemId: 'mana_potion', chance: 0.4 }, { itemId: 'scroll_fireball', chance: 0.045 }], locationId: 'ashen_fortress', isBoss: false, icon: '🧙' },
+  { id: 'fortress_ash_golem', nameRu: 'Пепельный голем крепости', nameEn: 'Fortress Ash Golem', hp: 45, ac: 13, attack: 8, damage: '1d10+3', xp: 48, gold: 25, lootTable: [{ itemId: 'iron_ore', chance: 0.5 }, { itemId: 'dwarven_plate', chance: 0.0225 }], locationId: 'ashen_fortress', isBoss: false, icon: '🗿' },
 
   // Разлом Карсуса (Level 3)
-  { id: 'rift_spawn', nameRu: 'Порождение Разлома', nameEn: 'Rift Spawn', hp: 28, ac: 11, attack: 6, damage: '1d8+2', xp: 30, gold: 12, lootTable: [{ itemId: 'shadow_essence', chance: 0.3 }, { itemId: 'greater_health', chance: 0.2 }], locationId: 'karsus_rift', isBoss: false, icon: '🕳️' },
+  { id: 'rift_spawn', nameRu: 'Порождение Разлома', nameEn: 'Rift Spawn', hp: 28, ac: 11, attack: 6, damage: '1d8+2', xp: 30, gold: 12, lootTable: [{ itemId: 'shadow_essence', chance: 0.21 }, { itemId: 'greater_health', chance: 0.14 }], locationId: 'karsus_rift', isBoss: false, icon: '🕳️' },
   {
     id: 'first_witness', nameRu: 'Первый Свидетель', nameEn: 'The First Witness', hp: 95, ac: 14, attack: 10, damage: '2d8+5', xp: 280, gold: 120,
-    lootTable: [{ itemId: 'witness_eye', chance: 0.25 }, { itemId: 'ashen_amulet', chance: 0.15 }, { itemId: 'elixir_power', chance: 0.3 }],
+    lootTable: [{ itemId: 'witness_eye', chance: 0.055 }, { itemId: 'ashen_amulet', chance: 0.0675 }, { itemId: 'elixir_power', chance: 0.135 }],
     locationId: 'karsus_rift', isBoss: true, icon: '👁️',
     mechanics: {
       alternateFormEveryTurns: 3,
@@ -570,29 +570,29 @@ export const ENEMIES: EnemyTemplate[] = [
 
   // Внешняя роща (Level 3)
   { id: 'blighted_treant', nameRu: 'Заражённый древень', nameEn: 'Blighted Treant', hp: 32, ac: 12, attack: 6, damage: '1d8+2', xp: 30, gold: 12, lootTable: [{ itemId: 'iron_ore', chance: 0.2 }, { itemId: 'health_potion', chance: 0.3 }], locationId: 'outer_grove', isBoss: false, icon: '🌳' },
-  { id: 'thorn_wolf', nameRu: 'Терновый волк', nameEn: 'Thorn Wolf', hp: 24, ac: 10, attack: 6, damage: '1d6+3', xp: 24, gold: 8, lootTable: [{ itemId: 'elven_bow', chance: 0.1 }, { itemId: 'antidote', chance: 0.25 }], locationId: 'outer_grove', isBoss: false, icon: '🐺' },
-  { id: 'withering_dryad', nameRu: 'Увядающая дриада', nameEn: 'Withering Dryad', hp: 26, ac: 11, attack: 6, damage: '1d6+3', xp: 28, gold: 14, lootTable: [{ itemId: 'mana_potion', chance: 0.3 }, { itemId: 'shadow_essence', chance: 0.15 }], locationId: 'outer_grove', isBoss: false, icon: '🧚' },
+  { id: 'thorn_wolf', nameRu: 'Терновый волк', nameEn: 'Thorn Wolf', hp: 24, ac: 10, attack: 6, damage: '1d6+3', xp: 24, gold: 8, lootTable: [{ itemId: 'elven_bow', chance: 0.07 }, { itemId: 'antidote', chance: 0.25 }], locationId: 'outer_grove', isBoss: false, icon: '🐺' },
+  { id: 'withering_dryad', nameRu: 'Увядающая дриада', nameEn: 'Withering Dryad', hp: 26, ac: 11, attack: 6, damage: '1d6+3', xp: 28, gold: 14, lootTable: [{ itemId: 'mana_potion', chance: 0.3 }, { itemId: 'shadow_essence', chance: 0.105 }], locationId: 'outer_grove', isBoss: false, icon: '🧚' },
 
   // Мёртвый берег (Level 3)
-  { id: 'blight_current_spawn', nameRu: 'Порождение Скверного течения', nameEn: 'Blight Current Spawn', hp: 28, ac: 10, attack: 6, damage: '1d6+3', xp: 26, gold: 10, lootTable: [{ itemId: 'shadow_essence', chance: 0.3 }], locationId: 'dead_shore', isBoss: false, icon: '🌊' },
-  { id: 'drowned_elf', nameRu: 'Утопленный эльф', nameEn: 'Drowned Elf', hp: 24, ac: 11, attack: 6, damage: '1d8+2', xp: 27, gold: 12, lootTable: [{ itemId: 'shadow_cloak', chance: 0.08 }, { itemId: 'antidote', chance: 0.25 }], locationId: 'dead_shore', isBoss: false, icon: '💀' },
+  { id: 'blight_current_spawn', nameRu: 'Порождение Скверного течения', nameEn: 'Blight Current Spawn', hp: 28, ac: 10, attack: 6, damage: '1d6+3', xp: 26, gold: 10, lootTable: [{ itemId: 'shadow_essence', chance: 0.21 }], locationId: 'dead_shore', isBoss: false, icon: '🌊' },
+  { id: 'drowned_elf', nameRu: 'Утопленный эльф', nameEn: 'Drowned Elf', hp: 24, ac: 11, attack: 6, damage: '1d8+2', xp: 27, gold: 12, lootTable: [{ itemId: 'shadow_cloak', chance: 0.036 }, { itemId: 'antidote', chance: 0.25 }], locationId: 'dead_shore', isBoss: false, icon: '💀' },
   { id: 'silt_crawler', nameRu: 'Илистый ползун', nameEn: 'Silt Crawler', hp: 22, ac: 9, attack: 5, damage: '1d6+2', xp: 22, gold: 6, lootTable: [{ itemId: 'antidote', chance: 0.3 }], locationId: 'dead_shore', isBoss: false, icon: '🐌' },
 
   // Сердце Рощи (Level 3-4)
-  { id: 'corrupted_treekeeper', nameRu: 'Осквернённый хранитель дерева', nameEn: 'Corrupted Treekeeper', hp: 34, ac: 12, attack: 7, damage: '1d8+3', xp: 34, gold: 16, lootTable: [{ itemId: 'greater_health', chance: 0.25 }, { itemId: 'iron_ore', chance: 0.3 }], locationId: 'heart_of_grove', isBoss: false, icon: '🌲' },
-  { id: 'root_wraith', nameRu: 'Дух-корень', nameEn: 'Root Wraith', hp: 30, ac: 13, attack: 7, damage: '1d6+3', xp: 32, gold: 14, lootTable: [{ itemId: 'shadow_essence', chance: 0.3 }, { itemId: 'mana_potion', chance: 0.3 }], locationId: 'heart_of_grove', isBoss: false, icon: '👻' },
-  { id: 'lost_grove_soul', nameRu: 'Пленённая душа Рощи', nameEn: 'Lost Soul of the Grove', hp: 36, ac: 12, attack: 8, damage: '1d8+3', xp: 38, gold: 18, lootTable: [{ itemId: 'ailet_tear', chance: 0.15 }, { itemId: 'arcane_pendant', chance: 0.1 }], locationId: 'heart_of_grove', isBoss: false, icon: '👤' },
+  { id: 'corrupted_treekeeper', nameRu: 'Осквернённый хранитель дерева', nameEn: 'Corrupted Treekeeper', hp: 34, ac: 12, attack: 7, damage: '1d8+3', xp: 34, gold: 16, lootTable: [{ itemId: 'greater_health', chance: 0.175 }, { itemId: 'iron_ore', chance: 0.3 }], locationId: 'heart_of_grove', isBoss: false, icon: '🌲' },
+  { id: 'root_wraith', nameRu: 'Дух-корень', nameEn: 'Root Wraith', hp: 30, ac: 13, attack: 7, damage: '1d6+3', xp: 32, gold: 14, lootTable: [{ itemId: 'shadow_essence', chance: 0.21 }, { itemId: 'mana_potion', chance: 0.3 }], locationId: 'heart_of_grove', isBoss: false, icon: '👻' },
+  { id: 'lost_grove_soul', nameRu: 'Пленённая душа Рощи', nameEn: 'Lost Soul of the Grove', hp: 36, ac: 12, attack: 8, damage: '1d8+3', xp: 38, gold: 18, lootTable: [{ itemId: 'ailet_tear', chance: 0.0675 }, { itemId: 'arcane_pendant', chance: 0.045 }], locationId: 'heart_of_grove', isBoss: false, icon: '👤' },
 
   // Тень-грибница (Level 4)
-  { id: 'spore_horror', nameRu: 'Ужас спор', nameEn: 'Spore Horror', hp: 38, ac: 13, attack: 8, damage: '1d8+3', xp: 40, gold: 18, lootTable: [{ itemId: 'greater_health', chance: 0.25 }, { itemId: 'shadow_essence', chance: 0.3 }], locationId: 'shade_mycelium', isBoss: false, icon: '🍄' },
+  { id: 'spore_horror', nameRu: 'Ужас спор', nameEn: 'Spore Horror', hp: 38, ac: 13, attack: 8, damage: '1d8+3', xp: 40, gold: 18, lootTable: [{ itemId: 'greater_health', chance: 0.175 }, { itemId: 'shadow_essence', chance: 0.21 }], locationId: 'shade_mycelium', isBoss: false, icon: '🍄' },
   { id: 'blight_mycelium_crawler', nameRu: 'Ползун Скверной грибницы', nameEn: 'Blight Mycelium Crawler', hp: 34, ac: 12, attack: 8, damage: '1d8+3', xp: 38, gold: 16, lootTable: [{ itemId: 'antidote', chance: 0.3 }], locationId: 'shade_mycelium', isBoss: false, icon: '🕸️' },
-  { id: 'fungal_stalker', nameRu: 'Грибной охотник', nameEn: 'Fungal Stalker', hp: 30, ac: 11, attack: 7, damage: '1d6+4', xp: 34, gold: 15, lootTable: [{ itemId: 'shadow_dagger', chance: 0.06 }], locationId: 'shade_mycelium', isBoss: false, icon: '🦠' },
+  { id: 'fungal_stalker', nameRu: 'Грибной охотник', nameEn: 'Fungal Stalker', hp: 30, ac: 11, attack: 7, damage: '1d6+4', xp: 34, gold: 15, lootTable: [{ itemId: 'shadow_dagger', chance: 0.027 }], locationId: 'shade_mycelium', isBoss: false, icon: '🦠' },
 
   // Корень Бездны (Level 4)
-  { id: 'root_horror', nameRu: 'Ужас корней', nameEn: 'Root Horror', hp: 40, ac: 13, attack: 9, damage: '1d10+3', xp: 45, gold: 20, lootTable: [{ itemId: 'greater_health', chance: 0.3 }, { itemId: 'iron_ore', chance: 0.3 }], locationId: 'abyss_root', isBoss: false, icon: '🌿' },
+  { id: 'root_horror', nameRu: 'Ужас корней', nameEn: 'Root Horror', hp: 40, ac: 13, attack: 9, damage: '1d10+3', xp: 45, gold: 20, lootTable: [{ itemId: 'greater_health', chance: 0.21 }, { itemId: 'iron_ore', chance: 0.3 }], locationId: 'abyss_root', isBoss: false, icon: '🌿' },
   {
     id: 'echo_of_ailet', nameRu: 'Эхо Айлет', nameEn: 'Echo of Ailet', hp: 110, ac: 15, attack: 11, damage: '2d8+6', xp: 350, gold: 150,
-    lootTable: [{ itemId: 'echo_thorn_crown', chance: 0.2 }, { itemId: 'ailet_tear', chance: 0.3 }, { itemId: 'scroll_heal', chance: 0.3 }],
+    lootTable: [{ itemId: 'echo_thorn_crown', chance: 0.044 }, { itemId: 'ailet_tear', chance: 0.135 }, { itemId: 'scroll_heal', chance: 0.21 }],
     locationId: 'abyss_root', isBoss: true, icon: '🥀',
     mechanics: {
       selfHealPercent: 0.05, selfHealUntilPhase: 2,
@@ -605,28 +605,28 @@ export const ENEMIES: EnemyTemplate[] = [
   // Внешние шахты (Level 4)
   { id: 'collapsed_miner', nameRu: 'Погребённый шахтёр', nameEn: 'Collapsed Miner', hp: 36, ac: 12, attack: 8, damage: '1d8+3', xp: 36, gold: 16, lootTable: [{ itemId: 'iron_ore', chance: 0.4 }, { itemId: 'health_potion', chance: 0.25 }], locationId: 'outer_mines', isBoss: false, icon: '⛏️' },
   { id: 'rock_crawler', nameRu: 'Каменный ползун', nameEn: 'Rock Crawler', hp: 32, ac: 13, attack: 7, damage: '1d6+4', xp: 32, gold: 14, lootTable: [{ itemId: 'iron_ore', chance: 0.3 }], locationId: 'outer_mines', isBoss: false, icon: '🪨' },
-  { id: 'tunnel_wraith', nameRu: 'Туннельный призрак', nameEn: 'Tunnel Wraith', hp: 34, ac: 13, attack: 8, damage: '1d8+3', xp: 38, gold: 18, lootTable: [{ itemId: 'shadow_essence', chance: 0.3 }], locationId: 'outer_mines', isBoss: false, icon: '👻' },
+  { id: 'tunnel_wraith', nameRu: 'Туннельный призрак', nameEn: 'Tunnel Wraith', hp: 34, ac: 13, attack: 8, damage: '1d8+3', xp: 38, gold: 18, lootTable: [{ itemId: 'shadow_essence', chance: 0.21 }], locationId: 'outer_mines', isBoss: false, icon: '👻' },
 
   // Рунная мастерская (Level 4-5)
-  { id: 'rune_construct', nameRu: 'Рунный страж', nameEn: 'Rune Construct', hp: 40, ac: 14, attack: 9, damage: '1d8+4', xp: 42, gold: 20, lootTable: [{ itemId: 'steel_sword', chance: 0.15 }, { itemId: 'iron_ore', chance: 0.3 }], locationId: 'rune_workshop', isBoss: false, icon: '🗿' },
-  { id: 'trapped_apprentice', nameRu: 'Пленённый подмастерье', nameEn: 'Trapped Apprentice', hp: 36, ac: 12, attack: 8, damage: '1d8+3', xp: 40, gold: 18, lootTable: [{ itemId: 'mana_potion', chance: 0.4 }, { itemId: 'scroll_fireball', chance: 0.1 }], locationId: 'rune_workshop', isBoss: false, icon: '🧙' },
-  { id: 'living_rune', nameRu: 'Ожившая руна', nameEn: 'Living Rune', hp: 38, ac: 13, attack: 9, damage: '1d10+3', xp: 44, gold: 20, lootTable: [{ itemId: 'arcane_pendant', chance: 0.1 }], locationId: 'rune_workshop', isBoss: false, icon: '✳️' },
+  { id: 'rune_construct', nameRu: 'Рунный страж', nameEn: 'Rune Construct', hp: 40, ac: 14, attack: 9, damage: '1d8+4', xp: 42, gold: 20, lootTable: [{ itemId: 'steel_sword', chance: 0.105 }, { itemId: 'iron_ore', chance: 0.3 }], locationId: 'rune_workshop', isBoss: false, icon: '🗿' },
+  { id: 'trapped_apprentice', nameRu: 'Пленённый подмастерье', nameEn: 'Trapped Apprentice', hp: 36, ac: 12, attack: 8, damage: '1d8+3', xp: 40, gold: 18, lootTable: [{ itemId: 'mana_potion', chance: 0.4 }, { itemId: 'scroll_fireball', chance: 0.045 }], locationId: 'rune_workshop', isBoss: false, icon: '🧙' },
+  { id: 'living_rune', nameRu: 'Ожившая руна', nameEn: 'Living Rune', hp: 38, ac: 13, attack: 9, damage: '1d10+3', xp: 44, gold: 20, lootTable: [{ itemId: 'arcane_pendant', chance: 0.045 }], locationId: 'rune_workshop', isBoss: false, icon: '✳️' },
 
   // Зал Клятв (Level 5)
-  { id: 'oathbreaker_shade', nameRu: 'Тень клятвопреступника', nameEn: 'Oathbreaker Shade', hp: 44, ac: 14, attack: 10, damage: '1d10+4', xp: 48, gold: 22, lootTable: [{ itemId: 'shadow_essence', chance: 0.3 }, { itemId: 'chainmail', chance: 0.1 }], locationId: 'oath_hall', isBoss: false, icon: '🗡️' },
-  { id: 'arena_champion', nameRu: 'Чемпион арены', nameEn: 'Arena Champion', hp: 50, ac: 15, attack: 11, damage: '1d10+5', xp: 55, gold: 28, lootTable: [{ itemId: 'dwarven_plate', chance: 0.1 }, { itemId: 'steel_sword', chance: 0.15 }, { itemId: 'ring_power', chance: 0.08 }], locationId: 'oath_hall', isBoss: false, icon: '🪓' },
-  { id: 'betrayed_guardian', nameRu: 'Преданный страж', nameEn: 'Betrayed Guardian', hp: 46, ac: 15, attack: 10, damage: '2d6+3', xp: 50, gold: 24, lootTable: [{ itemId: 'oath_shield_shard', chance: 0.15 }, { itemId: 'greater_health', chance: 0.3 }], locationId: 'oath_hall', isBoss: false, icon: '🛡️' },
+  { id: 'oathbreaker_shade', nameRu: 'Тень клятвопреступника', nameEn: 'Oathbreaker Shade', hp: 44, ac: 14, attack: 10, damage: '1d10+4', xp: 48, gold: 22, lootTable: [{ itemId: 'shadow_essence', chance: 0.21 }, { itemId: 'chainmail', chance: 0.07 }], locationId: 'oath_hall', isBoss: false, icon: '🗡️' },
+  { id: 'arena_champion', nameRu: 'Чемпион арены', nameEn: 'Arena Champion', hp: 50, ac: 15, attack: 11, damage: '1d10+5', xp: 55, gold: 28, lootTable: [{ itemId: 'dwarven_plate', chance: 0.045 }, { itemId: 'steel_sword', chance: 0.105 }, { itemId: 'ring_power', chance: 0.036 }], locationId: 'oath_hall', isBoss: false, icon: '🪓' },
+  { id: 'betrayed_guardian', nameRu: 'Преданный страж', nameEn: 'Betrayed Guardian', hp: 46, ac: 15, attack: 10, damage: '2d6+3', xp: 50, gold: 24, lootTable: [{ itemId: 'oath_shield_shard', chance: 0.0675 }, { itemId: 'greater_health', chance: 0.21 }], locationId: 'oath_hall', isBoss: false, icon: '🛡️' },
 
   // Великая Кузница (Level 5)
-  { id: 'forge_wraith', nameRu: 'Дух Кузницы', nameEn: 'Forge Wraith', hp: 48, ac: 14, attack: 11, damage: '1d10+4', xp: 52, gold: 24, lootTable: [{ itemId: 'iron_ore', chance: 0.4 }, { itemId: 'shadow_essence', chance: 0.2 }], locationId: 'great_forge', isBoss: false, icon: '🔥' },
-  { id: 'molten_golem', nameRu: 'Расплавленный голем', nameEn: 'Molten Golem', hp: 55, ac: 16, attack: 12, damage: '2d6+4', xp: 58, gold: 28, lootTable: [{ itemId: 'dragon_scale', chance: 0.1 }, { itemId: 'iron_ore', chance: 0.4 }], locationId: 'great_forge', isBoss: false, icon: '🌋' },
-  { id: 'tornak_zealot', nameRu: 'Фанатик Торнака', nameEn: 'Tornak Zealot', hp: 45, ac: 13, attack: 11, damage: '1d10+4', xp: 54, gold: 26, lootTable: [{ itemId: 'greater_health', chance: 0.3 }, { itemId: 'steel_sword', chance: 0.15 }], locationId: 'great_forge', isBoss: false, icon: '⚒️' },
+  { id: 'forge_wraith', nameRu: 'Дух Кузницы', nameEn: 'Forge Wraith', hp: 48, ac: 14, attack: 11, damage: '1d10+4', xp: 52, gold: 24, lootTable: [{ itemId: 'iron_ore', chance: 0.4 }, { itemId: 'shadow_essence', chance: 0.14 }], locationId: 'great_forge', isBoss: false, icon: '🔥' },
+  { id: 'molten_golem', nameRu: 'Расплавленный голем', nameEn: 'Molten Golem', hp: 55, ac: 16, attack: 12, damage: '2d6+4', xp: 58, gold: 28, lootTable: [{ itemId: 'dragon_scale', chance: 0.045 }, { itemId: 'iron_ore', chance: 0.4 }], locationId: 'great_forge', isBoss: false, icon: '🌋' },
+  { id: 'tornak_zealot', nameRu: 'Фанатик Торнака', nameEn: 'Tornak Zealot', hp: 45, ac: 13, attack: 11, damage: '1d10+4', xp: 54, gold: 26, lootTable: [{ itemId: 'greater_health', chance: 0.21 }, { itemId: 'steel_sword', chance: 0.105 }], locationId: 'great_forge', isBoss: false, icon: '⚒️' },
 
   // Разлом Основы (Level 5)
-  { id: 'rift_collapse_horror', nameRu: 'Ужас обвала', nameEn: 'Rift Collapse Horror', hp: 50, ac: 15, attack: 11, damage: '1d10+5', xp: 56, gold: 26, lootTable: [{ itemId: 'greater_health', chance: 0.3 }, { itemId: 'dwarven_plate', chance: 0.08 }], locationId: 'foundation_rift', isBoss: false, icon: '🕳️' },
+  { id: 'rift_collapse_horror', nameRu: 'Ужас обвала', nameEn: 'Rift Collapse Horror', hp: 50, ac: 15, attack: 11, damage: '1d10+5', xp: 56, gold: 26, lootTable: [{ itemId: 'greater_health', chance: 0.21 }, { itemId: 'dwarven_plate', chance: 0.036 }], locationId: 'foundation_rift', isBoss: false, icon: '🕳️' },
   {
     id: 'broken_oath', nameRu: 'Сломанная Клятва', nameEn: 'The Broken Oath', hp: 140, ac: 17, attack: 13, damage: '2d10+6', xp: 450, gold: 200,
-    lootTable: [{ itemId: 'broken_oath_hammer', chance: 0.15 }, { itemId: 'oath_shield_shard', chance: 0.3 }, { itemId: 'greater_health', chance: 0.3 }, { itemId: 'blueprint_crown_armor', chance: 0.12 }],
+    lootTable: [{ itemId: 'broken_oath_hammer', chance: 0.012 }, { itemId: 'oath_shield_shard', chance: 0.135 }, { itemId: 'greater_health', chance: 0.21 }, { itemId: 'blueprint_crown_armor', chance: 0.0096 }],
     locationId: 'foundation_rift', isBoss: true, icon: '💔',
     mechanics: {
       shieldMax: 60, shieldRegenTurns: 4,
@@ -635,29 +635,29 @@ export const ENEMIES: EnemyTemplate[] = [
   },
 
   // Пепельная пустошь (Level 5)
-  { id: 'cinder_stalker', nameRu: 'Пепельный хищник', nameEn: 'Cinder Stalker', hp: 52, ac: 15, attack: 11, damage: '1d10+4', xp: 55, gold: 24, lootTable: [{ itemId: 'greater_health', chance: 0.25 }, { itemId: 'iron_ore', chance: 0.3 }], locationId: 'ashen_wasteland', isBoss: false, icon: '🔥' },
-  { id: 'ash_wyrmling', nameRu: 'Пепельный дракончик', nameEn: 'Ash Wyrmling', hp: 48, ac: 14, attack: 11, damage: '1d8+5', xp: 52, gold: 22, lootTable: [{ itemId: 'dragon_scale', chance: 0.15 }], locationId: 'ashen_wasteland', isBoss: false, icon: '🦎' },
-  { id: 'wasteland_marauder', nameRu: 'Мародёр пустоши', nameEn: 'Wasteland Marauder', hp: 50, ac: 14, attack: 12, damage: '1d10+4', xp: 56, gold: 26, lootTable: [{ itemId: 'steel_sword', chance: 0.15 }, { itemId: 'chainmail', chance: 0.1 }], locationId: 'ashen_wasteland', isBoss: false, icon: '⚔️' },
+  { id: 'cinder_stalker', nameRu: 'Пепельный хищник', nameEn: 'Cinder Stalker', hp: 52, ac: 15, attack: 11, damage: '1d10+4', xp: 55, gold: 24, lootTable: [{ itemId: 'greater_health', chance: 0.175 }, { itemId: 'iron_ore', chance: 0.3 }], locationId: 'ashen_wasteland', isBoss: false, icon: '🔥' },
+  { id: 'ash_wyrmling', nameRu: 'Пепельный дракончик', nameEn: 'Ash Wyrmling', hp: 48, ac: 14, attack: 11, damage: '1d8+5', xp: 52, gold: 22, lootTable: [{ itemId: 'dragon_scale', chance: 0.0675 }], locationId: 'ashen_wasteland', isBoss: false, icon: '🦎' },
+  { id: 'wasteland_marauder', nameRu: 'Мародёр пустоши', nameEn: 'Wasteland Marauder', hp: 50, ac: 14, attack: 12, damage: '1d10+4', xp: 56, gold: 26, lootTable: [{ itemId: 'steel_sword', chance: 0.105 }, { itemId: 'chainmail', chance: 0.07 }], locationId: 'ashen_wasteland', isBoss: false, icon: '⚔️' },
 
   // Гнёзда (Level 5-6)
-  { id: 'nest_guardian', nameRu: 'Страж гнезда', nameEn: 'Nest Guardian', hp: 56, ac: 16, attack: 12, damage: '1d10+5', xp: 58, gold: 26, lootTable: [{ itemId: 'dragon_scale', chance: 0.2 }, { itemId: 'greater_health', chance: 0.3 }], locationId: 'dragon_nests', isBoss: false, icon: '🥚' },
-  { id: 'feral_hatchling', nameRu: 'Одичавший детёныш', nameEn: 'Feral Hatchling', hp: 44, ac: 13, attack: 11, damage: '1d8+5', xp: 50, gold: 20, lootTable: [{ itemId: 'dragon_scale', chance: 0.15 }], locationId: 'dragon_nests', isBoss: false, icon: '🐣' },
-  { id: 'broodmother_wyrm', nameRu: 'Матриарх выводка', nameEn: 'Broodmother Wyrm', hp: 62, ac: 16, attack: 13, damage: '2d6+5', xp: 65, gold: 30, lootTable: [{ itemId: 'dragon_scale', chance: 0.3 }, { itemId: 'ignira_fang', chance: 0.08 }], locationId: 'dragon_nests', isBoss: false, icon: '🐲' },
+  { id: 'nest_guardian', nameRu: 'Страж гнезда', nameEn: 'Nest Guardian', hp: 56, ac: 16, attack: 12, damage: '1d10+5', xp: 58, gold: 26, lootTable: [{ itemId: 'dragon_scale', chance: 0.09 }, { itemId: 'greater_health', chance: 0.21 }], locationId: 'dragon_nests', isBoss: false, icon: '🥚' },
+  { id: 'feral_hatchling', nameRu: 'Одичавший детёныш', nameEn: 'Feral Hatchling', hp: 44, ac: 13, attack: 11, damage: '1d8+5', xp: 50, gold: 20, lootTable: [{ itemId: 'dragon_scale', chance: 0.0675 }], locationId: 'dragon_nests', isBoss: false, icon: '🐣' },
+  { id: 'broodmother_wyrm', nameRu: 'Матриарх выводка', nameEn: 'Broodmother Wyrm', hp: 62, ac: 16, attack: 13, damage: '2d6+5', xp: 65, gold: 30, lootTable: [{ itemId: 'dragon_scale', chance: 0.135 }, { itemId: 'ignira_fang', chance: 0.0176 }], locationId: 'dragon_nests', isBoss: false, icon: '🐲' },
 
   // Обсидиановый лабиринт (Level 6)
-  { id: 'obsidian_golem', nameRu: 'Обсидиановый голем', nameEn: 'Obsidian Golem', hp: 65, ac: 18, attack: 13, damage: '2d6+5', xp: 68, gold: 30, lootTable: [{ itemId: 'iron_ore', chance: 0.4 }, { itemId: 'void_crystal', chance: 0.08 }], locationId: 'obsidian_labyrinth', isBoss: false, icon: '🗿' },
-  { id: 'molten_shade', nameRu: 'Расплавленная тень', nameEn: 'Molten Shade', hp: 58, ac: 16, attack: 14, damage: '1d10+6', xp: 64, gold: 28, lootTable: [{ itemId: 'shadow_essence', chance: 0.3 }], locationId: 'obsidian_labyrinth', isBoss: false, icon: '👤' },
-  { id: 'labyrinth_stalker', nameRu: 'Хищник лабиринта', nameEn: 'Labyrinth Stalker', hp: 54, ac: 15, attack: 13, damage: '1d10+5', xp: 60, gold: 26, lootTable: [{ itemId: 'shadow_dagger', chance: 0.08 }], locationId: 'obsidian_labyrinth', isBoss: false, icon: '🦂' },
+  { id: 'obsidian_golem', nameRu: 'Обсидиановый голем', nameEn: 'Obsidian Golem', hp: 65, ac: 18, attack: 13, damage: '2d6+5', xp: 68, gold: 30, lootTable: [{ itemId: 'iron_ore', chance: 0.4 }, { itemId: 'void_crystal', chance: 0.0176 }], locationId: 'obsidian_labyrinth', isBoss: false, icon: '🗿' },
+  { id: 'molten_shade', nameRu: 'Расплавленная тень', nameEn: 'Molten Shade', hp: 58, ac: 16, attack: 14, damage: '1d10+6', xp: 64, gold: 28, lootTable: [{ itemId: 'shadow_essence', chance: 0.21 }], locationId: 'obsidian_labyrinth', isBoss: false, icon: '👤' },
+  { id: 'labyrinth_stalker', nameRu: 'Хищник лабиринта', nameEn: 'Labyrinth Stalker', hp: 54, ac: 15, attack: 13, damage: '1d10+5', xp: 60, gold: 26, lootTable: [{ itemId: 'shadow_dagger', chance: 0.036 }], locationId: 'obsidian_labyrinth', isBoss: false, icon: '🦂' },
 
   // Жерло Игниры (Level 6)
-  { id: 'ignira_zealot', nameRu: 'Фанатик Игниры', nameEn: 'Ignira Zealot', hp: 58, ac: 16, attack: 14, damage: '1d10+6', xp: 66, gold: 30, lootTable: [{ itemId: 'greater_health', chance: 0.3 }, { itemId: 'scroll_fireball', chance: 0.15 }], locationId: 'ignira_maw', isBoss: false, icon: '🔥' },
-  { id: 'magma_elemental', nameRu: 'Магмовый элементаль', nameEn: 'Magma Elemental', hp: 70, ac: 17, attack: 15, damage: '2d8+5', xp: 75, gold: 34, lootTable: [{ itemId: 'dragon_scale', chance: 0.25 }, { itemId: 'ignira_fang', chance: 0.1 }], locationId: 'ignira_maw', isBoss: false, icon: '🌋' },
+  { id: 'ignira_zealot', nameRu: 'Фанатик Игниры', nameEn: 'Ignira Zealot', hp: 58, ac: 16, attack: 14, damage: '1d10+6', xp: 66, gold: 30, lootTable: [{ itemId: 'greater_health', chance: 0.21 }, { itemId: 'scroll_fireball', chance: 0.0675 }], locationId: 'ignira_maw', isBoss: false, icon: '🔥' },
+  { id: 'magma_elemental', nameRu: 'Магмовый элементаль', nameEn: 'Magma Elemental', hp: 70, ac: 17, attack: 15, damage: '2d8+5', xp: 75, gold: 34, lootTable: [{ itemId: 'dragon_scale', chance: 0.1125 }, { itemId: 'ignira_fang', chance: 0.022 }], locationId: 'ignira_maw', isBoss: false, icon: '🌋' },
 
   // Колыбель Пламени (Level 6)
   { id: 'flame_wisp_swarm', nameRu: 'Рой огненных духов', nameEn: 'Flame Wisp Swarm', hp: 60, ac: 15, attack: 14, damage: '1d10+6', xp: 70, gold: 32, lootTable: [{ itemId: 'mana_potion', chance: 0.3 }], locationId: 'flame_cradle', isBoss: false, icon: '✨' },
   {
     id: 'first_dragon', nameRu: 'Первый Дракон', nameEn: 'The First Dragon', hp: 160, ac: 18, attack: 15, damage: '3d8+6', xp: 550, gold: 250,
-    lootTable: [{ itemId: 'first_dragon_scale', chance: 0.15 }, { itemId: 'ignira_fang', chance: 0.25 }, { itemId: 'elixir_power', chance: 0.3 }, { itemId: 'dragonslayer', chance: 0.08 }, { itemId: 'blueprint_cursed_king_blade', chance: 0.12 }],
+    lootTable: [{ itemId: 'first_dragon_scale', chance: 0.012 }, { itemId: 'ignira_fang', chance: 0.055 }, { itemId: 'elixir_power', chance: 0.135 }, { itemId: 'dragonslayer', chance: 0.0064 }, { itemId: 'blueprint_cursed_king_blade', chance: 0.0096 }],
     locationId: 'flame_cradle', isBoss: true, icon: '🐉',
     mechanics: {
       playerDotPercent: 0.04, // Горение каждый ход
@@ -667,29 +667,29 @@ export const ENEMIES: EnemyTemplate[] = [
   },
 
   // Внешние топи (Level 6)
-  { id: 'marsh_zombie', nameRu: 'Болотный зомби', nameEn: 'Marsh Zombie', hp: 62, ac: 16, attack: 13, damage: '1d10+5', xp: 62, gold: 26, lootTable: [{ itemId: 'greater_health', chance: 0.3 }, { itemId: 'antidote', chance: 0.3 }], locationId: 'outer_marshes', isBoss: false, icon: '🧟' },
-  { id: 'bog_wraith', nameRu: 'Болотный призрак', nameEn: 'Bog Wraith', hp: 58, ac: 17, attack: 14, damage: '1d10+5', xp: 65, gold: 28, lootTable: [{ itemId: 'shadow_essence', chance: 0.35 }], locationId: 'outer_marshes', isBoss: false, icon: '👻' },
+  { id: 'marsh_zombie', nameRu: 'Болотный зомби', nameEn: 'Marsh Zombie', hp: 62, ac: 16, attack: 13, damage: '1d10+5', xp: 62, gold: 26, lootTable: [{ itemId: 'greater_health', chance: 0.21 }, { itemId: 'antidote', chance: 0.3 }], locationId: 'outer_marshes', isBoss: false, icon: '🧟' },
+  { id: 'bog_wraith', nameRu: 'Болотный призрак', nameEn: 'Bog Wraith', hp: 58, ac: 17, attack: 14, damage: '1d10+5', xp: 65, gold: 28, lootTable: [{ itemId: 'shadow_essence', chance: 0.245 }], locationId: 'outer_marshes', isBoss: false, icon: '👻' },
   { id: 'venom_mist_spawn', nameRu: 'Порождение ядовитого тумана', nameEn: 'Venom Mist Spawn', hp: 54, ac: 15, attack: 13, damage: '1d10+5', xp: 60, gold: 24, lootTable: [{ itemId: 'antidote', chance: 0.4 }], locationId: 'outer_marshes', isBoss: false, icon: '☠️' },
 
   // Кладбище кораблей (Level 6-7)
-  { id: 'drowned_sailor', nameRu: 'Утопленный моряк', nameEn: 'Drowned Sailor', hp: 60, ac: 16, attack: 14, damage: '1d10+5', xp: 64, gold: 28, lootTable: [{ itemId: 'chainmail', chance: 0.15 }, { itemId: 'shadow_cloak', chance: 0.08 }], locationId: 'shipwreck_graveyard', isBoss: false, icon: '⚓' },
-  { id: 'ghost_captain', nameRu: 'Призрачный капитан', nameEn: 'Ghost Captain', hp: 66, ac: 17, attack: 15, damage: '2d6+5', xp: 70, gold: 32, lootTable: [{ itemId: 'shadow_dagger', chance: 0.1 }, { itemId: 'first_fall_dust', chance: 0.1 }, { itemId: 'ancient_map', chance: 0.15 }], locationId: 'shipwreck_graveyard', isBoss: false, icon: '🏴‍☠️' },
+  { id: 'drowned_sailor', nameRu: 'Утопленный моряк', nameEn: 'Drowned Sailor', hp: 60, ac: 16, attack: 14, damage: '1d10+5', xp: 64, gold: 28, lootTable: [{ itemId: 'chainmail', chance: 0.105 }, { itemId: 'shadow_cloak', chance: 0.036 }], locationId: 'shipwreck_graveyard', isBoss: false, icon: '⚓' },
+  { id: 'ghost_captain', nameRu: 'Призрачный капитан', nameEn: 'Ghost Captain', hp: 66, ac: 17, attack: 15, damage: '2d6+5', xp: 70, gold: 32, lootTable: [{ itemId: 'shadow_dagger', chance: 0.045 }, { itemId: 'first_fall_dust', chance: 0.045 }, { itemId: 'ancient_map', chance: 0.105 }], locationId: 'shipwreck_graveyard', isBoss: false, icon: '🏴‍☠️' },
   { id: 'hull_crawler', nameRu: 'Ползун обшивки', nameEn: 'Hull Crawler', hp: 58, ac: 16, attack: 13, damage: '1d10+5', xp: 62, gold: 26, lootTable: [{ itemId: 'iron_ore', chance: 0.3 }], locationId: 'shipwreck_graveyard', isBoss: false, icon: '🦀' },
 
   // Чумной лагерь (Level 7)
-  { id: 'blight_alchemist', nameRu: 'Алхимик Скверны', nameEn: 'Blight Alchemist', hp: 64, ac: 16, attack: 15, damage: '1d10+6', xp: 70, gold: 32, lootTable: [{ itemId: 'scroll_fireball', chance: 0.15 }, { itemId: 'antidote', chance: 0.4 }], locationId: 'plague_camp', isBoss: false, icon: '🧪' },
+  { id: 'blight_alchemist', nameRu: 'Алхимик Скверны', nameEn: 'Blight Alchemist', hp: 64, ac: 16, attack: 15, damage: '1d10+6', xp: 70, gold: 32, lootTable: [{ itemId: 'scroll_fireball', chance: 0.0675 }, { itemId: 'antidote', chance: 0.4 }], locationId: 'plague_camp', isBoss: false, icon: '🧪' },
   { id: 'plague_hound', nameRu: 'Чумной пёс', nameEn: 'Plague Hound', hp: 60, ac: 16, attack: 15, damage: '1d10+6', xp: 68, gold: 30, lootTable: [{ itemId: 'antidote', chance: 0.35 }], locationId: 'plague_camp', isBoss: false, icon: '🐕' },
-  { id: 'toxic_experiment', nameRu: 'Токсичный эксперимент', nameEn: 'Toxic Experiment', hp: 70, ac: 17, attack: 16, damage: '2d6+6', xp: 75, gold: 34, lootTable: [{ itemId: 'greater_health', chance: 0.3 }, { itemId: 'void_crystal', chance: 0.08 }], locationId: 'plague_camp', isBoss: false, icon: '🧫' },
+  { id: 'toxic_experiment', nameRu: 'Токсичный эксперимент', nameEn: 'Toxic Experiment', hp: 70, ac: 17, attack: 16, damage: '2d6+6', xp: 75, gold: 34, lootTable: [{ itemId: 'greater_health', chance: 0.21 }, { itemId: 'void_crystal', chance: 0.0176 }], locationId: 'plague_camp', isBoss: false, icon: '🧫' },
 
   // Костяной собор (Level 7)
-  { id: 'bone_priest', nameRu: 'Костяной жрец', nameEn: 'Bone Priest', hp: 68, ac: 17, attack: 16, damage: '1d10+6', xp: 74, gold: 34, lootTable: [{ itemId: 'first_fall_dust', chance: 0.12 }, { itemId: 'mana_potion', chance: 0.4 }, { itemId: 'cursed_locket', chance: 0.1 }], locationId: 'bone_cathedral', isBoss: false, icon: '💀' },
-  { id: 'cathedral_guardian', nameRu: 'Страж собора', nameEn: 'Cathedral Guardian', hp: 75, ac: 18, attack: 16, damage: '2d8+5', xp: 80, gold: 36, lootTable: [{ itemId: 'dwarven_plate', chance: 0.1 }, { itemId: 'greater_health', chance: 0.3 }], locationId: 'bone_cathedral', isBoss: false, icon: '⛪' },
+  { id: 'bone_priest', nameRu: 'Костяной жрец', nameEn: 'Bone Priest', hp: 68, ac: 17, attack: 16, damage: '1d10+6', xp: 74, gold: 34, lootTable: [{ itemId: 'first_fall_dust', chance: 0.054 }, { itemId: 'mana_potion', chance: 0.4 }, { itemId: 'cursed_locket', chance: 0.045 }], locationId: 'bone_cathedral', isBoss: false, icon: '💀' },
+  { id: 'cathedral_guardian', nameRu: 'Страж собора', nameEn: 'Cathedral Guardian', hp: 75, ac: 18, attack: 16, damage: '2d8+5', xp: 80, gold: 36, lootTable: [{ itemId: 'dwarven_plate', chance: 0.045 }, { itemId: 'greater_health', chance: 0.21 }], locationId: 'bone_cathedral', isBoss: false, icon: '⛪' },
 
   // Врата Мора (Level 7)
-  { id: 'mass_grave_horror', nameRu: 'Ужас братской могилы', nameEn: 'Mass Grave Horror', hp: 70, ac: 17, attack: 16, damage: '2d6+6', xp: 78, gold: 36, lootTable: [{ itemId: 'greater_health', chance: 0.3 }, { itemId: 'shadow_essence', chance: 0.3 }], locationId: 'plague_gate', isBoss: false, icon: '🪦' },
+  { id: 'mass_grave_horror', nameRu: 'Ужас братской могилы', nameEn: 'Mass Grave Horror', hp: 70, ac: 17, attack: 16, damage: '2d6+6', xp: 78, gold: 36, lootTable: [{ itemId: 'greater_health', chance: 0.21 }, { itemId: 'shadow_essence', chance: 0.21 }], locationId: 'plague_gate', isBoss: false, icon: '🪦' },
   {
     id: 'first_risen', nameRu: 'Первый Восставший', nameEn: 'The First Risen', hp: 180, ac: 19, attack: 17, damage: '3d8+7', xp: 650, gold: 300,
-    lootTable: [{ itemId: 'first_risen_crown', chance: 0.15 }, { itemId: 'first_fall_dust', chance: 0.3 }, { itemId: 'elixir_power', chance: 0.3 }, { itemId: 'blueprint_crown_fragment', chance: 0.12 }],
+    lootTable: [{ itemId: 'first_risen_crown', chance: 0.012 }, { itemId: 'first_fall_dust', chance: 0.135 }, { itemId: 'elixir_power', chance: 0.135 }, { itemId: 'blueprint_crown_fragment', chance: 0.0096 }],
     locationId: 'plague_gate', isBoss: true, icon: '💀',
     mechanics: {
       summonEveryTurns: 2, summonBonusDamage: 6, summonUntilPhase: 2, summonMaxStacks: 5, // призывает скелетов каждые 2 хода до фазы 2
@@ -699,29 +699,29 @@ export const ENEMIES: EnemyTemplate[] = [
   },
 
   // Пограничье (Level 7)
-  { id: 'border_raider', nameRu: 'Пограничный налётчик', nameEn: 'Border Raider', hp: 72, ac: 17, attack: 16, damage: '1d10+6', xp: 75, gold: 34, lootTable: [{ itemId: 'steel_sword', chance: 0.2 }, { itemId: 'greater_health', chance: 0.3 }], locationId: 'borderlands', isBoss: false, icon: '🪓' },
-  { id: 'clan_scout', nameRu: 'Клановый разведчик', nameEn: 'Clan Scout', hp: 66, ac: 16, attack: 15, damage: '1d10+6', xp: 70, gold: 30, lootTable: [{ itemId: 'elven_bow', chance: 0.1 }], locationId: 'borderlands', isBoss: false, icon: '👁️' },
+  { id: 'border_raider', nameRu: 'Пограничный налётчик', nameEn: 'Border Raider', hp: 72, ac: 17, attack: 16, damage: '1d10+6', xp: 75, gold: 34, lootTable: [{ itemId: 'steel_sword', chance: 0.14 }, { itemId: 'greater_health', chance: 0.21 }], locationId: 'borderlands', isBoss: false, icon: '🪓' },
+  { id: 'clan_scout', nameRu: 'Клановый разведчик', nameEn: 'Clan Scout', hp: 66, ac: 16, attack: 15, damage: '1d10+6', xp: 70, gold: 30, lootTable: [{ itemId: 'elven_bow', chance: 0.07 }], locationId: 'borderlands', isBoss: false, icon: '👁️' },
   { id: 'war_hound', nameRu: 'Боевой пёс', nameEn: 'War Hound', hp: 64, ac: 16, attack: 15, damage: '1d10+6', xp: 68, gold: 28, lootTable: [{ itemId: 'antidote', chance: 0.3 }], locationId: 'borderlands', isBoss: false, icon: '🐺' },
 
   // Арена Крови (Level 7-8)
-  { id: 'arena_slave', nameRu: 'Раб арены', nameEn: 'Arena Slave', hp: 70, ac: 17, attack: 16, damage: '1d10+6', xp: 74, gold: 32, lootTable: [{ itemId: 'greater_health', chance: 0.3 }, { itemId: 'chainmail', chance: 0.15 }], locationId: 'blood_arena', isBoss: false, icon: '⛓️' },
-  { id: 'gladiator_champion', nameRu: 'Чемпион-гладиатор', nameEn: 'Gladiator Champion', hp: 80, ac: 18, attack: 17, damage: '2d6+6', xp: 85, gold: 38, lootTable: [{ itemId: 'dwarven_plate', chance: 0.12 }, { itemId: 'grumgar_fang', chance: 0.05 }, { itemId: 'lucky_charm', chance: 0.06 }], locationId: 'blood_arena', isBoss: false, icon: '🏆' },
-  { id: 'blood_priest', nameRu: 'Кровавый жрец', nameEn: 'Blood Priest', hp: 74, ac: 17, attack: 17, damage: '1d10+7', xp: 82, gold: 36, lootTable: [{ itemId: 'unborn_chieftain_seal', chance: 0.05 }, { itemId: 'mana_potion', chance: 0.4 }], locationId: 'blood_arena', isBoss: false, icon: '🩸' },
+  { id: 'arena_slave', nameRu: 'Раб арены', nameEn: 'Arena Slave', hp: 70, ac: 17, attack: 16, damage: '1d10+6', xp: 74, gold: 32, lootTable: [{ itemId: 'greater_health', chance: 0.21 }, { itemId: 'chainmail', chance: 0.105 }], locationId: 'blood_arena', isBoss: false, icon: '⛓️' },
+  { id: 'gladiator_champion', nameRu: 'Чемпион-гладиатор', nameEn: 'Gladiator Champion', hp: 80, ac: 18, attack: 17, damage: '2d6+6', xp: 85, gold: 38, lootTable: [{ itemId: 'dwarven_plate', chance: 0.054 }, { itemId: 'grumgar_fang', chance: 0.004 }, { itemId: 'lucky_charm', chance: 0.0132 }], locationId: 'blood_arena', isBoss: false, icon: '🏆' },
+  { id: 'blood_priest', nameRu: 'Кровавый жрец', nameEn: 'Blood Priest', hp: 74, ac: 17, attack: 17, damage: '1d10+7', xp: 82, gold: 36, lootTable: [{ itemId: 'unborn_chieftain_seal', chance: 0.004 }, { itemId: 'mana_potion', chance: 0.4 }], locationId: 'blood_arena', isBoss: false, icon: '🩸' },
 
   // Крепость Грумгара (Level 8)
-  { id: 'fortress_warrior', nameRu: 'Воин крепости', nameEn: 'Fortress Warrior', hp: 78, ac: 18, attack: 17, damage: '1d10+7', xp: 84, gold: 38, lootTable: [{ itemId: 'dwarven_plate', chance: 0.15 }, { itemId: 'greater_health', chance: 0.3 }], locationId: 'grumgar_fortress', isBoss: false, icon: '🛡️' },
-  { id: 'clan_shaman', nameRu: 'Клановый шаман', nameEn: 'Clan Shaman', hp: 72, ac: 17, attack: 17, damage: '1d10+7', xp: 82, gold: 36, lootTable: [{ itemId: 'arcane_pendant', chance: 0.15 }, { itemId: 'mana_potion', chance: 0.4 }], locationId: 'grumgar_fortress', isBoss: false, icon: '🔮' },
-  { id: 'horde_captain', nameRu: 'Капитан орды', nameEn: 'Horde Captain', hp: 85, ac: 19, attack: 18, damage: '2d8+6', xp: 90, gold: 42, lootTable: [{ itemId: 'grumgar_fang', chance: 0.06 }, { itemId: 'greater_health', chance: 0.3 }], locationId: 'grumgar_fortress', isBoss: false, icon: '📯' },
+  { id: 'fortress_warrior', nameRu: 'Воин крепости', nameEn: 'Fortress Warrior', hp: 78, ac: 18, attack: 17, damage: '1d10+7', xp: 84, gold: 38, lootTable: [{ itemId: 'dwarven_plate', chance: 0.0675 }, { itemId: 'greater_health', chance: 0.21 }], locationId: 'grumgar_fortress', isBoss: false, icon: '🛡️' },
+  { id: 'clan_shaman', nameRu: 'Клановый шаман', nameEn: 'Clan Shaman', hp: 72, ac: 17, attack: 17, damage: '1d10+7', xp: 82, gold: 36, lootTable: [{ itemId: 'arcane_pendant', chance: 0.0675 }, { itemId: 'mana_potion', chance: 0.4 }], locationId: 'grumgar_fortress', isBoss: false, icon: '🔮' },
+  { id: 'horde_captain', nameRu: 'Капитан орды', nameEn: 'Horde Captain', hp: 85, ac: 19, attack: 18, damage: '2d8+6', xp: 90, gold: 42, lootTable: [{ itemId: 'grumgar_fang', chance: 0.0048 }, { itemId: 'greater_health', chance: 0.21 }], locationId: 'grumgar_fortress', isBoss: false, icon: '📯' },
 
   // Тропа Черепов (Level 8)
-  { id: 'skull_zealot', nameRu: 'Фанатик черепов', nameEn: 'Skull Zealot', hp: 80, ac: 18, attack: 18, damage: '2d6+7', xp: 88, gold: 40, lootTable: [{ itemId: 'unborn_chieftain_seal', chance: 0.06 }, { itemId: 'greater_health', chance: 0.3 }], locationId: 'skull_trail', isBoss: false, icon: '💀' },
-  { id: 'ritual_guardian', nameRu: 'Страж ритуала', nameEn: 'Ritual Guardian', hp: 88, ac: 19, attack: 18, damage: '2d8+6', xp: 92, gold: 42, lootTable: [{ itemId: 'void_crystal', chance: 0.1 }], locationId: 'skull_trail', isBoss: false, icon: '🗿' },
+  { id: 'skull_zealot', nameRu: 'Фанатик черепов', nameEn: 'Skull Zealot', hp: 80, ac: 18, attack: 18, damage: '2d6+7', xp: 88, gold: 40, lootTable: [{ itemId: 'unborn_chieftain_seal', chance: 0.0048 }, { itemId: 'greater_health', chance: 0.21 }], locationId: 'skull_trail', isBoss: false, icon: '💀' },
+  { id: 'ritual_guardian', nameRu: 'Страж ритуала', nameEn: 'Ritual Guardian', hp: 88, ac: 19, attack: 18, damage: '2d8+6', xp: 92, gold: 42, lootTable: [{ itemId: 'void_crystal', chance: 0.022 }], locationId: 'skull_trail', isBoss: false, icon: '🗿' },
 
   // Зев Бездны (Level 8)
-  { id: 'abyss_maw_horror', nameRu: 'Ужас Зева', nameEn: 'Maw Horror', hp: 85, ac: 19, attack: 18, damage: '2d8+7', xp: 95, gold: 44, lootTable: [{ itemId: 'greater_health', chance: 0.3 }, { itemId: 'void_crystal', chance: 0.1 }], locationId: 'abyss_maw', isBoss: false, icon: '🕳️' },
+  { id: 'abyss_maw_horror', nameRu: 'Ужас Зева', nameEn: 'Maw Horror', hp: 85, ac: 19, attack: 18, damage: '2d8+7', xp: 95, gold: 44, lootTable: [{ itemId: 'greater_health', chance: 0.21 }, { itemId: 'void_crystal', chance: 0.022 }], locationId: 'abyss_maw', isBoss: false, icon: '🕳️' },
   {
     id: 'grumgar_unborn', nameRu: 'Грумгар Нерождённый', nameEn: 'Grumgar the Unborn', hp: 200, ac: 20, attack: 19, damage: '3d10+8', xp: 800, gold: 400,
-    lootTable: [{ itemId: 'grumgar_fang', chance: 0.15 }, { itemId: 'unborn_chieftain_seal', chance: 0.15 }, { itemId: 'elixir_power', chance: 0.3 }],
+    lootTable: [{ itemId: 'grumgar_fang', chance: 0.012 }, { itemId: 'unborn_chieftain_seal', chance: 0.012 }, { itemId: 'elixir_power', chance: 0.135 }],
     locationId: 'abyss_maw', isBoss: true, icon: '👹',
     mechanics: {
       counterStrikeEveryTurns: 2, counterStrikeBonusMult: 1.6,               // каждые 2 хода — Ответный удар
@@ -733,12 +733,12 @@ export const ENEMIES: EnemyTemplate[] = [
   // ===== ГЛУБЬ =====
 
   // Верхняя Глубь (Level 8)
-  { id: 'fallen_ruin_wraith', nameRu: 'Дух Обрушенных Руин', nameEn: 'Fallen Ruin Wraith', hp: 90, ac: 18, attack: 16, damage: '2d8+6', xp: 90, gold: 40, lootTable: [{ itemId: 'void_crystal', chance: 0.15 }, { itemId: 'greater_health', chance: 0.3 }], locationId: 'upper_deep', isBoss: false, icon: '🏚️' },
-  { id: 'drifting_hulk', nameRu: 'Дрейфующий Остов', nameEn: 'Drifting Hulk', hp: 95, ac: 17, attack: 17, damage: '2d8+7', xp: 95, gold: 42, lootTable: [{ itemId: 'iron_ore', chance: 0.4 }, { itemId: 'dwarven_plate', chance: 0.06 }], locationId: 'upper_deep', isBoss: false, icon: '🚢' },
-  { id: 'weak_blight_spawn', nameRu: 'Слабое порождение Скверны', nameEn: 'Weak Blight Spawn', hp: 80, ac: 16, attack: 15, damage: '2d6+6', xp: 85, gold: 38, lootTable: [{ itemId: 'shadow_essence', chance: 0.3 }], locationId: 'upper_deep', isBoss: false, icon: '🌑' },
+  { id: 'fallen_ruin_wraith', nameRu: 'Дух Обрушенных Руин', nameEn: 'Fallen Ruin Wraith', hp: 90, ac: 18, attack: 16, damage: '2d8+6', xp: 90, gold: 40, lootTable: [{ itemId: 'void_crystal', chance: 0.033 }, { itemId: 'greater_health', chance: 0.21 }], locationId: 'upper_deep', isBoss: false, icon: '🏚️' },
+  { id: 'drifting_hulk', nameRu: 'Дрейфующий Остов', nameEn: 'Drifting Hulk', hp: 95, ac: 17, attack: 17, damage: '2d8+7', xp: 95, gold: 42, lootTable: [{ itemId: 'iron_ore', chance: 0.4 }, { itemId: 'dwarven_plate', chance: 0.027 }], locationId: 'upper_deep', isBoss: false, icon: '🚢' },
+  { id: 'weak_blight_spawn', nameRu: 'Слабое порождение Скверны', nameEn: 'Weak Blight Spawn', hp: 80, ac: 16, attack: 15, damage: '2d6+6', xp: 85, gold: 38, lootTable: [{ itemId: 'shadow_essence', chance: 0.21 }], locationId: 'upper_deep', isBoss: false, icon: '🌑' },
   {
     id: 'gatekeeper_of_the_deep', nameRu: 'Привратник Глуби', nameEn: 'Gatekeeper of the Deep', hp: 220, ac: 19, attack: 19, damage: '3d10+7', xp: 900, gold: 450,
-    lootTable: [{ itemId: 'gatekeeper_key', chance: 0.15 }, { itemId: 'void_crystal', chance: 0.3 }, { itemId: 'elixir_power', chance: 0.3 }],
+    lootTable: [{ itemId: 'gatekeeper_key', chance: 0.012 }, { itemId: 'void_crystal', chance: 0.066 }, { itemId: 'elixir_power', chance: 0.135 }],
     locationId: 'upper_deep', isBoss: true, icon: '🚪',
     mechanics: {
       adaptiveResistToRepeatedActionType: true, adaptiveResistPerRepeat: 0.2, adaptiveResistMax: 0.6, // адаптируется к повторному типу урона — чередуйте атаку и способности
@@ -746,11 +746,11 @@ export const ENEMIES: EnemyTemplate[] = [
   },
 
   // Тихие Залы (Level 9, зона Кессары)
-  { id: 'mirror_shard_wraith', nameRu: 'Осколок Зеркала', nameEn: 'Mirror Shard Wraith', hp: 95, ac: 18, attack: 18, damage: '2d8+7', xp: 98, gold: 44, lootTable: [{ itemId: 'void_crystal', chance: 0.2 }], locationId: 'silent_halls', isBoss: false, icon: '🪞' },
-  { id: 'whispering_fear', nameRu: 'Шепчущий Страх', nameEn: 'Whispering Fear', hp: 90, ac: 17, attack: 18, damage: '2d8+7', xp: 95, gold: 42, lootTable: [{ itemId: 'shadow_essence', chance: 0.3 }], locationId: 'silent_halls', isBoss: false, icon: '👁️' },
+  { id: 'mirror_shard_wraith', nameRu: 'Осколок Зеркала', nameEn: 'Mirror Shard Wraith', hp: 95, ac: 18, attack: 18, damage: '2d8+7', xp: 98, gold: 44, lootTable: [{ itemId: 'void_crystal', chance: 0.044 }], locationId: 'silent_halls', isBoss: false, icon: '🪞' },
+  { id: 'whispering_fear', nameRu: 'Шепчущий Страх', nameEn: 'Whispering Fear', hp: 90, ac: 17, attack: 18, damage: '2d8+7', xp: 95, gold: 42, lootTable: [{ itemId: 'shadow_essence', chance: 0.21 }], locationId: 'silent_halls', isBoss: false, icon: '👁️' },
   {
     id: 'mirror_of_kessara', nameRu: 'Зеркало Кессары', nameEn: "Kessara's Mirror", hp: 240, ac: 19, attack: 20, damage: '3d10+8', xp: 950, gold: 470,
-    lootTable: [{ itemId: 'kessara_mirror_shard', chance: 0.15 }, { itemId: 'void_crystal', chance: 0.3 }, { itemId: 'elixir_power', chance: 0.3 }],
+    lootTable: [{ itemId: 'kessara_mirror_shard', chance: 0.012 }, { itemId: 'void_crystal', chance: 0.066 }, { itemId: 'elixir_power', chance: 0.135 }],
     locationId: 'silent_halls', isBoss: true, icon: '🪞',
     mechanics: {
       // "идеальная копия" игрока с удвоенными статами, но каждые 3 хода теряет бафф — окно для добивания
@@ -759,11 +759,11 @@ export const ENEMIES: EnemyTemplate[] = [
   },
 
   // Корневая Бездна (Level 9, зона Айлет)
-  { id: 'mutated_root_horror', nameRu: 'Мутировавший корневой ужас', nameEn: 'Mutated Root Horror', hp: 98, ac: 18, attack: 18, damage: '2d8+7', xp: 98, gold: 44, lootTable: [{ itemId: 'shadow_essence', chance: 0.3 }], locationId: 'root_abyss', isBoss: false, icon: '🧬' },
-  { id: 'parasitic_flesh_bloom', nameRu: 'Паразитический плотоцвет', nameEn: 'Parasitic Flesh Bloom', hp: 92, ac: 17, attack: 18, damage: '2d8+7', xp: 95, gold: 42, lootTable: [{ itemId: 'greater_health', chance: 0.3 }], locationId: 'root_abyss', isBoss: false, icon: '🥀' },
+  { id: 'mutated_root_horror', nameRu: 'Мутировавший корневой ужас', nameEn: 'Mutated Root Horror', hp: 98, ac: 18, attack: 18, damage: '2d8+7', xp: 98, gold: 44, lootTable: [{ itemId: 'shadow_essence', chance: 0.21 }], locationId: 'root_abyss', isBoss: false, icon: '🧬' },
+  { id: 'parasitic_flesh_bloom', nameRu: 'Паразитический плотоцвет', nameEn: 'Parasitic Flesh Bloom', hp: 92, ac: 17, attack: 18, damage: '2d8+7', xp: 95, gold: 42, lootTable: [{ itemId: 'greater_health', chance: 0.21 }], locationId: 'root_abyss', isBoss: false, icon: '🥀' },
   {
     id: 'heart_of_ailet', nameRu: 'Сердце Айлет', nameEn: "Ailet's Heart", hp: 250, ac: 18, attack: 19, damage: '3d10+7', xp: 950, gold: 470,
-    lootTable: [{ itemId: 'ailet_pulsing_heart', chance: 0.15 }, { itemId: 'void_crystal', chance: 0.3 }, { itemId: 'elixir_power', chance: 0.3 }],
+    lootTable: [{ itemId: 'ailet_pulsing_heart', chance: 0.012 }, { itemId: 'void_crystal', chance: 0.066 }, { itemId: 'elixir_power', chance: 0.135 }],
     locationId: 'root_abyss', isBoss: true, icon: '💗',
     mechanics: {
       selfHealPercent: 0.10, selfHealUntilPhase: 2,                                      // хилит себя 10%/ход до фазы 2
@@ -775,10 +775,10 @@ export const ENEMIES: EnemyTemplate[] = [
 
   // Горнило Безумия (Level 9, зона Велариона)
   { id: 'mindless_flame_wisp', nameRu: 'Бездумный огненный дух', nameEn: 'Mindless Flame Wisp', hp: 95, ac: 17, attack: 19, damage: '2d10+7', xp: 98, gold: 44, lootTable: [{ itemId: 'mana_potion', chance: 0.3 }], locationId: 'madness_forge', isBoss: false, icon: '🔥' },
-  { id: 'reality_melting_ember', nameRu: 'Плавящий реальность уголёк', nameEn: 'Reality-Melting Ember', hp: 90, ac: 17, attack: 19, damage: '2d10+7', xp: 95, gold: 42, lootTable: [{ itemId: 'void_crystal', chance: 0.2 }], locationId: 'madness_forge', isBoss: false, icon: '🌋' },
+  { id: 'reality_melting_ember', nameRu: 'Плавящий реальность уголёк', nameEn: 'Reality-Melting Ember', hp: 90, ac: 17, attack: 19, damage: '2d10+7', xp: 95, gold: 42, lootTable: [{ itemId: 'void_crystal', chance: 0.044 }], locationId: 'madness_forge', isBoss: false, icon: '🌋' },
   {
     id: 'flame_of_velarion', nameRu: 'Пламя Велариона', nameEn: "Velarion's Flame", hp: 240, ac: 18, attack: 20, damage: '3d10+8', xp: 950, gold: 470,
-    lootTable: [{ itemId: 'eternal_ember', chance: 0.15 }, { itemId: 'void_crystal', chance: 0.3 }, { itemId: 'elixir_power', chance: 0.3 }],
+    lootTable: [{ itemId: 'eternal_ember', chance: 0.012 }, { itemId: 'void_crystal', chance: 0.066 }, { itemId: 'elixir_power', chance: 0.135 }],
     locationId: 'madness_forge', isBoss: true, icon: '🔥',
     mechanics: {
       playerDotPercent: 0.03,                                            // огненный урон каждый ход
@@ -790,10 +790,10 @@ export const ENEMIES: EnemyTemplate[] = [
 
   // Окаменевший Закон (Level 9, зона Торнака)
   { id: 'petrified_sentinel', nameRu: 'Окаменевший страж', nameEn: 'Petrified Sentinel', hp: 100, ac: 20, attack: 17, damage: '2d8+7', xp: 98, gold: 44, lootTable: [{ itemId: 'iron_ore', chance: 0.4 }], locationId: 'petrified_law', isBoss: false, icon: '🗿' },
-  { id: 'frozen_moment_wraith', nameRu: 'Дух застывшего мгновения', nameEn: 'Frozen Moment Wraith', hp: 90, ac: 18, attack: 18, damage: '2d8+7', xp: 95, gold: 42, lootTable: [{ itemId: 'shadow_essence', chance: 0.3 }], locationId: 'petrified_law', isBoss: false, icon: '⏳' },
+  { id: 'frozen_moment_wraith', nameRu: 'Дух застывшего мгновения', nameEn: 'Frozen Moment Wraith', hp: 90, ac: 18, attack: 18, damage: '2d8+7', xp: 95, gold: 42, lootTable: [{ itemId: 'shadow_essence', chance: 0.21 }], locationId: 'petrified_law', isBoss: false, icon: '⏳' },
   {
     id: 'statue_of_tornak', nameRu: 'Статуя Торнака', nameEn: "Tornak's Statue", hp: 260, ac: 20, attack: 22, damage: '3d12+8', xp: 1000, gold: 500,
-    lootTable: [{ itemId: 'petrified_law_shard', chance: 0.15 }, { itemId: 'void_crystal', chance: 0.3 }, { itemId: 'elixir_power', chance: 0.3 }],
+    lootTable: [{ itemId: 'petrified_law_shard', chance: 0.012 }, { itemId: 'void_crystal', chance: 0.066 }, { itemId: 'elixir_power', chance: 0.135 }],
     locationId: 'petrified_law', isBoss: true, icon: '🗿',
     mechanics: {
       nearInvulnerableAcMult: 45,      // почти неуязвим (~90% снижение урона) в базе

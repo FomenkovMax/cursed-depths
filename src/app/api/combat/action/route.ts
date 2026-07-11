@@ -72,7 +72,7 @@ import { dungeonModifierEffect } from '@/lib/dungeon-modifiers';
 import { abyssScaling, abyssEnemyIdForDepth, isEliteDepth } from '@/lib/abyss';
 import { FORTRESS_ID, CONTROL_GOLD_BONUS } from '@/lib/fortress';
 import { bossIntroLine, deathMessage } from '@/lib/exploration-flavor';
-import { isPremiumActive, PREMIUM_GOLD_XP_MULT } from '@/lib/premium-shop';
+import { isPremiumActive, PREMIUM_GOLD_XP_MULT, isDeathDebuffActive, DEATH_DEBUFF_XP_MULT, DEATH_DEBUFF_HOURS } from '@/lib/premium-shop';
 
 export async function POST(req: NextRequest) {
   const auth = validateTelegramRequest(req);
@@ -154,6 +154,10 @@ export async function POST(req: NextRequest) {
     // Премиум-статус (lib/premium-shop.ts, куплен за Осколки Короны) — +15% золота и опыта с
     // ЛЮБОГО боя, умножается поверх всех остальных множителей выше, тот же приём, что fortressGoldMult.
     const premiumMult = isPremiumActive(player.premiumUntil) ? PREMIUM_GOLD_XP_MULT : 1;
+    // Дебафф смерти (-15% опыта, премиум иммунен) умножается ОТДЕЛЬНО от premiumMult — оба не
+    // могут быть активны одновременно (isDeathDebuffActive сама проверяет премиум), но пишем
+    // как самостоятельный множитель, а не ветку внутри premiumMult, чтобы логика была явной.
+    const xpMultTotal = premiumMult * (isDeathDebuffActive(player.deathDebuffUntil, player.premiumUntil) ? DEATH_DEBUFF_XP_MULT : 1);
 
     // Track deferred DB operations for transaction
     let itemToConsume: { id: string; delete: boolean } | null = null;
@@ -523,7 +527,7 @@ export async function POST(req: NextRequest) {
     if (enemyHp <= 0 && !combatOver) {
       combatOver = true;
       playerWon = true;
-      xpGained = Math.round(enemyTemplate.xp * dungeonEffect.xpMult * abyssEffect.xpMult * premiumMult);
+      xpGained = Math.round(enemyTemplate.xp * dungeonEffect.xpMult * abyssEffect.xpMult * xpMultTotal);
       goldGained = Math.round((enemyTemplate.gold + rollDice('1d4') * Math.ceil(player.level / 2)) * dungeonEffect.goldMult * abyssEffect.goldMult * fortressGoldMult * premiumMult);
       droppedItems.push(...rollLoot(enemyTemplate.lootTable));
       const currencyDrop = rollCurrencyDrop(enemyTemplate.isBoss);
@@ -735,7 +739,7 @@ export async function POST(req: NextRequest) {
             }
           } else {
             dungeonJustCompleted = true;
-            xpGained += Math.round(dungeon.completionReward.xp * dungeonEffect.xpMult * premiumMult);
+            xpGained += Math.round(dungeon.completionReward.xp * dungeonEffect.xpMult * xpMultTotal);
             goldGained += Math.round(dungeon.completionReward.gold * dungeonEffect.goldMult * fortressGoldMult * premiumMult);
             for (const rewardItemId of dungeon.completionReward.items ?? []) {
               const rewardItemData = ITEMS.find(i => i.id === rewardItemId);
@@ -782,7 +786,7 @@ export async function POST(req: NextRequest) {
             }
           } else {
             trialJustCompleted = true;
-            xpGained += Math.round(trial.completionReward.xp * premiumMult);
+            xpGained += Math.round(trial.completionReward.xp * xpMultTotal);
             goldGained += Math.round(trial.completionReward.gold * fortressGoldMult * premiumMult);
             for (const rewardItemId of trial.completionReward.items ?? []) {
               const rewardItemData = ITEMS.find(i => i.id === rewardItemId);
@@ -920,8 +924,14 @@ export async function POST(req: NextRequest) {
         updateData.gold = { decrement: goldLoss };
         if (goldLoss > 0) {
           combatLog.push({ text: `Вы потеряли ${goldLoss} золота при смерти.`, turn: currentTurn + 2 });
-          updateData.combatLog = JSON.stringify(combatLog);
         }
+        // Дебафф -15% опыта на 24 часа (lib/premium-shop.ts) — премиум полностью иммунен, ставить
+        // дебафф ему бессмысленно (isDeathDebuffActive всё равно проигнорирует поле из-за премиума).
+        if (!isPremiumActive(player.premiumUntil)) {
+          updateData.deathDebuffUntil = new Date(Date.now() + DEATH_DEBUFF_HOURS * 60 * 60 * 1000);
+          combatLog.push({ text: `Опыт снижен на 15% на ${DEATH_DEBUFF_HOURS} часов.`, turn: currentTurn + 2 });
+        }
+        updateData.combatLog = JSON.stringify(combatLog);
         // Player died - teleport to town with 1 HP
         updateData.hp = 1;
         updateData.locationId = 'town';

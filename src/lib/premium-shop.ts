@@ -90,3 +90,14 @@ export function isPremiumActive(premiumUntil: Date | null): boolean {
 /** Единственное место, откуда премиум-бонус берёт своё число — описание SKU выше ("+15%
  * золота и опыта") ссылается на эту же величину, чтобы текст и реальный расчёт не разошлись. */
 export const PREMIUM_GOLD_XP_MULT = 1.15;
+
+/** Штраф за смерть — реальная цена поражения сверх уже существующей потери золота
+ * (см. combat/action.ts): -15% опыта на сутки. Премиум полностью иммунен — это не отдельная
+ * механика, а часть того же расчёта: проверяется isPremiumActive рядом с сроком дебаффа. */
+export const DEATH_DEBUFF_XP_MULT = 0.85;
+export const DEATH_DEBUFF_HOURS = 24;
+
+export function isDeathDebuffActive(deathDebuffUntil: Date | null, premiumUntil: Date | null): boolean {
+  if (isPremiumActive(premiumUntil)) return false;
+  return !!deathDebuffUntil && deathDebuffUntil.getTime() > Date.now();
+}

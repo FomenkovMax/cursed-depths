@@ -65,6 +65,9 @@ model Player {
   premiumUntil    DateTime? // до какого момента активен премиум-статус — null/в прошлом = нет
   stashCapacityBonus Int    @default(0) // разовое расширение хранилища сверх STASH_CAPACITY
                             // (покупка за Осколки Короны), накопительное
+  deathDebuffUntil DateTime? // -15% опыта до этого момента (см. lib/premium-shop.ts
+                            // isDeathDebuffActive) — ставится при каждой смерти, премиум
+                            // полностью иммунен (проверяется вместе с этим полем, не отдельным флагом)
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 

@@ -148,7 +148,7 @@ export async function POST(req: NextRequest) {
 
       return NextResponse.json({
         type: 'combat',
-        message: encounterMessage(player.locationId, enemy.nameRu),
+        message: encounterMessage(player.locationId, enemy.id, enemy.nameRu),
         enemy: { ...enemy, hp: enemyHp, maxHp: enemyHp },
         player: updated,
       });

@@ -240,7 +240,7 @@ export interface PartyCombatStateResponse {
 }
 
 export type GameScreen = 'loading' | 'creation' | 'game';
-export type GameTab = 'overview' | 'combat' | 'map' | 'inventory' | 'quests' | 'craft' | 'leaderboard' | 'party' | 'achievements' | 'guild' | 'codex' | 'market' | 'pvp';
+export type GameTab = 'overview' | 'combat' | 'map' | 'inventory' | 'quests' | 'craft' | 'leaderboard' | 'party' | 'achievements' | 'guild' | 'codex' | 'market' | 'pvp' | 'premium';
 
 export type GameMessage = { text: string; type: 'info' | 'success' | 'error' } | null;
 
@@ -255,6 +255,16 @@ export interface ExplorationEvent {
   icon: string;
   textRu: string;
   choices: EventChoice[];
+}
+
+export interface TrialJunctionOption {
+  direction: 'left' | 'right';
+  type: 'monster' | 'reward' | 'trap';
+  label: string;
+}
+
+export interface TrialJunctionView {
+  options: TrialJunctionOption[];
 }
 
 export interface AchievementEntry {
@@ -390,12 +400,58 @@ export interface CodexEntryView {
   unlockedAt: string | null;
 }
 
+export interface ShardPackView {
+  id: string;
+  nameRu: string;
+  icon: string;
+  stars: number;
+  shards: number;
+}
+
+export interface PremiumSkuView {
+  id: string;
+  nameRu: string;
+  descriptionRu: string;
+  icon: string;
+  costShards: number;
+}
+
+export interface FortuneWheelStateView {
+  freeSpinsLeftToday: number;
+  freeSpinsPerDay: number;
+  paidSpinCost: number;
+}
+
+export interface RaceChangeStateView {
+  costShards: number;
+  races: RaceData[];
+}
+
+export interface PremiumShopStateView {
+  crownShards: number;
+  premiumUntil: string | null;
+  premiumActive: boolean;
+  shardPacks: ShardPackView[];
+  catalog: PremiumSkuView[];
+  fortuneWheel: FortuneWheelStateView;
+  raceChange: RaceChangeStateView;
+}
+
+export interface FortuneSpinResultView {
+  id: string;
+  nameRu: string;
+  icon: string;
+  kind: 'gold' | 'shards' | 'premium_days' | 'stash_slots' | 'item' | 'nothing';
+  itemWon: string | null;
+}
+
 // Telegram WebApp SDK types
 export type TelegramWebApp = {
   ready: () => void;
   expand: () => void;
   initData?: string;
   initDataUnsafe?: { user?: { id: number; first_name?: string; username?: string } };
+  openInvoice?: (url: string, callback?: (status: 'paid' | 'cancelled' | 'failed' | 'pending') => void) => void;
 };
 export type TelegramGlobal = { Telegram?: { WebApp?: TelegramWebApp } };
 
@@ -459,8 +515,18 @@ export const AFFIX_TIER_COLORS: Record<string, string> = {
 
 export const SLOT_RU: Record<string, string> = {
   weapon: 'Оружие',
-  chest: 'Нагрудник',
+  head: 'Голова',
+  body: 'Тело',
+  hands: 'Руки',
+  legs: 'Ноги',
+  ring1: 'Кольцо 1',
+  ring2: 'Кольцо 2',
+  amulet: 'Амулет',
+  // Устаревшие значения — уже экипированные до перехода на 7 слотов предметы могли
+  // сохранить старые имена в БД, пока их не переэкипируют.
+  chest: 'Тело',
   accessory1: 'Аксессуар',
+  accessory2: 'Аксессуар',
 };
 
 export function parseStats(statsStr: string | null): Record<string, number> {

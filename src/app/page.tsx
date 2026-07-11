@@ -16,6 +16,7 @@ import {
   PartyData,
   PartyCombatStateResponse,
   ExplorationEvent,
+  TrialJunctionView,
   AchievementEntry,
   CodexEntryView,
   MarketListingView,
@@ -28,12 +29,15 @@ import {
   FortressStateView,
   FortressAssaultResultView,
   GuildData,
+  PremiumShopStateView,
+  FortuneSpinResultView,
 } from '@/lib/game-types';
 import { LoadingScreen } from '@/components/game/LoadingScreen';
 import { CharacterCreationScreen } from '@/components/game/CharacterCreationScreen';
 import { GameHeader } from '@/components/game/GameHeader';
 import { OverviewTab } from '@/components/game/OverviewTab';
 import { ExplorationEventModal } from '@/components/game/ExplorationEventModal';
+import { TrialJunctionModal } from '@/components/game/TrialJunctionModal';
 import { AchievementsTab } from '@/components/game/AchievementsTab';
 import { CodexTab } from '@/components/game/CodexTab';
 import { MarketTab } from '@/components/game/MarketTab';
@@ -46,6 +50,7 @@ import { CraftTab } from '@/components/game/CraftTab';
 import { LeaderboardTab, type LeaderboardEntry, type SeasonWinnerEntry } from '@/components/game/LeaderboardTab';
 import { PartyTab } from '@/components/game/PartyTab';
 import { GuildTab } from '@/components/game/GuildTab';
+import { PremiumShopTab } from '@/components/game/PremiumShopTab';
 
 // ===== MAIN COMPONENT =====
 export default function CursedDepths() {
@@ -82,6 +87,12 @@ export default function CursedDepths() {
   const [worldBossLoading, setWorldBossLoading] = useState(false);
   const [fortress, setFortress] = useState<FortressStateView | null>(null);
   const [fortressLoading, setFortressLoading] = useState(false);
+  const [premiumState, setPremiumState] = useState<PremiumShopStateView | null>(null);
+  const [premiumLoading, setPremiumLoading] = useState(false);
+  const [buyingPackId, setBuyingPackId] = useState<string | null>(null);
+  const [spinningWheel, setSpinningWheel] = useState(false);
+  const [lastFortuneResult, setLastFortuneResult] = useState<FortuneSpinResultView | null>(null);
+  const [changingRace, setChangingRace] = useState(false);
   const [stashItems, setStashItems] = useState<StashItemView[]>([]);
   const [stashCapacity, setStashCapacity] = useState(60);
   const [stashLoading, setStashLoading] = useState(false);
@@ -90,6 +101,7 @@ export default function CursedDepths() {
   const [guildLoading, setGuildLoading] = useState(false);
   const [partyCombatState, setPartyCombatState] = useState<PartyCombatStateResponse | null>(null);
   const [explorationEvent, setExplorationEvent] = useState<ExplorationEvent | null>(null);
+  const [trialJunction, setTrialJunction] = useState<TrialJunctionView | null>(null);
   // Изученные рецепты тира 3 (game-data.ts CRAFTING_RECIPES) — отдельный стейт, а не поле
   // player: только GET /api/player включает player.recipes в ответ, остальные роуты
   // (explore/combat/travel) — нет, и setPlayer(data.player) после них затёр бы это поле,
@@ -485,6 +497,117 @@ export default function CursedDepths() {
     }
   };
 
+  // ===== PREMIUM SHOP (Осколки Короны за Telegram Stars — lib/premium-shop.ts) =====
+  const refreshPremiumState = useCallback(() => {
+    setPremiumLoading(true);
+    apiCall('/api/shop/premium/state')
+      .then(data => { if (data.shardPacks) setPremiumState(data); })
+      .catch(() => setMessage({ text: 'Не удалось загрузить магазин', type: 'error' }))
+      .finally(() => setPremiumLoading(false));
+  }, [apiCall]);
+
+  useEffect(() => {
+    if (tab !== 'premium' || !telegramIdRef.current) return;
+    refreshPremiumState();
+  }, [tab, refreshPremiumState]);
+
+  // Баланс Осколков Короны в GameHeader должен быть виден сразу после входа, а не только
+  // после первого открытия вкладки "Премиум" — отдельный триггер на screen==='game'.
+  useEffect(() => {
+    if (screen !== 'game' || !telegramIdRef.current) return;
+    refreshPremiumState();
+  }, [screen, refreshPremiumState]);
+
+  const handleBuyShardPack = async (packId: string) => {
+    if (!player) return;
+    setBuyingPackId(packId);
+    try {
+      const data = await apiCall('/api/shop/premium/invoice', 'POST', { packId });
+      if (data.error || !data.invoiceUrl) {
+        setMessage({ text: data.error || 'Не удалось создать счёт', type: 'error' });
+        setBuyingPackId(null);
+        return;
+      }
+      const win = typeof window !== 'undefined' ? (window as unknown as TelegramGlobal) : null;
+      const tg = win?.Telegram?.WebApp;
+      if (tg?.openInvoice) {
+        tg.openInvoice(data.invoiceUrl, (status) => {
+          setBuyingPackId(null);
+          if (status === 'paid') {
+            setMessage({ text: 'Оплата прошла! Осколки уже начислены.', type: 'success' });
+            refreshPremiumState();
+          } else if (status === 'failed') {
+            setMessage({ text: 'Оплата не прошла.', type: 'error' });
+          }
+        });
+      } else {
+        // Вне Telegram WebView (напр. обычный браузер при разработке) — открываем ссылку напрямую.
+        window.open(data.invoiceUrl, '_blank');
+        setBuyingPackId(null);
+      }
+    } catch {
+      setMessage({ text: 'Ошибка создания счёта', type: 'error' });
+      setBuyingPackId(null);
+    }
+  };
+
+  const handleRedeemSku = async (skuId: string) => {
+    if (!player) return;
+    setPremiumLoading(true);
+    try {
+      const data = await apiCall('/api/shop/premium/redeem', 'POST', { skuId });
+      if (data.error) {
+        setMessage({ text: data.error, type: 'error' });
+      } else {
+        setPlayer(data.player);
+        setMessage({ text: data.message, type: 'success' });
+        refreshPremiumState();
+      }
+    } catch {
+      setMessage({ text: 'Ошибка покупки', type: 'error' });
+    } finally {
+      setPremiumLoading(false);
+    }
+  };
+
+  const handleSpinFortuneWheel = async () => {
+    if (!player) return;
+    setSpinningWheel(true);
+    try {
+      const data = await apiCall('/api/fortune/spin', 'POST', {});
+      if (data.error) {
+        setMessage({ text: data.error, type: 'error' });
+      } else {
+        setPlayer(data.player);
+        setLastFortuneResult(data.reward);
+        refreshPremiumState();
+      }
+    } catch {
+      setMessage({ text: 'Ошибка вращения колеса', type: 'error' });
+    } finally {
+      setSpinningWheel(false);
+    }
+  };
+
+  const handleChangeRace = async (raceSlug: string, classSlug: string) => {
+    if (!player) return;
+    setChangingRace(true);
+    try {
+      const data = await apiCall('/api/player/change-race', 'POST', { raceSlug, classSlug });
+      if (data.error) {
+        setMessage({ text: data.error, type: 'error' });
+      } else {
+        setPlayer(data.player);
+        setMessage({ text: data.message, type: 'success' });
+        refreshPremiumState();
+      }
+    } catch {
+      setMessage({ text: 'Ошибка смены расы', type: 'error' });
+    } finally {
+      setChangingRace(false);
+    }
+  };
+
   // Приглашение по Telegram deep-link: бот присылает кнопку web_app с URL вида
   // "?joinParty=<id>" (см. src/app/api/telegram/webhook/route.ts) — при первом входе в игру
   // с таким параметром автоматически вступаем в пати (сам переход по ссылке уже
@@ -728,6 +851,51 @@ export default function CursedDepths() {
     setLoading(false);
   };
 
+  // ===== TRIALS (lib/trials.ts) — ветвящийся аналог данжей, см. combat/action.ts trial-ветку =====
+  const handleStartTrial = async (trialId: string) => {
+    if (!player || player.inCombat) return;
+    setLoading(true);
+    try {
+      const data = await apiCall('/api/trial/start', 'POST', { trialId });
+      if (data.error) {
+        setMessage({ text: data.error, type: 'error' });
+      } else {
+        setPlayer(data.player);
+        setTrialJunction(data.trialJunction ?? null);
+        setMessage({ text: data.message, type: 'info' });
+      }
+    } catch {
+      setMessage({ text: 'Ошибка входа в испытание', type: 'error' });
+    }
+    setLoading(false);
+  };
+
+  const handleTrialChoose = async (direction: 'left' | 'right') => {
+    if (!trialJunction) return;
+    setLoading(true);
+    try {
+      const data = await apiCall('/api/trial/choose', 'POST', { direction });
+      setTrialJunction(null);
+      if (data.error) {
+        setMessage({ text: data.error, type: 'error' });
+      } else if (data.type === 'combat') {
+        setPlayer(data.player);
+        setCombatLog([{ text: data.message, turn: 0 }]);
+        setTab('combat');
+        setMessage({ text: data.message, type: 'info' });
+      } else if (data.type === 'junction') {
+        setPlayer(data.player);
+        if (data.goldDelta > 0) addFloatingDamage(`+${data.goldDelta} 💰`, '#fbbf24');
+        setMessage({ text: data.message, type: 'success' });
+        setTrialJunction(data.trialJunction ?? null);
+      }
+    } catch {
+      setTrialJunction(null);
+      setMessage({ text: 'Ошибка испытания', type: 'error' });
+    }
+    setLoading(false);
+  };
+
   // ===== COMBAT ACTION =====
   const handleCombatAction = async (action: string, itemId?: string, abilityId?: string) => {
     if (!player || !player.inCombat) return;
@@ -753,8 +921,13 @@ export default function CursedDepths() {
         addFloatingDamage(`+${data.goldGained} 💰`, '#fbbf24');
         if (data.dungeonCompleted) {
           setMessage({ text: `🏆 Данж пройден! +${data.xpGained} XP, +${data.goldGained} золота`, type: 'success' });
+        } else if (data.trialCompleted) {
+          setMessage({ text: `🏆 Испытание пройдено! +${data.xpGained} XP, +${data.goldGained} золота`, type: 'success' });
         } else if (data.dungeonRoomCleared) {
           setMessage({ text: `Комната пройдена! Следующий враг уже здесь...`, type: 'success' });
+        } else if (data.trialJunction) {
+          setTrialJunction(data.trialJunction);
+          setMessage({ text: 'Комната пройдена! Впереди развилка.', type: 'success' });
         } else {
           setMessage({ text: `Победа! +${data.xpGained} XP, +${data.goldGained} золота`, type: 'success' });
         }
@@ -1298,7 +1471,13 @@ export default function CursedDepths() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <GameHeader player={player} locationIcon={location?.icon} locationName={location?.nameRu} />
+      <GameHeader
+        player={player}
+        locationIcon={location?.icon}
+        locationName={location?.nameRu}
+        crownShards={premiumState?.crownShards ?? 0}
+        onOpenPremium={() => setTab('premium')}
+      />
 
       {/* Message toast area */}
       {message && (
@@ -1325,6 +1504,7 @@ export default function CursedDepths() {
       )}
 
       <ExplorationEventModal event={explorationEvent} loading={loading} onChoose={handleEventChoice} />
+      <TrialJunctionModal junction={trialJunction} loading={loading} onChoose={handleTrialChoose} />
 
       {/* Main content */}
       <main className="flex-1 overflow-hidden">
@@ -1347,6 +1527,7 @@ export default function CursedDepths() {
             onSellItem={handleSellItem}
             onStartDungeon={handleStartDungeon}
             onStartAbyss={handleStartAbyss}
+            onStartTrial={handleStartTrial}
           />
 
           <CombatTab
@@ -1418,6 +1599,20 @@ export default function CursedDepths() {
             fortress={fortress}
             fortressLoading={fortressLoading}
             onAssaultFortress={handleAssaultFortress}
+          />
+
+          <PremiumShopTab
+            state={premiumState}
+            loading={premiumLoading}
+            buyingPackId={buyingPackId}
+            onBuyPack={handleBuyShardPack}
+            onRedeemSku={handleRedeemSku}
+            player={player}
+            spinningWheel={spinningWheel}
+            lastFortuneResult={lastFortuneResult}
+            onSpinWheel={handleSpinFortuneWheel}
+            changingRace={changingRace}
+            onChangeRace={handleChangeRace}
           />
 
           <CodexTab entries={codexEntries} loading={codexLoading} />

@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
   try {
     const player = await db.player.findUnique({
       where: { telegramId: auth.telegramId },
-      include: { race: true, codexEntries: true, recipes: true },
+      include: { race: true, codexEntries: true, recipes: true, guildMember: true },
     });
     if (!player) return NextResponse.json({ error: 'Персонаж не найден' }, { status: 404 });
 
@@ -22,6 +22,10 @@ export async function GET(req: NextRequest) {
       totalKills: player.totalKills,
       bestAbyssDepth: player.bestAbyssDepth,
       recipesLearnedCount: player.recipes.length,
+      totalCrafts: player.totalCrafts,
+      partyWins: player.partyWins,
+      pvpWins: player.pvpWins,
+      inGuild: !!player.guildMember,
     };
 
     const alreadyUnlockedIds = new Set(player.codexEntries.map(e => e.entryId));

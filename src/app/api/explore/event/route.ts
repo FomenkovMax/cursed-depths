@@ -7,6 +7,7 @@ import { addItemToInventory } from '@/lib/inventory-utils';
 import { initBossState } from '@/lib/boss-mechanics';
 import { computeEquipmentBonuses } from '@/lib/equipment-stats';
 import { isInActivePartyCombat } from '@/lib/party-guards';
+import { isDeathDebuffActive, DEATH_DEBUFF_XP_MULT } from '@/lib/premium-shop';
 
 export async function POST(req: NextRequest) {
   const auth = validateTelegramRequest(req);
@@ -37,7 +38,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Недостаточно золота (нужно 30)' }, { status: 400 });
     }
 
-    const resolution = resolveEventChoice(eventId, choiceId, player.level);
+    // Проверки характеристик (rollStatCheck) считают эффективный стат так же, как и бой —
+    // с учётом экипировки, а не только сырых очков персонажа.
+    const equipBonuses = computeEquipmentBonuses(player.inventory);
+    const resolution = resolveEventChoice(eventId, choiceId, player.level, {
+      strength: player.strength + equipBonuses.strength,
+      dexterity: player.dexterity + equipBonuses.dexterity,
+      vitality: player.vitality + equipBonuses.vitality,
+      intellect: player.intellect + equipBonuses.intellect,
+      willpower: player.willpower + equipBonuses.willpower,
+      instinct: player.instinct + equipBonuses.instinct,
+    });
     if (!resolution) {
       return NextResponse.json({ error: 'Неизвестный выбор' }, { status: 400 });
     }
@@ -70,7 +81,6 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    const equipBonuses = computeEquipmentBonuses(player.inventory);
     const effectiveMaxHp = player.maxHp + equipBonuses.hp;
     const effectiveMaxMp = player.maxMp + equipBonuses.mp;
     // События никогда не убивают напрямую — минимум 1 HP, чтобы не давать нечестную "смерть от текста".
@@ -78,7 +88,9 @@ export async function POST(req: NextRequest) {
     const newMp = Math.max(0, Math.min(effectiveMaxMp, player.mp + Math.round(effectiveMaxMp * resolution.mpDeltaPercent)));
     const newGold = Math.max(0, player.gold + resolution.goldDelta);
 
-    let newXp = player.xp + resolution.xpDelta;
+    // Дебафф смерти (-15% опыта, премиум иммунен) действует на любой источник опыта, не только бой.
+    const xpDebuffMult = isDeathDebuffActive(player.deathDebuffUntil, player.premiumUntil) ? DEATH_DEBUFF_XP_MULT : 1;
+    let newXp = player.xp + Math.round(resolution.xpDelta * xpDebuffMult);
     let newLevel = player.level;
     let newXpToNext = player.xpToNext;
     let newStatPoints = player.statPoints;

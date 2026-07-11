@@ -5,6 +5,7 @@ import { computeEquipmentBonuses } from '@/lib/equipment-stats';
 import { stageUnlockLevel, type PlayerCombatStats } from '@/lib/combat-engine';
 import { simulatePvpFight, eloDelta, clampRating, leagueForRating, type PvpCombatant } from '@/lib/pvp';
 import { incrementQuestProgress } from '@/lib/quests';
+import { isDeathDebuffActive, DEATH_DEBUFF_XP_MULT } from '@/lib/premium-shop';
 
 async function buildCombatant(playerId: string) {
   const player = await db.player.findUnique({
@@ -84,7 +85,8 @@ export async function POST(req: NextRequest) {
     let newMaxHp = attackerBuild.player.maxHp;
 
     if (attackerWon) {
-      xpGained = WIN_XP;
+      const xpDebuffMult = isDeathDebuffActive(attackerBuild.player.deathDebuffUntil, attackerBuild.player.premiumUntil) ? DEATH_DEBUFF_XP_MULT : 1;
+      xpGained = Math.round(WIN_XP * xpDebuffMult);
       goldGained = WIN_GOLD;
       newXp = attackerBuild.player.xp + xpGained;
       while (newXp >= newXpToNext) {

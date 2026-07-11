@@ -65,12 +65,14 @@ import {
 import { computeEquipmentBonuses } from '@/lib/equipment-stats';
 import { incrementQuestProgress } from '@/lib/quests';
 import { findDungeon } from '@/lib/dungeons';
+import { findTrial, type TrialRoomOption } from '@/lib/trials';
 import { rollGearInstance, rollCurrencyDrop } from '@/lib/item-affixes';
 import { rollTemperScrollDrop } from '@/lib/item-enhancement';
 import { dungeonModifierEffect } from '@/lib/dungeon-modifiers';
 import { abyssScaling, abyssEnemyIdForDepth, isEliteDepth } from '@/lib/abyss';
 import { FORTRESS_ID, CONTROL_GOLD_BONUS } from '@/lib/fortress';
 import { bossIntroLine, deathMessage } from '@/lib/exploration-flavor';
+import { isPremiumActive, PREMIUM_GOLD_XP_MULT, isDeathDebuffActive, DEATH_DEBUFF_XP_MULT, DEATH_DEBUFF_HOURS } from '@/lib/premium-shop';
 
 export async function POST(req: NextRequest) {
   const auth = validateTelegramRequest(req);
@@ -149,6 +151,13 @@ export async function POST(req: NextRequest) {
         fortressGoldMult = 1 + CONTROL_GOLD_BONUS;
       }
     }
+    // Премиум-статус (lib/premium-shop.ts, куплен за Осколки Короны) — +15% золота и опыта с
+    // ЛЮБОГО боя, умножается поверх всех остальных множителей выше, тот же приём, что fortressGoldMult.
+    const premiumMult = isPremiumActive(player.premiumUntil) ? PREMIUM_GOLD_XP_MULT : 1;
+    // Дебафф смерти (-15% опыта, премиум иммунен) умножается ОТДЕЛЬНО от premiumMult — оба не
+    // могут быть активны одновременно (isDeathDebuffActive сама проверяет премиум), но пишем
+    // как самостоятельный множитель, а не ветку внутри premiumMult, чтобы логика была явной.
+    const xpMultTotal = premiumMult * (isDeathDebuffActive(player.deathDebuffUntil, player.premiumUntil) ? DEATH_DEBUFF_XP_MULT : 1);
 
     // Track deferred DB operations for transaction
     let itemToConsume: { id: string; delete: boolean } | null = null;
@@ -518,8 +527,8 @@ export async function POST(req: NextRequest) {
     if (enemyHp <= 0 && !combatOver) {
       combatOver = true;
       playerWon = true;
-      xpGained = Math.round(enemyTemplate.xp * dungeonEffect.xpMult * abyssEffect.xpMult);
-      goldGained = Math.round((enemyTemplate.gold + rollDice('1d4') * Math.ceil(player.level / 2)) * dungeonEffect.goldMult * abyssEffect.goldMult * fortressGoldMult);
+      xpGained = Math.round(enemyTemplate.xp * dungeonEffect.xpMult * abyssEffect.xpMult * xpMultTotal);
+      goldGained = Math.round((enemyTemplate.gold + rollDice('1d4') * Math.ceil(player.level / 2)) * dungeonEffect.goldMult * abyssEffect.goldMult * fortressGoldMult * premiumMult);
       droppedItems.push(...rollLoot(enemyTemplate.lootTable));
       const currencyDrop = rollCurrencyDrop(enemyTemplate.isBoss);
       if (currencyDrop) droppedItems.push(currencyDrop);
@@ -730,8 +739,8 @@ export async function POST(req: NextRequest) {
             }
           } else {
             dungeonJustCompleted = true;
-            xpGained += Math.round(dungeon.completionReward.xp * dungeonEffect.xpMult);
-            goldGained += Math.round(dungeon.completionReward.gold * dungeonEffect.goldMult * fortressGoldMult);
+            xpGained += Math.round(dungeon.completionReward.xp * dungeonEffect.xpMult * xpMultTotal);
+            goldGained += Math.round(dungeon.completionReward.gold * dungeonEffect.goldMult * fortressGoldMult * premiumMult);
             for (const rewardItemId of dungeon.completionReward.items ?? []) {
               const rewardItemData = ITEMS.find(i => i.id === rewardItemId);
               if (rewardItemData) {
@@ -745,6 +754,53 @@ export async function POST(req: NextRequest) {
           }
         } else {
           combatLog.push({ text: `Забег по данжу «${dungeon.nameRu}» прерван.`, turn: currentTurn + 3 });
+        }
+      }
+    }
+
+    // Испытания (lib/trials.ts) — ветвящийся аналог данжей выше. Отличие от линейной ветки:
+    // при победе в комнате-развилке НЕ спавним следующего врага автоматически — если развилок
+    // ещё осталось, отдаём варианты направлений во фронт (trialNextJunctionOptions), а бой
+    // не продолжается (inCombat=false), пока игрок не выберет через /api/trial/choose. Комната
+    // с индексом trial.junctions.length — это всегда гарантированный босс, без выбора.
+    let trialNextJunctionIndex: number | null = null;
+    let trialNextJunctionOptions: TrialRoomOption[] | null = null;
+    let trialBossEnemy: typeof ENEMIES[0] | null = null;
+    let trialBossEnemyHp = 0;
+    let trialJustCompleted = false;
+    if (player.dungeonId && combatOver && !findDungeon(player.dungeonId)) {
+      const trial = findTrial(player.dungeonId);
+      if (trial) {
+        if (playerWon) {
+          const nextRoomIndex = player.dungeonRoom + 1;
+          if (nextRoomIndex < trial.junctions.length) {
+            trialNextJunctionIndex = nextRoomIndex;
+            trialNextJunctionOptions = trial.junctions[nextRoomIndex].options;
+            combatLog.push({ text: `Развилка ${nextRoomIndex + 1}/${trial.junctions.length}: выберите путь.`, turn: currentTurn + 3 });
+          } else if (nextRoomIndex === trial.junctions.length) {
+            trialBossEnemy = ENEMIES.find(e => e.id === trial.bossEnemyId) ?? null;
+            if (trialBossEnemy) {
+              trialBossEnemyHp = trialBossEnemy.hp + Math.floor(Math.random() * 5);
+              const bossLine = bossIntroLine(trialBossEnemy.id);
+              combatLog.push({ text: bossLine ?? `${trialBossEnemy.nameRu} появляется!`, turn: currentTurn + 3 });
+            }
+          } else {
+            trialJustCompleted = true;
+            xpGained += Math.round(trial.completionReward.xp * xpMultTotal);
+            goldGained += Math.round(trial.completionReward.gold * fortressGoldMult * premiumMult);
+            for (const rewardItemId of trial.completionReward.items ?? []) {
+              const rewardItemData = ITEMS.find(i => i.id === rewardItemId);
+              if (rewardItemData) {
+                lootItems.push({ itemData: rewardItemData, quantity: 1 });
+                droppedItems.push(rewardItemId);
+                combatLog.push({ text: `Найдено: ${rewardItemData.nameRu}!`, turn: currentTurn + 3 });
+              }
+            }
+            combatLog.push({ text: trial.completionLoreRu, turn: currentTurn + 3 });
+            combatLog.push({ text: `Испытание «${trial.nameRu}» пройдено! Бонус: +${trial.completionReward.xp} XP, +${trial.completionReward.gold} золота`, turn: currentTurn + 3 });
+          }
+        } else {
+          combatLog.push({ text: `Испытание «${trial.nameRu}» прервано.`, turn: currentTurn + 3 });
         }
       }
     }
@@ -792,7 +848,7 @@ export async function POST(req: NextRequest) {
       hp: playerHp,
       mp: playerMp,
       combatLog: JSON.stringify(combatLog),
-      bossState: combatOver && !dungeonNextEnemy && !abyssNextEnemy ? null : JSON.stringify(bossState),
+      bossState: combatOver && !dungeonNextEnemy && !abyssNextEnemy && !trialBossEnemy ? null : JSON.stringify(bossState),
       xp: newXp,
       gold: { increment: goldGained },
       ...(playerWon ? { totalKills: { increment: 1 } } : {}),
@@ -824,6 +880,22 @@ export async function POST(req: NextRequest) {
       updateData.bossState = JSON.stringify(initBossState(abyssNextEnemy.mechanics));
       updateData.abyssDepth = abyssNextDepth;
       if (abyssNextDepth > player.bestAbyssDepth) updateData.bestAbyssDepth = abyssNextDepth;
+    } else if (trialBossEnemy) {
+      // Все развилки испытания пройдены — гарантированный босс спавнится сразу, без выбора.
+      updateData.inCombat = true;
+      updateData.enemyId = trialBossEnemy.id;
+      updateData.enemyHp = trialBossEnemyHp;
+      updateData.enemyMaxHp = trialBossEnemyHp;
+      updateData.bossState = JSON.stringify(initBossState(trialBossEnemy.mechanics));
+      updateData.dungeonRoom = player.dungeonRoom + 1;
+    } else if (trialNextJunctionIndex !== null) {
+      // Комната-развилка пройдена, но следующая комната ещё не выбрана — бой не продолжается,
+      // игрок должен сходить в /api/trial/choose прежде чем бой начнётся снова.
+      updateData.inCombat = false;
+      updateData.enemyId = null;
+      updateData.enemyHp = null;
+      updateData.enemyMaxHp = null;
+      updateData.dungeonRoom = trialNextJunctionIndex;
     } else if (combatOver) {
       updateData.inCombat = false;
       updateData.enemyId = null;
@@ -852,8 +924,14 @@ export async function POST(req: NextRequest) {
         updateData.gold = { decrement: goldLoss };
         if (goldLoss > 0) {
           combatLog.push({ text: `Вы потеряли ${goldLoss} золота при смерти.`, turn: currentTurn + 2 });
-          updateData.combatLog = JSON.stringify(combatLog);
         }
+        // Дебафф -15% опыта на 24 часа (lib/premium-shop.ts) — премиум полностью иммунен, ставить
+        // дебафф ему бессмысленно (isDeathDebuffActive всё равно проигнорирует поле из-за премиума).
+        if (!isPremiumActive(player.premiumUntil)) {
+          updateData.deathDebuffUntil = new Date(Date.now() + DEATH_DEBUFF_HOURS * 60 * 60 * 1000);
+          combatLog.push({ text: `Опыт снижен на 15% на ${DEATH_DEBUFF_HOURS} часов.`, turn: currentTurn + 2 });
+        }
+        updateData.combatLog = JSON.stringify(combatLog);
         // Player died - teleport to town with 1 HP
         updateData.hp = 1;
         updateData.locationId = 'town';
@@ -909,7 +987,7 @@ export async function POST(req: NextRequest) {
       if (playerWon) {
         await incrementQuestProgress(tx, player.id, 'kill');
       }
-      if (dungeonJustCompleted) {
+      if (dungeonJustCompleted || trialJustCompleted) {
         await incrementQuestProgress(tx, player.id, 'dungeon');
       }
 
@@ -938,6 +1016,10 @@ export async function POST(req: NextRequest) {
       leveledUp,
       dungeonRoomCleared: !!dungeonNextEnemy,
       dungeonCompleted: dungeonJustCompleted,
+      trialJunction: trialNextJunctionOptions
+        ? { options: trialNextJunctionOptions.map(o => ({ direction: o.direction, type: o.type, label: o.label })) }
+        : undefined,
+      trialCompleted: trialJustCompleted,
     });
   } catch (error) {
     console.error('[API] Route error:', error);

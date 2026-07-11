@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { validateTelegramRequest } from '@/lib/auth';
-import { STASH_CAPACITY } from '@/lib/stash';
+import { effectiveStashCapacity } from '@/lib/stash';
 
 export async function POST(req: NextRequest) {
   const auth = validateTelegramRequest(req);
@@ -20,9 +20,10 @@ export async function POST(req: NextRequest) {
     if (!item) return NextResponse.json({ error: 'Предмет не найден' }, { status: 404 });
     if (item.equipped) return NextResponse.json({ error: 'Сначала снимите предмет' }, { status: 400 });
 
+    const capacity = effectiveStashCapacity(player.stashCapacityBonus);
     const stashCount = await db.stashItem.count({ where: { playerId: player.id } });
-    if (stashCount >= STASH_CAPACITY) {
-      return NextResponse.json({ error: `Хранилище заполнено (${STASH_CAPACITY} слотов)` }, { status: 400 });
+    if (stashCount >= capacity) {
+      return NextResponse.json({ error: `Хранилище заполнено (${capacity} слотов)` }, { status: 400 });
     }
 
     await db.$transaction(async (tx) => {

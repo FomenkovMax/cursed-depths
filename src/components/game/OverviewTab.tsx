@@ -9,6 +9,7 @@ import { computeEquipmentBonuses } from '@/lib/equipment-stats';
 import { stageUnlockLevel } from '@/lib/combat-engine';
 import { parsePassiveEffect } from '@/lib/passive-engine';
 import { dungeonForLocation } from '@/lib/dungeons';
+import { trialForLocation } from '@/lib/trials';
 import { ABYSS_LOCATION_ID, ABYSS_MIN_LEVEL } from '@/lib/abyss';
 import { MarketPanel } from './MarketPanel';
 
@@ -34,6 +35,7 @@ interface OverviewTabProps {
   onSellItem: (inventoryId: string) => void;
   onStartDungeon: (dungeonId: string) => void;
   onStartAbyss: () => void;
+  onStartTrial: (trialId: string) => void;
 }
 
 export function OverviewTab({
@@ -52,10 +54,12 @@ export function OverviewTab({
   onSellItem,
   onStartDungeon,
   onStartAbyss,
+  onStartTrial,
 }: OverviewTabProps) {
   const playerInventory = player?.inventory || [];
   const gearBonuses = computeEquipmentBonuses(playerInventory);
   const dungeon = player ? dungeonForLocation(player.locationId) : null;
+  const trial = player ? trialForLocation(player.locationId) : null;
   const canEnterAbyss = player && player.locationId === ABYSS_LOCATION_ID;
 
   return (
@@ -168,6 +172,34 @@ export function OverviewTab({
               disabled={loading || player.inCombat || player.hp <= 0 || player.level < dungeon.minLevel}
             >
               {dungeon.icon} Войти в данж
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Испытание — ветвящийся аналог данжа (lib/trials.ts): на каждой развилке видно тип
+          обеих троп заранее, маршрут можно спланировать и запомнить, а не просто идти по прямой. */}
+      {player && trial && (
+        <Card className="border-primary/40 bg-primary/5">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3 mb-3">
+              <span className="text-3xl">{trial.icon}</span>
+              <div>
+                <h3 className="font-bold text-sm">{trial.nameRu}</h3>
+                <p className="text-xs text-muted-foreground">{trial.descriptionRu}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 mb-3 flex-wrap">
+              <Badge variant="outline" className="text-[10px] h-4 px-1">🗺️ {trial.junctions.length} развилки</Badge>
+              <Badge variant="outline" className="text-[10px] h-4 px-1">Ур. {trial.minLevel}+</Badge>
+              <Badge variant="outline" className="text-[10px] h-4 px-1 text-gold">🎁 +{trial.completionReward.xp} XP, +{trial.completionReward.gold} 💰</Badge>
+            </div>
+            <Button
+              className="w-full h-10"
+              onClick={() => onStartTrial(trial.id)}
+              disabled={loading || player.inCombat || player.hp <= 0 || player.level < trial.minLevel}
+            >
+              {trial.icon} Войти в испытание
             </Button>
           </CardContent>
         </Card>

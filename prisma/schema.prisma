@@ -60,6 +60,17 @@ model Player {
   worldBossAttackDate   String? // "YYYY-MM-DD" последней атаки — тот же паттерн, что lastDailyReward
   fortressAssaultsToday Int @default(0) // штурмы Крепости (lib/fortress.ts) — тот же паттерн
   fortressAssaultDate   String?
+  crownShards     Int       @default(0) // премиум-валюта "Осколки Короны" (lib/premium-shop.ts) —
+                            // покупается за Telegram Stars, тратится на PREMIUM_CATALOG
+  premiumUntil    DateTime? // до какого момента активен премиум-статус — null/в прошлом = нет
+  stashCapacityBonus Int    @default(0) // разовое расширение хранилища сверх STASH_CAPACITY
+                            // (покупка за Осколки Короны), накопительное
+  deathDebuffUntil DateTime? // -15% опыта до этого момента (см. lib/premium-shop.ts
+                            // isDeathDebuffActive) — ставится при каждой смерти, премиум
+                            // полностью иммунен (проверяется вместе с этим полем, не отдельным флагом)
+  fortuneSpinsToday Int     @default(0) // сколько раз колесо фортуны (lib/fortune-wheel.ts)
+                            // крутили сегодня — тот же паттерн lazy-reset, что worldBossAttacksToday
+  fortuneSpinDate   String? // "YYYY-MM-DD" последнего вращения
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
@@ -76,12 +87,32 @@ model Player {
   worldBossHits   WorldBossContribution[]
   stashItems      StashItem[]
   fortressAssaults FortressContribution[]
+  starPurchases   StarPurchase[]
 
   @@index([telegramId])
   @@index([locationId])
   @@index([level])
   @@index([raceId])
   @@index([classId])
+}
+
+// Журнал платежей Telegram Stars (lib/premium-shop.ts) — telegramChargeId уникален и служит
+// ключом идемпотентности: Telegram может повторно прислать successful_payment при сетевых
+// проблемах на своей стороне, и без этой записи повторная доставка задвоила бы начисление
+// Осколков Короны. Строка создаётся ТОЛЬКО в момент реального начисления (см.
+// /api/telegram/webhook), не в момент создания инвойса — invoice может быть создан и так и не
+// оплачен.
+model StarPurchase {
+  id               String   @id @default(cuid())
+  playerId         String
+  player           Player   @relation(fields: [playerId], references: [id])
+  packId           String   // какой SHARD_PACKS.id был куплен
+  starsAmount      Int      // сколько Stars реально заплачено (для сверки/возвратов)
+  shardsGranted    Int      // сколько Осколков Короны начислено (с учётом бонуса пака)
+  telegramChargeId String   @unique
+  createdAt        DateTime @default(now())
+
+  @@index([playerId])
 }
 
 // Пати (совместный бой) — см. lib/party-combat-engine.ts. Игрок состоит максимум в одной

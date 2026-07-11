@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ItemIconTile } from '@/components/game/ItemIconTile';
-import { RARITY_COLORS, RARITY_NAMES_RU } from '@/lib/game-data';
+import { RARITY_COLORS, RARITY_NAMES_RU, ITEMS } from '@/lib/game-data';
 import { PlayerData, InventoryItem, StashItemView, SLOT_RU, ITEM_TYPE_RU, AFFIX_TIER_RU, AFFIX_TIER_COLORS, parseStats, parseAffixes } from '@/lib/game-types';
 
 interface InventoryTabProps {
@@ -25,6 +25,49 @@ type GridItem = InventoryItem | StashItemView;
 
 function statLabel(k: string): string {
   return k === 'attack' ? 'АТК' : k === 'defense' ? 'ЗАЩ' : k === 'healHp' ? 'ЛечHP' : k === 'healMp' ? 'ЛечMP' : k === 'damage' ? 'Урон' : k;
+}
+
+// Расположение "в полный рост": голова сверху по центру, амулет и первое кольцо по бокам
+// тела, оружие и второе кольцо на уровне рук, ноги внизу — читается как силуэт персонажа,
+// а не произвольная сетка. area-имена совпадают с полями Inventory.slot.
+const PORTRAIT_AREAS = `
+  ".      head   ."
+  "amulet body   ring1"
+  "weapon hands  ring2"
+  ".      legs   ."
+`;
+const PORTRAIT_SLOTS: { slot: string; area: string }[] = [
+  { slot: 'head', area: 'head' },
+  { slot: 'amulet', area: 'amulet' },
+  { slot: 'body', area: 'body' },
+  { slot: 'ring1', area: 'ring1' },
+  { slot: 'weapon', area: 'weapon' },
+  { slot: 'hands', area: 'hands' },
+  { slot: 'ring2', area: 'ring2' },
+  { slot: 'legs', area: 'legs' },
+];
+
+function PortraitGrid({ equipped, onSelect }: { equipped: InventoryItem[]; onSelect: (item: InventoryItem) => void }) {
+  const bySlot = new Map(equipped.map(i => [i.slot, i]));
+  return (
+    <div className="grid gap-2" style={{ gridTemplateAreas: PORTRAIT_AREAS, gridTemplateColumns: 'repeat(3, 1fr)' }}>
+      {PORTRAIT_SLOTS.map(({ slot, area }) => {
+        const item = bySlot.get(slot);
+        return (
+          <div key={slot} style={{ gridArea: area }} className="flex flex-col items-center gap-1">
+            {item ? (
+              <ItemIconTile item={item} equipped onClick={() => onSelect(item)} />
+            ) : (
+              <div className="aspect-square w-full rounded-lg border border-dashed border-border/50 bg-secondary/10 flex items-center justify-center text-muted-foreground/40 text-lg">
+                {slot === 'weapon' ? '⚔️' : slot === 'head' ? '👤' : slot === 'body' ? '👕' : slot === 'hands' ? '🤚' : slot === 'legs' ? '🦵' : slot === 'amulet' ? '📿' : '💍'}
+              </div>
+            )}
+            <span className="text-[9px] text-muted-foreground text-center leading-none">{SLOT_RU[slot] ?? slot}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
 }
 
 export function InventoryTab({
@@ -88,21 +131,16 @@ export function InventoryTab({
         </Card>
       ) : (
         <>
-          {/* Экипировано */}
+          {/* Портрет — расположение по слотам "в полный рост", а не плоская сетка: голова
+              сверху, тело в центре с амулетом/кольцом по бокам, оружие и вторая рука ниже,
+              ноги внизу. Под каждый предмет своя иконка уже есть (ItemIconTile), место под
+              арт персонажа/анимацию класса — на будущее (см. обсуждение с пользователем). */}
           <Card className="border-border">
             <CardHeader className="pb-2 pt-3 px-4">
-              <CardTitle className="text-sm">Экипировано</CardTitle>
+              <CardTitle className="text-sm">Портрет</CardTitle>
             </CardHeader>
             <CardContent className="px-4 pb-3">
-              {equipped.length === 0 ? (
-                <p className="text-xs text-muted-foreground text-center py-2">Ничего не экипировано</p>
-              ) : (
-                <div className="grid grid-cols-5 gap-2">
-                  {equipped.map(item => (
-                    <ItemIconTile key={item.id} item={item} equipped onClick={() => setDetail({ item, source: 'inventory' })} />
-                  ))}
-                </div>
-              )}
+              <PortraitGrid equipped={equipped} onSelect={item => setDetail({ item, source: 'inventory' })} />
             </CardContent>
           </Card>
 
@@ -163,6 +201,18 @@ export function InventoryTab({
                     {detailAffixes.map((a, i) => <div key={i}>• {a.labelRu} +{a.value}</div>)}
                   </div>
                 )}
+                {/* Флейвор-текст базового предмета (ITEMS[].descriptionRu, game-data.ts) — ни
+                    инвентарь, ни хранилище раньше его вообще не показывали, хотя часть предметов
+                    (легендарки/мифики) уже написана в духе Dark Souls. Общий для всех экземпляров
+                    itemId, ищется по статичным данным, а не хранится в самой Inventory-строке. */}
+                {(() => {
+                  const baseItem = ITEMS.find(i => i.id === detail.item.itemId);
+                  return baseItem?.descriptionRu ? (
+                    <p className="text-[11px] text-muted-foreground leading-relaxed italic pt-1.5 border-t border-border/60">
+                      {baseItem.descriptionRu}
+                    </p>
+                  ) : null;
+                })()}
               </div>
               <div className="flex flex-col gap-1.5 pt-1">
                 {detail.source === 'stash' ? (

@@ -17,6 +17,13 @@ export const WORLD_BOSS_NAME = 'Пробуждённый Исполин Пепл
  * пробуждение одного и того же существа, каждый раз чуть крепче прошлого. */
 export const WORLD_BOSS_LORE = 'Когда-то он охранял первый Разлом и не смог его удержать. Голос Карсуса поднимает пепел его тела снова и снова — каждое воплощение чуть крепче и чуть голоднее прошлого.';
 export const DAILY_ATTACK_CAP = 5;
+/** Премиум даёт вдвое больше попыток в день — чем больше атак, тем больше суммарный урон и,
+ * значит, доля в rewardForShare (см. ниже): это ощутимое, а не косметическое преимущество. */
+export const PREMIUM_DAILY_ATTACK_CAP = 10;
+
+export function dailyAttackCapFor(isPremium: boolean): number {
+  return isPremium ? PREMIUM_DAILY_ATTACK_CAP : DAILY_ATTACK_CAP;
+}
 
 const BASE_MAX_HP = 8000;
 const MAX_HP_GROWTH = 1.12; // на 12% крепче с каждым следующим воплощением

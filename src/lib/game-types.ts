@@ -257,6 +257,16 @@ export interface ExplorationEvent {
   choices: EventChoice[];
 }
 
+export interface TrialJunctionOption {
+  direction: 'left' | 'right';
+  type: 'monster' | 'reward' | 'trap';
+  label: string;
+}
+
+export interface TrialJunctionView {
+  options: TrialJunctionOption[];
+}
+
 export interface AchievementEntry {
   id: string;
   nameRu: string;

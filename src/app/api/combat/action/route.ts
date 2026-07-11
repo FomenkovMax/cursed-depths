@@ -65,6 +65,7 @@ import {
 import { computeEquipmentBonuses } from '@/lib/equipment-stats';
 import { incrementQuestProgress } from '@/lib/quests';
 import { findDungeon } from '@/lib/dungeons';
+import { findTrial, type TrialRoomOption } from '@/lib/trials';
 import { rollGearInstance, rollCurrencyDrop } from '@/lib/item-affixes';
 import { rollTemperScrollDrop } from '@/lib/item-enhancement';
 import { dungeonModifierEffect } from '@/lib/dungeon-modifiers';
@@ -749,6 +750,53 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Испытания (lib/trials.ts) — ветвящийся аналог данжей выше. Отличие от линейной ветки:
+    // при победе в комнате-развилке НЕ спавним следующего врага автоматически — если развилок
+    // ещё осталось, отдаём варианты направлений во фронт (trialNextJunctionOptions), а бой
+    // не продолжается (inCombat=false), пока игрок не выберет через /api/trial/choose. Комната
+    // с индексом trial.junctions.length — это всегда гарантированный босс, без выбора.
+    let trialNextJunctionIndex: number | null = null;
+    let trialNextJunctionOptions: TrialRoomOption[] | null = null;
+    let trialBossEnemy: typeof ENEMIES[0] | null = null;
+    let trialBossEnemyHp = 0;
+    let trialJustCompleted = false;
+    if (player.dungeonId && combatOver && !findDungeon(player.dungeonId)) {
+      const trial = findTrial(player.dungeonId);
+      if (trial) {
+        if (playerWon) {
+          const nextRoomIndex = player.dungeonRoom + 1;
+          if (nextRoomIndex < trial.junctions.length) {
+            trialNextJunctionIndex = nextRoomIndex;
+            trialNextJunctionOptions = trial.junctions[nextRoomIndex].options;
+            combatLog.push({ text: `Развилка ${nextRoomIndex + 1}/${trial.junctions.length}: выберите путь.`, turn: currentTurn + 3 });
+          } else if (nextRoomIndex === trial.junctions.length) {
+            trialBossEnemy = ENEMIES.find(e => e.id === trial.bossEnemyId) ?? null;
+            if (trialBossEnemy) {
+              trialBossEnemyHp = trialBossEnemy.hp + Math.floor(Math.random() * 5);
+              const bossLine = bossIntroLine(trialBossEnemy.id);
+              combatLog.push({ text: bossLine ?? `${trialBossEnemy.nameRu} появляется!`, turn: currentTurn + 3 });
+            }
+          } else {
+            trialJustCompleted = true;
+            xpGained += trial.completionReward.xp;
+            goldGained += Math.round(trial.completionReward.gold * fortressGoldMult);
+            for (const rewardItemId of trial.completionReward.items ?? []) {
+              const rewardItemData = ITEMS.find(i => i.id === rewardItemId);
+              if (rewardItemData) {
+                lootItems.push({ itemData: rewardItemData, quantity: 1 });
+                droppedItems.push(rewardItemId);
+                combatLog.push({ text: `Найдено: ${rewardItemData.nameRu}!`, turn: currentTurn + 3 });
+              }
+            }
+            combatLog.push({ text: trial.completionLoreRu, turn: currentTurn + 3 });
+            combatLog.push({ text: `Испытание «${trial.nameRu}» пройдено! Бонус: +${trial.completionReward.xp} XP, +${trial.completionReward.gold} золота`, turn: currentTurn + 3 });
+          }
+        } else {
+          combatLog.push({ text: `Испытание «${trial.nameRu}» прервано.`, turn: currentTurn + 3 });
+        }
+      }
+    }
+
     // Бездонный Разлом (lib/abyss.ts) — тот же паттерн, что и у данжей выше, но без конца:
     // при победе всегда спавнится следующая, более глубокая комната, пока игрок не сбежит
     // или не погибнет. bestAbyssDepth обновляется отдельно ниже, в updateData.
@@ -792,7 +840,7 @@ export async function POST(req: NextRequest) {
       hp: playerHp,
       mp: playerMp,
       combatLog: JSON.stringify(combatLog),
-      bossState: combatOver && !dungeonNextEnemy && !abyssNextEnemy ? null : JSON.stringify(bossState),
+      bossState: combatOver && !dungeonNextEnemy && !abyssNextEnemy && !trialBossEnemy ? null : JSON.stringify(bossState),
       xp: newXp,
       gold: { increment: goldGained },
       ...(playerWon ? { totalKills: { increment: 1 } } : {}),
@@ -824,6 +872,22 @@ export async function POST(req: NextRequest) {
       updateData.bossState = JSON.stringify(initBossState(abyssNextEnemy.mechanics));
       updateData.abyssDepth = abyssNextDepth;
       if (abyssNextDepth > player.bestAbyssDepth) updateData.bestAbyssDepth = abyssNextDepth;
+    } else if (trialBossEnemy) {
+      // Все развилки испытания пройдены — гарантированный босс спавнится сразу, без выбора.
+      updateData.inCombat = true;
+      updateData.enemyId = trialBossEnemy.id;
+      updateData.enemyHp = trialBossEnemyHp;
+      updateData.enemyMaxHp = trialBossEnemyHp;
+      updateData.bossState = JSON.stringify(initBossState(trialBossEnemy.mechanics));
+      updateData.dungeonRoom = player.dungeonRoom + 1;
+    } else if (trialNextJunctionIndex !== null) {
+      // Комната-развилка пройдена, но следующая комната ещё не выбрана — бой не продолжается,
+      // игрок должен сходить в /api/trial/choose прежде чем бой начнётся снова.
+      updateData.inCombat = false;
+      updateData.enemyId = null;
+      updateData.enemyHp = null;
+      updateData.enemyMaxHp = null;
+      updateData.dungeonRoom = trialNextJunctionIndex;
     } else if (combatOver) {
       updateData.inCombat = false;
       updateData.enemyId = null;
@@ -909,7 +973,7 @@ export async function POST(req: NextRequest) {
       if (playerWon) {
         await incrementQuestProgress(tx, player.id, 'kill');
       }
-      if (dungeonJustCompleted) {
+      if (dungeonJustCompleted || trialJustCompleted) {
         await incrementQuestProgress(tx, player.id, 'dungeon');
       }
 
@@ -938,6 +1002,10 @@ export async function POST(req: NextRequest) {
       leveledUp,
       dungeonRoomCleared: !!dungeonNextEnemy,
       dungeonCompleted: dungeonJustCompleted,
+      trialJunction: trialNextJunctionOptions
+        ? { options: trialNextJunctionOptions.map(o => ({ direction: o.direction, type: o.type, label: o.label })) }
+        : undefined,
+      trialCompleted: trialJustCompleted,
     });
   } catch (error) {
     console.error('[API] Route error:', error);

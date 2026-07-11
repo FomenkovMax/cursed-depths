@@ -16,6 +16,7 @@ import {
   PartyData,
   PartyCombatStateResponse,
   ExplorationEvent,
+  TrialJunctionView,
   AchievementEntry,
   CodexEntryView,
   MarketListingView,
@@ -34,6 +35,7 @@ import { CharacterCreationScreen } from '@/components/game/CharacterCreationScre
 import { GameHeader } from '@/components/game/GameHeader';
 import { OverviewTab } from '@/components/game/OverviewTab';
 import { ExplorationEventModal } from '@/components/game/ExplorationEventModal';
+import { TrialJunctionModal } from '@/components/game/TrialJunctionModal';
 import { AchievementsTab } from '@/components/game/AchievementsTab';
 import { CodexTab } from '@/components/game/CodexTab';
 import { MarketTab } from '@/components/game/MarketTab';
@@ -90,6 +92,7 @@ export default function CursedDepths() {
   const [guildLoading, setGuildLoading] = useState(false);
   const [partyCombatState, setPartyCombatState] = useState<PartyCombatStateResponse | null>(null);
   const [explorationEvent, setExplorationEvent] = useState<ExplorationEvent | null>(null);
+  const [trialJunction, setTrialJunction] = useState<TrialJunctionView | null>(null);
   // Изученные рецепты тира 3 (game-data.ts CRAFTING_RECIPES) — отдельный стейт, а не поле
   // player: только GET /api/player включает player.recipes в ответ, остальные роуты
   // (explore/combat/travel) — нет, и setPlayer(data.player) после них затёр бы это поле,
@@ -728,6 +731,51 @@ export default function CursedDepths() {
     setLoading(false);
   };
 
+  // ===== TRIALS (lib/trials.ts) — ветвящийся аналог данжей, см. combat/action.ts trial-ветку =====
+  const handleStartTrial = async (trialId: string) => {
+    if (!player || player.inCombat) return;
+    setLoading(true);
+    try {
+      const data = await apiCall('/api/trial/start', 'POST', { trialId });
+      if (data.error) {
+        setMessage({ text: data.error, type: 'error' });
+      } else {
+        setPlayer(data.player);
+        setTrialJunction(data.trialJunction ?? null);
+        setMessage({ text: data.message, type: 'info' });
+      }
+    } catch {
+      setMessage({ text: 'Ошибка входа в испытание', type: 'error' });
+    }
+    setLoading(false);
+  };
+
+  const handleTrialChoose = async (direction: 'left' | 'right') => {
+    if (!trialJunction) return;
+    setLoading(true);
+    try {
+      const data = await apiCall('/api/trial/choose', 'POST', { direction });
+      setTrialJunction(null);
+      if (data.error) {
+        setMessage({ text: data.error, type: 'error' });
+      } else if (data.type === 'combat') {
+        setPlayer(data.player);
+        setCombatLog([{ text: data.message, turn: 0 }]);
+        setTab('combat');
+        setMessage({ text: data.message, type: 'info' });
+      } else if (data.type === 'junction') {
+        setPlayer(data.player);
+        if (data.goldDelta > 0) addFloatingDamage(`+${data.goldDelta} 💰`, '#fbbf24');
+        setMessage({ text: data.message, type: 'success' });
+        setTrialJunction(data.trialJunction ?? null);
+      }
+    } catch {
+      setTrialJunction(null);
+      setMessage({ text: 'Ошибка испытания', type: 'error' });
+    }
+    setLoading(false);
+  };
+
   // ===== COMBAT ACTION =====
   const handleCombatAction = async (action: string, itemId?: string, abilityId?: string) => {
     if (!player || !player.inCombat) return;
@@ -753,8 +801,13 @@ export default function CursedDepths() {
         addFloatingDamage(`+${data.goldGained} 💰`, '#fbbf24');
         if (data.dungeonCompleted) {
           setMessage({ text: `🏆 Данж пройден! +${data.xpGained} XP, +${data.goldGained} золота`, type: 'success' });
+        } else if (data.trialCompleted) {
+          setMessage({ text: `🏆 Испытание пройдено! +${data.xpGained} XP, +${data.goldGained} золота`, type: 'success' });
         } else if (data.dungeonRoomCleared) {
           setMessage({ text: `Комната пройдена! Следующий враг уже здесь...`, type: 'success' });
+        } else if (data.trialJunction) {
+          setTrialJunction(data.trialJunction);
+          setMessage({ text: 'Комната пройдена! Впереди развилка.', type: 'success' });
         } else {
           setMessage({ text: `Победа! +${data.xpGained} XP, +${data.goldGained} золота`, type: 'success' });
         }
@@ -1325,6 +1378,7 @@ export default function CursedDepths() {
       )}
 
       <ExplorationEventModal event={explorationEvent} loading={loading} onChoose={handleEventChoice} />
+      <TrialJunctionModal junction={trialJunction} loading={loading} onChoose={handleTrialChoose} />
 
       {/* Main content */}
       <main className="flex-1 overflow-hidden">
@@ -1347,6 +1401,7 @@ export default function CursedDepths() {
             onSellItem={handleSellItem}
             onStartDungeon={handleStartDungeon}
             onStartAbyss={handleStartAbyss}
+            onStartTrial={handleStartTrial}
           />
 
           <CombatTab

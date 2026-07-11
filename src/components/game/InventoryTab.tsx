@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ItemIconTile } from '@/components/game/ItemIconTile';
-import { RARITY_COLORS, RARITY_NAMES_RU } from '@/lib/game-data';
+import { RARITY_COLORS, RARITY_NAMES_RU, ITEMS } from '@/lib/game-data';
 import { PlayerData, InventoryItem, StashItemView, SLOT_RU, ITEM_TYPE_RU, AFFIX_TIER_RU, AFFIX_TIER_COLORS, parseStats, parseAffixes } from '@/lib/game-types';
 
 interface InventoryTabProps {
@@ -163,6 +163,18 @@ export function InventoryTab({
                     {detailAffixes.map((a, i) => <div key={i}>• {a.labelRu} +{a.value}</div>)}
                   </div>
                 )}
+                {/* Флейвор-текст базового предмета (ITEMS[].descriptionRu, game-data.ts) — ни
+                    инвентарь, ни хранилище раньше его вообще не показывали, хотя часть предметов
+                    (легендарки/мифики) уже написана в духе Dark Souls. Общий для всех экземпляров
+                    itemId, ищется по статичным данным, а не хранится в самой Inventory-строке. */}
+                {(() => {
+                  const baseItem = ITEMS.find(i => i.id === detail.item.itemId);
+                  return baseItem?.descriptionRu ? (
+                    <p className="text-[11px] text-muted-foreground leading-relaxed italic pt-1.5 border-t border-border/60">
+                      {baseItem.descriptionRu}
+                    </p>
+                  ) : null;
+                })()}
               </div>
               <div className="flex flex-col gap-1.5 pt-1">
                 {detail.source === 'stash' ? (

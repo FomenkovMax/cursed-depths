@@ -407,6 +407,10 @@ model Inventory {
   enhancementLevel Int @default(0) // "заточка" 0-10 — см. lib/item-enhancement.ts. Каждый
                       // успешный уровень прибавляет +1 к каждому числовому ключу в `stats`
                       // (уже включён в сумму `stats`, как и аффиксы).
+  enchantRerolls Int @default(0) // сколько раз точечный реброс (api/craft/enchant) применяли
+                      // к этому конкретному предмету — растущая цена (см. lib/item-affixes.ts
+                      // enchantCostForReroll) не даёт бесконечно фармить идеальный ролл на
+                      // одном экземпляре. Никогда не сбрасывается.
 
   @@index([playerId])
   @@index([itemId])

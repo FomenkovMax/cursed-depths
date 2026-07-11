@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { validateTelegramRequest } from '@/lib/auth';
-import { resolveFortressCycleIfNeeded, ASSAULT_DAILY_CAP } from '@/lib/fortress';
+import { resolveFortressCycleIfNeeded, ASSAULT_DAILY_CAP, FORTRESS_NAME, FORTRESS_LORE } from '@/lib/fortress';
 
 export async function GET(req: NextRequest) {
   const auth = validateTelegramRequest(req);
@@ -41,6 +41,8 @@ export async function GET(req: NextRequest) {
     const assaultsToday = player.fortressAssaultDate === today ? player.fortressAssaultsToday : 0;
 
     return NextResponse.json({
+      name: FORTRESS_NAME,
+      lore: FORTRESS_LORE,
       cycleId: fortress.cycleId,
       controllingGuild,
       standings,

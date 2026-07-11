@@ -71,6 +71,7 @@ export function GuildTab({
         <Card className="border-destructive/50 bg-destructive/5">
           <CardHeader className="pb-2 pt-3 px-4">
             <CardTitle className="text-sm">🌋 {worldBoss.boss.name} <span className="text-[10px] text-muted-foreground font-normal">(воплощение {worldBoss.boss.incarnation})</span></CardTitle>
+            <p className="text-[10px] text-muted-foreground leading-relaxed italic pt-0.5">{worldBoss.boss.lore}</p>
           </CardHeader>
           <CardContent className="px-4 pb-3 space-y-2">
             <div className="flex items-center gap-2">
@@ -105,7 +106,8 @@ export function GuildTab({
       {fortress && (
         <Card className="border-gold/50 bg-gold/5">
           <CardHeader className="pb-2 pt-3 px-4">
-            <CardTitle className="text-sm">🏯 Крепость <span className="text-[10px] text-muted-foreground font-normal">(цикл {fortress.cycleId})</span></CardTitle>
+            <CardTitle className="text-sm">🏯 {fortress.name} <span className="text-[10px] text-muted-foreground font-normal">(цикл {fortress.cycleId})</span></CardTitle>
+            <p className="text-[10px] text-muted-foreground leading-relaxed italic pt-0.5">{fortress.lore}</p>
           </CardHeader>
           <CardContent className="px-4 pb-3 space-y-2">
             <div className="text-xs">

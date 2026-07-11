@@ -13,6 +13,10 @@ import { basicAttackDamage, type PlayerCombatStats } from './combat-engine';
 import { db } from './db';
 
 export const FORTRESS_ID = 'current';
+export const FORTRESS_NAME = 'Забытая Цитадель';
+/** Ничья крепость без модели Fortress.name/lore в схеме — константа для отображения,
+ * не требует миграции. Объясняет, ЗА ЧТО дерутся гильдии, не только "+10% золота". */
+export const FORTRESS_LORE = 'Ни одна хроника не помнит, кто её построил. Гильдии бьются за право удерживать её не ради истории, а ради того, что она даёт удерживающим — пока флаг держится.';
 export const ASSAULT_DAILY_CAP = 3;
 export const CONTROL_GOLD_BONUS = 0.1;
 

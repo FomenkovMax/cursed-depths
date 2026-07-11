@@ -282,6 +282,8 @@ export interface FortressStandingView {
 }
 
 export interface FortressStateView {
+  name: string;
+  lore: string;
   cycleId: string;
   controllingGuild: FortressGuildRef | null;
   standings: FortressStandingView[];
@@ -316,7 +318,7 @@ export interface WorldBossContributorView {
 }
 
 export interface WorldBossStateView {
-  boss: { incarnation: number; name: string; hp: number; maxHp: number };
+  boss: { incarnation: number; name: string; hp: number; maxHp: number; lore: string };
   topContributors: WorldBossContributorView[];
   attacksLeftToday: number;
 }

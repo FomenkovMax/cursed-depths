@@ -148,8 +148,8 @@ function chainStepTitle(chain: { nameRu: string; icon: string }, stepIndex: numb
 const CHAIN_TYPE_VERB: Record<string, string> = { kill: 'Победите', explore: 'Исследуйте локацию', craft: 'Скрафтите' };
 const CHAIN_TYPE_NOUN: Record<string, string> = { kill: 'врагов', explore: 'раз', craft: 'предметов' };
 
-function chainStepDescription(step: { type: string; target: number }): string {
-  return `${CHAIN_TYPE_VERB[step.type]} ${step.target} ${CHAIN_TYPE_NOUN[step.type]}.`;
+function chainStepDescription(step: { type: string; target: number; narrativeRu: string }): string {
+  return `${step.narrativeRu} ${CHAIN_TYPE_VERB[step.type]} ${step.target} ${CHAIN_TYPE_NOUN[step.type]}.`;
 }
 
 /** Все questId, которые цепочка МОГЛА когда-либо выдать этому игроку — линейные шаги плюс обе

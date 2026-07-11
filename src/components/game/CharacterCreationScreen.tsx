@@ -9,6 +9,14 @@ import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import { GameMessage, RaceData, STAT_SHORT_RU, PATH_NAMES_RU, ROLE_NAMES_RU } from '@/lib/game-types';
 
+// Короткая философия каждого Пути из мифологии мира (см. lib/codex.ts 'karsus_paths') —
+// связывает механический выбор класса (path: 'ash'|'blight') с тем, ЧТО это значит в лоре,
+// прямо в момент выбора, а не только постфактум в кодексе, до которого игрок дойдёт нескоро.
+const PATH_FLAVOR_RU: Record<string, string> = {
+  ash: 'Путь тех, кто услышал правду Карсуса, сгорел в ней — и возродился честнее.',
+  blight: 'Путь тех, кто услышал правду Карсуса и сгнил в ней, выстроив себя заново из того, что осталось.',
+};
+
 interface CharacterCreationScreenProps {
   message: GameMessage;
   onDismissMessage: () => void;
@@ -103,6 +111,11 @@ export function CharacterCreationScreen({
           {/* Step 0: Name */}
           {creationStep === 0 && (
             <div className="animate-fade-in">
+              <p className="text-xs text-muted-foreground text-center leading-relaxed mb-4 italic">
+                Вы приходите в себя среди пепла, не помня, как здесь оказались — лишь шрам через
+                полмира и эхо голоса Карсуса в ушах, всё ещё зовущего вас по имени.
+                Того имени вы уже не помните. Самое время выбрать новое.
+              </p>
               <h2 className="text-lg font-bold mb-4 text-center">Как вас зовут, искатель?</h2>
               <Input
                 value={charName}
@@ -147,6 +160,14 @@ export function CharacterCreationScreen({
                                 </Badge>
                               ))}
                             </div>
+                            {/* Лор прародителя расы (race.lore, seed-data.ts) — раскрывается только
+                                при выборе, чтобы список карточек остался обозримым, но выбор
+                                вознаграждался историей, а не только цифрами статов. */}
+                            {charRace === race.slug && race.lore && (
+                              <p className="text-[11px] text-muted-foreground leading-relaxed mt-2 pt-2 border-t border-border/60 italic">
+                                {race.lore}
+                              </p>
+                            )}
                           </div>
                         </div>
                       </button>
@@ -189,6 +210,13 @@ export function CharacterCreationScreen({
                               {cls.primaryStat}
                             </Badge>
                           </div>
+                          {/* Философия Пути (karsus_paths, lib/codex.ts) — тот же принцип, что и
+                              лор расы выше: разворачивается только для выбранного класса. */}
+                          {charClass === cls.slug && (
+                            <p className="text-[11px] text-muted-foreground leading-relaxed mt-2 pt-2 border-t border-border/60 italic">
+                              {PATH_FLAVOR_RU[cls.path]}
+                            </p>
+                          )}
                         </div>
                       </div>
                     </button>
@@ -227,8 +255,10 @@ export function CharacterCreationScreen({
                   </div>
                 </CardContent>
               </Card>
-              <p className="text-xs text-muted-foreground text-center">
-                Нажав &quot;Начать приключение&quot;, вы вступаете в мир Проклятых Глубин
+              <p className="text-xs text-muted-foreground text-center leading-relaxed italic px-2">
+                {charName} очнётся у Пепельных Врат без памяти о прошлом — лишь эхо голоса Карсуса
+                в ушах{raceData ? ` и наследие расы «${raceData.name}» за плечами` : ''}.
+                {classData && ` ${PATH_FLAVOR_RU[classData.path]}`}
               </p>
             </div>
           )}

@@ -70,6 +70,7 @@ import { rollTemperScrollDrop } from '@/lib/item-enhancement';
 import { dungeonModifierEffect } from '@/lib/dungeon-modifiers';
 import { abyssScaling, abyssEnemyIdForDepth, isEliteDepth } from '@/lib/abyss';
 import { FORTRESS_ID, CONTROL_GOLD_BONUS } from '@/lib/fortress';
+import { bossIntroLine } from '@/lib/exploration-flavor';
 
 export async function POST(req: NextRequest) {
   const auth = validateTelegramRequest(req);
@@ -723,7 +724,9 @@ export async function POST(req: NextRequest) {
             dungeonNextEnemy = ENEMIES.find(e => e.id === nextEnemyId) ?? null;
             if (dungeonNextEnemy) {
               dungeonNextEnemyHp = Math.round((dungeonNextEnemy.hp + Math.floor(Math.random() * 5)) * dungeonEffect.enemyHpMult);
-              combatLog.push({ text: `Комната ${nextRoomIndex + 1}/${dungeon.roomCount}: ${dungeonNextEnemy.nameRu} появляется!`, turn: currentTurn + 3 });
+              const bossLine = bossIntroLine(dungeonNextEnemy.id);
+              const enemyLine = bossLine ?? `${dungeonNextEnemy.nameRu} появляется!`;
+              combatLog.push({ text: `Комната ${nextRoomIndex + 1}/${dungeon.roomCount}: ${enemyLine}`, turn: currentTurn + 3 });
             }
           } else {
             dungeonJustCompleted = true;
@@ -760,7 +763,9 @@ export async function POST(req: NextRequest) {
           const nextScaling = abyssScaling(abyssNextDepth);
           abyssNextEnemyHp = Math.round((abyssNextEnemy.hp + Math.floor(Math.random() * 5)) * nextScaling.hpMult);
           const eliteTag = isEliteDepth(abyssNextDepth) ? ' ⚠️ Элитный противник!' : '';
-          combatLog.push({ text: `Глубина ${abyssNextDepth}: ${abyssNextEnemy.nameRu} появляется!${eliteTag}`, turn: currentTurn + 3 });
+          const bossLine = bossIntroLine(abyssNextEnemy.id);
+          const enemyLine = bossLine ?? `${abyssNextEnemy.nameRu} появляется!`;
+          combatLog.push({ text: `Глубина ${abyssNextDepth}: ${enemyLine}${eliteTag}`, turn: currentTurn + 3 });
         }
       } else {
         combatLog.push({ text: `Спуск в Бездонный Разлом прерван на глубине ${player.abyssDepth}.`, turn: currentTurn + 3 });

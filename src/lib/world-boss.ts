@@ -13,6 +13,9 @@ type PrismaClientLike = { worldBoss: typeof db.worldBoss };
 
 export const WORLD_BOSS_ID = 'current';
 export const WORLD_BOSS_NAME = 'Пробуждённый Исполин Пепла';
+/** Объясняет игроку саму механику "incarnation" — не просто респавн, а нарастающее
+ * пробуждение одного и того же существа, каждый раз чуть крепче прошлого. */
+export const WORLD_BOSS_LORE = 'Когда-то он охранял первый Разлом и не смог его удержать. Голос Карсуса поднимает пепел его тела снова и снова — каждое воплощение чуть крепче и чуть голоднее прошлого.';
 export const DAILY_ATTACK_CAP = 5;
 
 const BASE_MAX_HP = 8000;

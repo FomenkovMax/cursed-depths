@@ -20,6 +20,9 @@ export interface Dungeon {
   roomCount: number;
   /** Бонусная награда за прохождение ВСЕГО данжа — выдаётся поверх обычной награды за убийство босса. */
   completionReward: { xp: number; gold: number; items?: string[] };
+  /** Строка-развязка при полном прохождении — что означает победа над этим боссом в мифологии,
+   * а не только "данж пройден, вот награда". */
+  completionLoreRu: string;
 }
 
 export const DUNGEONS: Dungeon[] = [
@@ -34,6 +37,7 @@ export const DUNGEONS: Dungeon[] = [
     bossEnemyId: 'keeper_of_ashes',
     roomCount: 3,
     completionReward: { xp: 150, gold: 80, items: ['greater_health'] },
+    completionLoreRu: 'Хранитель Пепла рассыпается — и в наступившей тишине храма впервые за долгое время не слышно ничего, кроме собственного дыхания.',
   },
   {
     id: 'karsus_depths',
@@ -46,6 +50,7 @@ export const DUNGEONS: Dungeon[] = [
     bossEnemyId: 'first_witness',
     roomCount: 4,
     completionReward: { xp: 400, gold: 200, items: ['elixir_power'] },
+    completionLoreRu: 'Первый Свидетель падает, и голос Карсуса на миг замолкает — впервые с той ночи, как вы очнулись без памяти. Тишина длится недолго.',
   },
 ];
 

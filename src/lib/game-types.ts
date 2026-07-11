@@ -416,10 +416,19 @@ export interface PremiumSkuView {
   costShards: number;
 }
 
+export interface FortuneWheelSegmentView {
+  id: string;
+  nameRu: string;
+  icon: string;
+  kind: 'gold' | 'shards' | 'premium_days' | 'stash_slots' | 'item' | 'nothing';
+  rarity: string | null;
+}
+
 export interface FortuneWheelStateView {
   freeSpinsLeftToday: number;
   freeSpinsPerDay: number;
   paidSpinCost: number;
+  segments: FortuneWheelSegmentView[];
 }
 
 export interface RaceChangeStateView {

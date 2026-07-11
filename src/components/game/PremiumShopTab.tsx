@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { PremiumShopStateView, PlayerData, FortuneSpinResultView } from '@/lib/game-types';
+import { FortuneWheelVisual } from '@/components/game/FortuneWheel';
 
 interface PremiumShopTabProps {
   state: PremiumShopStateView | null;
@@ -13,8 +14,7 @@ interface PremiumShopTabProps {
   onRedeemSku: (skuId: string) => void;
   player: PlayerData | null;
   spinningWheel: boolean;
-  lastFortuneResult: FortuneSpinResultView | null;
-  onSpinWheel: () => void;
+  onSpinWheel: () => Promise<FortuneSpinResultView | null>;
   changingRace: boolean;
   onChangeRace: (raceSlug: string, classSlug: string) => void;
 }
@@ -27,7 +27,7 @@ function formatPremiumUntil(iso: string | null): string {
 
 export function PremiumShopTab({
   state, loading, buyingPackId, onBuyPack, onRedeemSku,
-  player, spinningWheel, lastFortuneResult, onSpinWheel,
+  player, spinningWheel, onSpinWheel,
   changingRace, onChangeRace,
 }: PremiumShopTabProps) {
   const [selectedRaceId, setSelectedRaceId] = useState('');
@@ -130,27 +130,15 @@ export function PremiumShopTab({
           <CardTitle className="text-sm">🎡 Колесо фортуны</CardTitle>
         </CardHeader>
         <CardContent className="px-4 pb-3 space-y-3">
-          <div className="text-[10px] text-muted-foreground">
+          <div className="text-[10px] text-muted-foreground text-center">
             Бесплатных прокрутов сегодня: {state?.fortuneWheel.freeSpinsLeftToday ?? 0} из {state?.fortuneWheel.freeSpinsPerDay ?? 1}
             {' '}(премиум получает {state ? state.fortuneWheel.freeSpinsPerDay : 2} в день). Платный прокрут — 👑 {state?.fortuneWheel.paidSpinCost ?? 50}.
           </div>
-          {lastFortuneResult && (
-            <div className="flex items-center gap-2 p-2 rounded-lg bg-gold/10 border border-gold/30">
-              <span className="text-xl">{lastFortuneResult.icon}</span>
-              <div className="text-xs">
-                <span className="font-medium">{lastFortuneResult.nameRu}</span>
-                {lastFortuneResult.itemWon && <span className="text-muted-foreground"> — {lastFortuneResult.itemWon}</span>}
-              </div>
-            </div>
-          )}
-          <Button
-            size="sm"
-            className="w-full h-9 text-xs"
+          <FortuneWheelVisual
+            segments={state?.fortuneWheel.segments ?? []}
             disabled={spinningWheel || !player}
-            onClick={onSpinWheel}
-          >
-            {spinningWheel ? 'Крутится...' : '🎡 Крутить колесо'}
-          </Button>
+            onSpin={onSpinWheel}
+          />
         </CardContent>
       </Card>
 

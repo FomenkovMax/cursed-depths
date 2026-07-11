@@ -14,6 +14,7 @@ import { computeEquipmentBonuses } from '@/lib/equipment-stats';
 import { isInActivePartyCombat } from '@/lib/party-guards';
 import { EXPLORATION_EVENTS } from '@/lib/exploration-events';
 import { rollGearInstance } from '@/lib/item-affixes';
+import { goldFindMessage, encounterMessage } from '@/lib/exploration-flavor';
 
 export async function POST(req: NextRequest) {
   const auth = validateTelegramRequest(req);
@@ -73,7 +74,7 @@ export async function POST(req: NextRequest) {
       });
       return NextResponse.json({
         type: 'safe',
-        message: `Вы осмотрели окрестности и нашли ${goldFound} золота.`,
+        message: goldFindMessage(player.locationId, goldFound),
         goldFound,
         player: updated,
       });
@@ -147,7 +148,7 @@ export async function POST(req: NextRequest) {
 
       return NextResponse.json({
         type: 'combat',
-        message: `Вы встретили ${enemy.nameRu}!`,
+        message: encounterMessage(player.locationId, enemy.nameRu),
         enemy: { ...enemy, hp: enemyHp, maxHp: enemyHp },
         player: updated,
       });
@@ -193,7 +194,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       type: 'explore',
-      message: `Вы исследовали ${location.nameRu} и нашли ${goldFound} золота!`,
+      message: goldFindMessage(player.locationId, goldFound),
       goldFound,
       foundItems,
       player: updated,

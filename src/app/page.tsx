@@ -55,6 +55,8 @@ export default function CursedDepths() {
   const [player, setPlayer] = useState<PlayerData | null>(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<GameMessage>(null);
+  const [adventureLog, setAdventureLog] = useState<{ id: number; text: string; type: 'info' | 'success' | 'error' }[]>([]);
+  const adventureLogIdRef = useRef(0);
   const [combatLog, setCombatLog] = useState<CombatLogEntry[]>([]);
   const [shaking, setShaking] = useState(false);
   const [levelUpAnimation, setLevelUpAnimation] = useState(false);
@@ -105,6 +107,15 @@ export default function CursedDepths() {
   const initDataRef = useRef('');
   const floatIdRef = useRef(0);
   const initDone = useRef(false);
+
+  // Журнал похождений на вкладке "Обзор" — та же нарративная обратная связь, что и toast в
+  // `message`, но не исчезает через пару секунд, а копится в свиток (как история чата в
+  // референсном боте). Подписываемся на `message`, а не переписываем все ~125 мест setMessage().
+  useEffect(() => {
+    if (!message) return;
+    adventureLogIdRef.current += 1;
+    setAdventureLog(prev => [{ id: adventureLogIdRef.current, text: message.text, type: message.type }, ...prev].slice(0, 20));
+  }, [message]);
 
   // ===== LOAD PLAYER =====
   const loadPlayer = useCallback(async (tgId: string) => {
@@ -1324,6 +1335,7 @@ export default function CursedDepths() {
             player={player}
             location={location}
             loading={loading}
+            adventureLog={adventureLog}
             onExplore={handleExplore}
             onRest={handleRest}
             onTravel={handleTravel}

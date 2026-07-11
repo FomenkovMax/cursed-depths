@@ -18,6 +18,22 @@ export type StatKey = 'strength' | 'dexterity' | 'vitality' | 'intellect' | 'wil
 export type GearSlot = 'weapon' | 'armor' | 'accessory';
 export type AffixTierName = 'normal' | 'magic' | 'rare' | 'corrupted';
 
+/** Левел-гейт на экип (см. api/inventory/equip) — нельзя получить имбалансную вещь не по
+ * уровню и тут же выключить сложность. Гейтится по редкости самого предмета (она уже лежит
+ * в Inventory.rarity на каждой строке), а не по отдельному полю на каждом из ~150 предметов. */
+export const MIN_LEVEL_BY_RARITY: Record<string, number> = {
+  common: 1,
+  uncommon: 2,
+  rare: 4,
+  epic: 7,
+  legendary: 11,
+  mythic: 16,
+};
+
+export function minLevelForRarity(rarity: string): number {
+  return MIN_LEVEL_BY_RARITY[rarity] ?? 1;
+}
+
 export interface AffixTierDef {
   tier: number; // 1 — лучший
   minItemLevel: number;

@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { validateTelegramRequest } from '@/lib/auth';
 import { computeEquipmentBonuses } from '@/lib/equipment-stats';
+import { ITEMS } from '@/lib/game-data';
+import { minLevelForRarity } from '@/lib/item-affixes';
 
 export async function POST(req: NextRequest) {
   const auth = validateTelegramRequest(req);
@@ -40,28 +42,42 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: `${item.name} снят`, equipped: false });
     }
 
-    // Оружие и броня — по одному слоту. У аксессуаров два слота (accessory1/accessory2):
-    // занимаем свободный, а если оба заняты — заменяем accessory1 (прежнее поведение).
+    // Хардкорный левел-гейт: нельзя экипировать вещь выше своего уровня, каким бы удачным ни
+    // был дроп — иначе редкая находка (см. рескейл шансов в game-data.ts) тривиализует
+    // прохождение вместо того, чтобы быть наградой за прогресс.
+    const requiredLevel = minLevelForRarity(item.rarity);
+    if (player.level < requiredLevel) {
+      return NextResponse.json({ error: `Этот предмет требует ${requiredLevel} уровень (у вас ${player.level})` }, { status: 400 });
+    }
+
+    // Физический слот берётся из статического шаблона предмета (ITEMS.gearSlot) — 7 частей
+    // тела (см. GearSlotId в game-data.ts), а не старые 3 (weapon/chest/accessory).
+    const template = ITEMS.find(i => i.id === item.itemId);
     let slot: string;
     let currentEquipped: typeof player.inventory[number] | undefined;
+
     if (item.type === 'weapon') {
       slot = 'weapon';
       currentEquipped = player.inventory.find(i => i.equipped && i.slot === slot);
     } else if (item.type === 'armor') {
-      slot = 'chest';
+      slot = template?.gearSlot ?? 'body';
+      currentEquipped = player.inventory.find(i => i.equipped && i.slot === slot);
+    } else if (template?.gearSlot === 'amulet') {
+      slot = 'amulet';
       currentEquipped = player.inventory.find(i => i.equipped && i.slot === slot);
     } else {
-      const accessory1Taken = player.inventory.find(i => i.equipped && i.slot === 'accessory1');
-      const accessory2Taken = player.inventory.find(i => i.equipped && i.slot === 'accessory2');
-      if (!accessory1Taken) {
-        slot = 'accessory1';
+      // Кольца — два слота (ring1/ring2): занимаем свободный, если оба заняты — заменяем ring1.
+      const ring1Taken = player.inventory.find(i => i.equipped && i.slot === 'ring1');
+      const ring2Taken = player.inventory.find(i => i.equipped && i.slot === 'ring2');
+      if (!ring1Taken) {
+        slot = 'ring1';
         currentEquipped = undefined;
-      } else if (!accessory2Taken) {
-        slot = 'accessory2';
+      } else if (!ring2Taken) {
+        slot = 'ring2';
         currentEquipped = undefined;
       } else {
-        slot = 'accessory1';
-        currentEquipped = accessory1Taken;
+        slot = 'ring1';
+        currentEquipped = ring1Taken;
       }
     }
 

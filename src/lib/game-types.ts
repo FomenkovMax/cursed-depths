@@ -515,8 +515,18 @@ export const AFFIX_TIER_COLORS: Record<string, string> = {
 
 export const SLOT_RU: Record<string, string> = {
   weapon: 'Оружие',
-  chest: 'Нагрудник',
+  head: 'Голова',
+  body: 'Тело',
+  hands: 'Руки',
+  legs: 'Ноги',
+  ring1: 'Кольцо 1',
+  ring2: 'Кольцо 2',
+  amulet: 'Амулет',
+  // Устаревшие значения — уже экипированные до перехода на 7 слотов предметы могли
+  // сохранить старые имена в БД, пока их не переэкипируют.
+  chest: 'Тело',
   accessory1: 'Аксессуар',
+  accessory2: 'Аксессуар',
 };
 
 export function parseStats(statsStr: string | null): Record<string, number> {

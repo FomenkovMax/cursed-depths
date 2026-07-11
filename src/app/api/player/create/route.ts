@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
       await tx.inventory.createMany({
         data: [
           { playerId: created.id, itemId: 'rusty_sword', name: 'Ржавый меч', type: 'weapon', rarity: 'common', equipped: true, slot: 'weapon', stats: '{"attack":2}', icon: '🗡️' },
-          { playerId: created.id, itemId: 'leather_armor', name: 'Кожаная броня', type: 'armor', rarity: 'common', equipped: true, slot: 'chest', stats: '{"defense":2}', icon: '🦺' },
+          { playerId: created.id, itemId: 'leather_armor', name: 'Кожаная броня', type: 'armor', rarity: 'common', equipped: true, slot: 'body', stats: '{"defense":2}', icon: '🦺' },
           { playerId: created.id, itemId: 'health_potion', name: 'Зелье здоровья', type: 'consumable', rarity: 'common', stats: '{"healHp":15}', icon: '🧪', quantity: 3 },
         ],
       });

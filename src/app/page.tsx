@@ -4,7 +4,8 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { LOCATIONS, ENEMIES, CRAFTING_RECIPES } from '@/lib/game-data';
 import { stageUnlockLevel } from '@/lib/combat-engine';
 import { parseDeathWard } from '@/lib/conditional-ability-engine';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs } from '@/components/ui/tabs';
+import { NavBar } from '@/components/game/NavBar';
 import {
   PlayerData,
   CombatLogEntry,
@@ -1317,50 +1318,7 @@ export default function CursedDepths() {
       {/* Main content */}
       <main className="flex-1 overflow-hidden">
         <Tabs value={tab} onValueChange={v => setTab(v as GameTab)} className="h-full flex flex-col">
-          <TabsList className="grid w-full grid-cols-13 bg-card rounded-none border-b border-border h-10 p-0">
-            <TabsTrigger value="overview" className="text-xs py-2 data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
-              🏠
-            </TabsTrigger>
-            <TabsTrigger value="combat" className="text-xs py-2 data-[state=active]:bg-destructive/20 data-[state=active]:text-destructive relative">
-              ⚔️
-              {player?.inCombat && (
-                <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-destructive rounded-full animate-pulse" />
-              )}
-            </TabsTrigger>
-            <TabsTrigger value="map" className="text-xs py-2 data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
-              🗺️
-            </TabsTrigger>
-            <TabsTrigger value="inventory" className="text-xs py-2 data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
-              🎒
-            </TabsTrigger>
-            <TabsTrigger value="quests" className="text-xs py-2 data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
-              📜
-            </TabsTrigger>
-            <TabsTrigger value="craft" className="text-xs py-2 data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
-              ⚒️
-            </TabsTrigger>
-            <TabsTrigger value="leaderboard" className="text-xs py-2 data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
-              🏆
-            </TabsTrigger>
-            <TabsTrigger value="party" className="text-xs py-2 data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
-              👥
-            </TabsTrigger>
-            <TabsTrigger value="achievements" className="text-xs py-2 data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
-              🏅
-            </TabsTrigger>
-            <TabsTrigger value="guild" className="text-xs py-2 data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
-              🏰
-            </TabsTrigger>
-            <TabsTrigger value="codex" className="text-xs py-2 data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
-              📖
-            </TabsTrigger>
-            <TabsTrigger value="market" className="text-xs py-2 data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
-              🏛️
-            </TabsTrigger>
-            <TabsTrigger value="pvp" className="text-xs py-2 data-[state=active]:bg-destructive/20 data-[state=active]:text-destructive">
-              ⚔️
-            </TabsTrigger>
-          </TabsList>
+          <NavBar tab={tab} onChangeTab={setTab} inCombat={!!player?.inCombat} />
 
           <OverviewTab
             player={player}

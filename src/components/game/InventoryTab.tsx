@@ -3,9 +3,9 @@ import { TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { RARITY_COLORS, RARITY_NAMES_RU } from '@/lib/game-data';
-import { PlayerData, StashItemView, SLOT_RU, ITEM_TYPE_RU, AFFIX_TIER_RU, AFFIX_TIER_COLORS, parseStats, parseAffixes } from '@/lib/game-types';
+import { PlayerData, InventoryItem, StashItemView, SLOT_RU, ITEM_TYPE_RU, AFFIX_TIER_RU, AFFIX_TIER_COLORS, parseStats, parseAffixes } from '@/lib/game-types';
 
 interface InventoryTabProps {
   player: PlayerData | null;
@@ -20,12 +20,56 @@ interface InventoryTabProps {
   onRetrieveItem: (stashItemId: string) => void;
 }
 
+type GridItem = InventoryItem | StashItemView;
+
+function statLabel(k: string): string {
+  return k === 'attack' ? 'АТК' : k === 'defense' ? 'ЗАЩ' : k === 'healHp' ? 'ЛечHP' : k === 'healMp' ? 'ЛечMP' : k === 'damage' ? 'Урон' : k;
+}
+
+/** Плитка-иконка в духе сеточного инвентаря Подземелий Колодца: значок + бейджи
+ * количества/улучшения поверх, вместо текстовой строки. Деталь предмета — по тапу. */
+function ItemTile({ item, equipped, onClick }: { item: GridItem; equipped?: boolean; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="relative aspect-square rounded-lg border bg-secondary/20 flex items-center justify-center transition-colors hover:bg-secondary/40"
+      style={{ borderColor: RARITY_COLORS[item.rarity] + (equipped ? '90' : '40') }}
+    >
+      <span className="text-2xl">{item.icon}</span>
+      {item.quantity > 1 && (
+        <span className="absolute bottom-0.5 right-0.5 text-[9px] leading-none bg-background/90 rounded px-1 py-0.5 font-medium">
+          x{item.quantity}
+        </span>
+      )}
+      {item.enhancementLevel > 0 && (
+        <span className="absolute top-0.5 left-0.5 text-[9px] leading-none text-gold font-bold">+{item.enhancementLevel}</span>
+      )}
+      {equipped && (
+        <span className="absolute -top-1 -right-1 text-[8px] leading-none bg-destructive text-destructive-foreground rounded px-1 py-0.5 rotate-6 shadow">
+          ЭКИП.
+        </span>
+      )}
+    </button>
+  );
+}
+
 export function InventoryTab({
   player, loading, onEquip, onUseItem, onLearnBlueprint,
   stashItems, stashCapacity, stashLoading, onStoreItem, onRetrieveItem,
 }: InventoryTabProps) {
   const playerInventory = player?.inventory || [];
   const [view, setView] = useState<'inventory' | 'stash'>('inventory');
+  const [detail, setDetail] = useState<{ item: GridItem; source: 'inventory' | 'stash' } | null>(null);
+
+  const equipped = playerInventory.filter(i => i.equipped);
+  const unequipped = playerInventory.filter(i => !i.equipped);
+
+  const detailStats = detail ? parseStats(detail.item.stats) : {};
+  const detailAffixes = detail ? parseAffixes(detail.item.affixes) : [];
+  const canEquip = detail ? ['weapon', 'armor', 'accessory'].includes(detail.item.type) : false;
+  const canUse = detail?.item.type === 'consumable';
+  const canLearn = detail?.item.type === 'blueprint';
 
   return (
     <TabsContent value="inventory" className="flex-1 overflow-y-auto p-4 space-y-3 m-0">
@@ -61,221 +105,138 @@ export function InventoryTab({
                 {stashLoading ? 'Загрузка...' : 'Хранилище пусто — уберите сюда предметы из инвентаря, чтобы сохранить их'}
               </p>
             ) : (
-              <ScrollArea className="h-96">
-                <div className="space-y-2 pr-2">
-                  {stashItems.map(item => {
-                    const stats = parseStats(item.stats);
-                    const affixes = parseAffixes(item.affixes);
-                    return (
-                      <div
-                        key={item.id}
-                        className="flex items-center gap-2 p-2 rounded-lg bg-secondary/20 border"
-                        style={{ borderColor: RARITY_COLORS[item.rarity] + '30' }}
-                      >
-                        <span className="text-lg">{item.icon}</span>
-                        <div className="flex-1 min-w-0">
-                          <div className="text-xs font-medium truncate" style={{ color: RARITY_COLORS[item.rarity] }}>
-                            {item.name} {item.quantity > 1 ? `x${item.quantity}` : ''}
-                            {item.enhancementLevel > 0 && <span className="ml-1 text-gold">+{item.enhancementLevel}</span>}
-                            {item.affixTier && AFFIX_TIER_RU[item.affixTier] && (
-                              <span className="ml-1 text-[9px]" style={{ color: AFFIX_TIER_COLORS[item.affixTier] }}>
-                                [{AFFIX_TIER_RU[item.affixTier]}]
-                              </span>
-                            )}
-                          </div>
-                          <div className="text-[10px] text-muted-foreground">
-                            {ITEM_TYPE_RU[item.type]} • {RARITY_NAMES_RU[item.rarity]}
-                            {affixes.length > 0 && ` • ${affixes.map(a => a.labelRu).join(', ')}`}
-                          </div>
-                          {Object.keys(stats).length > 0 && (
-                            <div className="flex gap-1 mt-0.5 flex-wrap">
-                              {Object.entries(stats).map(([k, v]) => (
-                                <Badge key={k} variant="outline" className="text-[9px] h-4 px-1">{k} +{v}</Badge>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="h-6 text-[10px] px-2 border-border shrink-0"
-                          onClick={() => onRetrieveItem(item.id)}
-                          disabled={loading}
-                        >
-                          Достать
-                        </Button>
-                      </div>
-                    );
-                  })}
-                </div>
-              </ScrollArea>
+              <div className="grid grid-cols-5 gap-2">
+                {stashItems.map(item => (
+                  <ItemTile key={item.id} item={item} onClick={() => setDetail({ item, source: 'stash' })} />
+                ))}
+              </div>
             )}
           </CardContent>
         </Card>
       ) : (
         <>
-      {/* Equipped section */}
-      <Card className="border-border">
-        <CardHeader className="pb-2 pt-3 px-4">
-          <CardTitle className="text-sm">Экипировано</CardTitle>
-        </CardHeader>
-        <CardContent className="px-4 pb-3">
-          {playerInventory.filter(i => i.equipped).length === 0 ? (
-            <p className="text-xs text-muted-foreground text-center py-2">Ничего не экипировано</p>
-          ) : (
-            <div className="space-y-2">
-              {playerInventory.filter(i => i.equipped).map(item => {
-                const stats = parseStats(item.stats);
-                const affixes = parseAffixes(item.affixes);
-                return (
-                  <div
-                    key={item.id}
-                    className="flex items-center gap-2 p-2 rounded-lg bg-secondary/30 border animate-pulse-border"
-                    style={{ borderColor: RARITY_COLORS[item.rarity] + '50' }}
-                  >
-                    <span className="text-lg">{item.icon}</span>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-xs font-medium truncate" style={{ color: RARITY_COLORS[item.rarity] }}>
-                        {item.name}
-                        {item.enhancementLevel > 0 && <span className="ml-1 text-gold">+{item.enhancementLevel}</span>}
-                        {item.affixTier && AFFIX_TIER_RU[item.affixTier] && (
-                          <span className="ml-1 text-[9px]" style={{ color: AFFIX_TIER_COLORS[item.affixTier] }}>
-                            [{AFFIX_TIER_RU[item.affixTier]}]
-                          </span>
-                        )}
-                      </div>
-                      <div className="text-[10px] text-muted-foreground">
-                        {SLOT_RU[item.slot || ''] || ITEM_TYPE_RU[item.type]} • {RARITY_NAMES_RU[item.rarity]}
-                        {affixes.length > 0 && ` • ${affixes.map(a => a.labelRu).join(', ')}`}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      {Object.entries(stats).map(([k, v]) => (
-                        <span key={k} className="text-[10px] text-uncommon">+{v} {k === 'attack' ? '⚔️' : k === 'defense' ? '🛡️' : k === 'hp' ? '❤️' : k === 'mp' ? '💧' : ''}</span>
-                      ))}
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-6 text-[10px] px-2 border-border ml-1"
-                        onClick={() => onEquip(item.id)}
-                        disabled={loading}
-                      >
+          {/* Экипировано */}
+          <Card className="border-border">
+            <CardHeader className="pb-2 pt-3 px-4">
+              <CardTitle className="text-sm">Экипировано</CardTitle>
+            </CardHeader>
+            <CardContent className="px-4 pb-3">
+              {equipped.length === 0 ? (
+                <p className="text-xs text-muted-foreground text-center py-2">Ничего не экипировано</p>
+              ) : (
+                <div className="grid grid-cols-5 gap-2">
+                  {equipped.map(item => (
+                    <ItemTile key={item.id} item={item} equipped onClick={() => setDetail({ item, source: 'inventory' })} />
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Инвентарь — сетка иконок вместо текстовых строк, деталь по тапу (как в Подземельях Колодца) */}
+          <Card className="border-border">
+            <CardHeader className="pb-2 pt-3 px-4">
+              <CardTitle className="text-sm">
+                Инвентарь ({unequipped.length} предметов)
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="px-4 pb-3">
+              {unequipped.length === 0 ? (
+                <p className="text-xs text-muted-foreground text-center py-2">Инвентарь пуст</p>
+              ) : (
+                <div className="grid grid-cols-5 gap-2">
+                  {unequipped.map(item => (
+                    <ItemTile key={item.id} item={item} onClick={() => setDetail({ item, source: 'inventory' })} />
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </>
+      )}
+
+      <Dialog open={!!detail} onOpenChange={open => !open && setDetail(null)}>
+        <DialogContent className="max-w-xs">
+          {detail && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2 text-sm" style={{ color: RARITY_COLORS[detail.item.rarity] }}>
+                  <span className="text-2xl">{detail.item.icon}</span>
+                  <span>
+                    {detail.item.name}
+                    {detail.item.enhancementLevel > 0 && <span className="ml-1 text-gold">+{detail.item.enhancementLevel}</span>}
+                  </span>
+                </DialogTitle>
+              </DialogHeader>
+              <div className="space-y-2">
+                <div className="text-xs text-muted-foreground">
+                  {('slot' in detail.item && detail.item.slot && SLOT_RU[detail.item.slot]) || ITEM_TYPE_RU[detail.item.type]} • {RARITY_NAMES_RU[detail.item.rarity]}
+                  {detail.item.quantity > 1 && ` • x${detail.item.quantity}`}
+                </div>
+                {detail.item.affixTier && AFFIX_TIER_RU[detail.item.affixTier] && (
+                  <Badge className="text-[10px]" style={{ backgroundColor: AFFIX_TIER_COLORS[detail.item.affixTier] + '20', color: AFFIX_TIER_COLORS[detail.item.affixTier] }}>
+                    {AFFIX_TIER_RU[detail.item.affixTier]}
+                  </Badge>
+                )}
+                {Object.keys(detailStats).length > 0 && (
+                  <div className="flex gap-1 flex-wrap">
+                    {Object.entries(detailStats).map(([k, v]) => (
+                      <Badge key={k} variant="outline" className="text-[10px] h-5 px-1.5">{statLabel(k)} +{v}</Badge>
+                    ))}
+                  </div>
+                )}
+                {detailAffixes.length > 0 && (
+                  <div className="text-[11px] text-muted-foreground space-y-0.5">
+                    {detailAffixes.map((a, i) => <div key={i}>• {a.labelRu} +{a.value}</div>)}
+                  </div>
+                )}
+              </div>
+              <div className="flex flex-col gap-1.5 pt-1">
+                {detail.source === 'stash' ? (
+                  <Button size="sm" onClick={() => { onRetrieveItem(detail.item.id); setDetail(null); }} disabled={loading}>
+                    Достать в инвентарь
+                  </Button>
+                ) : (
+                  <>
+                    {(detail.item as InventoryItem).equipped ? (
+                      <Button size="sm" variant="outline" className="border-border" onClick={() => { onEquip(detail.item.id); setDetail(null); }} disabled={loading}>
                         Снять
                       </Button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* All items section */}
-      <Card className="border-border">
-        <CardHeader className="pb-2 pt-3 px-4">
-          <CardTitle className="text-sm">
-            Инвентарь ({playerInventory.filter(i => !i.equipped).length || 0} предметов)
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="px-4 pb-3">
-          {playerInventory.filter(i => !i.equipped).length === 0 ? (
-            <p className="text-xs text-muted-foreground text-center py-2">Инвентарь пуст</p>
-          ) : (
-            <ScrollArea className="h-96">
-              <div className="space-y-2 pr-2">
-                {playerInventory.filter(i => !i.equipped).map(item => {
-                  const stats = parseStats(item.stats);
-                  const affixes = parseAffixes(item.affixes);
-                  const canEquip = ['weapon', 'armor', 'accessory'].includes(item.type);
-                  const canUse = item.type === 'consumable';
-                  const canLearn = item.type === 'blueprint';
-                  return (
-                    <div
-                      key={item.id}
-                      className="flex items-center gap-2 p-2 rounded-lg bg-secondary/20 border transition-all hover:bg-secondary/40"
-                      style={{ borderColor: RARITY_COLORS[item.rarity] + '30' }}
-                    >
-                      <span className="text-lg">{item.icon}</span>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-xs font-medium truncate" style={{ color: RARITY_COLORS[item.rarity] }}>
-                          {item.name} {item.quantity > 1 ? `x${item.quantity}` : ''}
-                          {item.enhancementLevel > 0 && <span className="ml-1 text-gold">+{item.enhancementLevel}</span>}
-                          {item.affixTier && AFFIX_TIER_RU[item.affixTier] && (
-                            <span className="ml-1 text-[9px]" style={{ color: AFFIX_TIER_COLORS[item.affixTier] }}>
-                              [{AFFIX_TIER_RU[item.affixTier]}]
-                            </span>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <span className="text-[10px] text-muted-foreground">
-                            {ITEM_TYPE_RU[item.type]} • {RARITY_NAMES_RU[item.rarity]}
-                            {affixes.length > 0 && ` • ${affixes.map(a => a.labelRu).join(', ')}`}
-                          </span>
-                        </div>
-                        {Object.keys(stats).length > 0 && (
-                          <div className="flex gap-1 mt-0.5 flex-wrap">
-                            {Object.entries(stats).map(([k, v]) => (
-                              <Badge key={k} variant="outline" className="text-[9px] h-4 px-1">
-                                {k === 'attack' ? 'АТК' : k === 'defense' ? 'ЗАЩ' : k === 'healHp' ? 'ЛечHP' : k === 'healMp' ? 'ЛечMP' : k === 'damage' ? 'Урон' : k} +{v}
-                              </Badge>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                      <div className="flex flex-col gap-1 shrink-0">
+                    ) : (
+                      <>
                         {canEquip && (
-                          <Button
-                            size="sm"
-                            className="h-6 text-[10px] px-2"
-                            onClick={() => onEquip(item.id)}
-                            disabled={loading}
-                          >
+                          <Button size="sm" onClick={() => { onEquip(detail.item.id); setDetail(null); }} disabled={loading}>
                             Надеть
                           </Button>
                         )}
                         {canUse && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="h-6 text-[10px] px-2 border-border"
-                            onClick={() => onUseItem(item.id)}
-                            disabled={loading}
-                          >
-                            Исп.
+                          <Button size="sm" variant="outline" className="border-border" onClick={() => { onUseItem(detail.item.id); setDetail(null); }} disabled={loading}>
+                            Использовать
                           </Button>
                         )}
                         {canLearn && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="h-6 text-[10px] px-2 border-gold/50 text-gold"
-                            onClick={() => onLearnBlueprint(item.id)}
-                            disabled={loading}
-                          >
+                          <Button size="sm" variant="outline" className="border-gold/50 text-gold" onClick={() => { onLearnBlueprint(detail.item.id); setDetail(null); }} disabled={loading}>
                             📜 Изучить
                           </Button>
                         )}
                         <Button
-                          variant="outline"
                           size="sm"
-                          className="h-6 text-[10px] px-2 border-border"
-                          onClick={() => onStoreItem(item.id)}
+                          variant="outline"
+                          className="border-border"
+                          onClick={() => { onStoreItem(detail.item.id); setDetail(null); }}
                           disabled={loading || stashItems.length >= stashCapacity}
                         >
                           🗄️ В хранилище
                         </Button>
-                      </div>
-                    </div>
-                  );
-                })}
+                      </>
+                    )}
+                  </>
+                )}
               </div>
-            </ScrollArea>
+            </>
           )}
-        </CardContent>
-      </Card>
-        </>
-      )}
+        </DialogContent>
+      </Dialog>
     </TabsContent>
   );
 }

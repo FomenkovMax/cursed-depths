@@ -306,30 +306,34 @@ export function applyCurrency(
 
 // ===== МАСТЕРСКАЯ ЗАЧАРОВАНИЯ (премиум, api/craft/enchant) =====
 // В отличие от applyCurrency('ash_shard', ...) выше, который перебрасывает ВСЕ аффиксы
-// предмета разом, здесь перебрасывается только ОДИН выбранный — остальные остаются как есть.
-// Платится не крафт-валютой с дропа, а Осколками Короны (премиум-валюта) — эксклюзивный
-// премиум-сервис поверх уже существующей системы аффиксов, а не новая система с нуля.
-export const ENCHANT_COST_BY_TIER: Record<string, number> = {
+// предмета разом, здесь перебрасывается только ОДНО ЗНАЧЕНИЕ выбранного аффикса — какой это
+// стат, не меняется, только его сила. Платится не крафт-валютой с дропа, а Осколками Короны
+// (премиум-валюта). Рискованно: значение может как вырасти, так и упасть — не гарантированное
+// улучшение, а азартная переброска, поэтому и цена растёт с каждым разом на одном предмете
+// (см. enchantCostForReroll) — иначе можно было бы бесконечно фармить идеальный ролл.
+export const ENCHANT_BASE_COST_BY_TIER: Record<string, number> = {
   magic: 100,
   rare: 200,
 };
+export const ENCHANT_COST_STEP = 100;
 
-export function enchantCostForTier(tier: AffixTierName): number | null {
-  return ENCHANT_COST_BY_TIER[tier] ?? null;
+export function enchantCostForReroll(tier: AffixTierName, rerollsSoFar: number): number | null {
+  const base = ENCHANT_BASE_COST_BY_TIER[tier];
+  if (base === undefined) return null;
+  return base + ENCHANT_COST_STEP * Math.max(0, rerollsSoFar);
 }
 
 export type SingleRerollResult =
-  | { ok: true; name: string; stats: Record<string, number>; affixes: RolledAffix[] }
+  | { ok: true; name: string; stats: Record<string, number>; affixes: RolledAffix[]; delta: number }
   | { ok: false; error: string };
 
-/** Перебрасывает ровно один аффикс по индексу в currentAffixes, оставляя остальные нетронутыми.
- * Новый аффикс того же вида (prefix/suffix), что и заменяемый, но статы уже занятые ДРУГИМИ
- * аффиксами предмета исключены — как и в rollAffixSet, повторов на одном предмете не бывает. */
+/** Меняет ЗНАЧЕНИЕ одного аффикса по индексу — какой это стат, не трогает, только силу.
+ * Дельта случайна и по знаку, и по величине (≈±30% от текущего значения, минимум ±1) — может
+ * как улучшить характеристику, так и ухудшить, пол — 1 (бонус не уходит в 0 или в минус).
+ * Остальные аффиксы предмета не затрагиваются. */
 export function rerollSingleAffix(
   baseNameRu: string,
   baseStats: Record<string, number>,
-  slot: GearSlot,
-  itemLevel: number,
   currentTier: AffixTierName,
   currentAffixes: RolledAffix[],
   affixIndex: number
@@ -341,13 +345,10 @@ export function rerollSingleAffix(
     return { ok: false, error: 'Такого свойства нет на предмете.' };
   }
   const target = currentAffixes[affixIndex];
-  const usedKeys = new Set(currentAffixes.filter((_, i) => i !== affixIndex).map(a => a.statKey));
-  const pool = eligibleAffixes(slot, target.kind, itemLevel, usedKeys);
-  if (pool.length === 0) {
-    return { ok: false, error: 'Нет доступных альтернатив для этого свойства.' };
-  }
-  const def = pool[Math.floor(Math.random() * pool.length)];
-  const newAffix = rollOneAffix(def, itemLevel);
+  const magnitude = Math.max(1, Math.round(target.value * 0.3));
+  const delta = Math.floor(Math.random() * (2 * magnitude + 1)) - magnitude;
+  const newValue = Math.max(1, target.value + delta);
+  const newAffix: RolledAffix = { ...target, value: newValue };
   const newAffixes = currentAffixes.map((a, i) => (i === affixIndex ? newAffix : a));
 
   return {
@@ -355,5 +356,6 @@ export function rerollSingleAffix(
     name: nameWithAffixes(baseNameRu, newAffixes),
     stats: mergeStats(baseStats, newAffixes),
     affixes: newAffixes,
+    delta: newValue - target.value,
   };
 }

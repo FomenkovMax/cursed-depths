@@ -7,7 +7,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { ItemIconTile } from '@/components/game/ItemIconTile';
 import { CRAFTING_RECIPES, ITEMS, RARITY_COLORS } from '@/lib/game-data';
 import { PlayerData, AFFIX_TIER_RU, AFFIX_TIER_COLORS, parseStats, parseAffixes } from '@/lib/game-types';
-import { CURRENCY_IDS, enchantCostForTier, type AffixTierName } from '@/lib/item-affixes';
+import { CURRENCY_IDS, enchantCostForReroll, type AffixTierName } from '@/lib/item-affixes';
 import { MAX_ENHANCEMENT_LEVEL, temperSuccessChance } from '@/lib/item-enhancement';
 
 interface CraftTabProps {
@@ -102,12 +102,12 @@ export function CraftTab({ player, loading, canCraftRecipe, learnedRecipeIds, on
                   </div>
                   {parseAffixes(selectedTarget.affixes).length > 0 && (() => {
                     const tier = selectedTarget.affixTier as AffixTierName | null;
-                    const enchantCost = tier ? enchantCostForTier(tier) : null;
+                    const enchantCost = tier ? enchantCostForReroll(tier, selectedTarget.enchantRerolls) : null;
                     return (
                       <div className="mt-2 pt-2 border-t border-border/40 space-y-1">
                         <p className="text-[10px] text-muted-foreground">
                           {enchantCost !== null
-                            ? `Точечный реброс одного свойства — 👑 ${enchantCost} за штуку (остальные не трогает):`
+                            ? `Точечный реброс значения одного свойства — рискованно, может как вырасти, так и упасть. Каждый следующий реброс на этом предмете дороже на 👑 100 (сейчас 👑 ${enchantCost}):`
                             : 'Осквернённый предмет — точечный реброс недоступен.'}
                         </p>
                         {parseAffixes(selectedTarget.affixes).map((a, idx) => (
@@ -121,7 +121,7 @@ export function CraftTab({ player, loading, canCraftRecipe, learnedRecipeIds, on
                                 disabled={loading || enchanting || crownShards < enchantCost}
                                 onClick={() => onEnchantAffix(selectedTarget.id, idx)}
                               >
-                                👑 {enchantCost}
+                                🎲 👑 {enchantCost}
                               </Button>
                             )}
                           </div>

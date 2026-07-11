@@ -6,6 +6,8 @@ interface GameHeaderProps {
   player: PlayerData | null;
   locationIcon: string | undefined;
   locationName: string | undefined;
+  crownShards: number;
+  onOpenPremium: () => void;
 }
 
 /**
@@ -25,7 +27,7 @@ function getEvolvedStageName(player: PlayerData): string | null {
   return best?.stageName ?? null;
 }
 
-export function GameHeader({ player, locationIcon, locationName }: GameHeaderProps) {
+export function GameHeader({ player, locationIcon, locationName, crownShards, onOpenPremium }: GameHeaderProps) {
   const gearBonuses = computeEquipmentBonuses(player?.inventory || []);
   const effectiveMaxHp = (player?.maxHp || 0) + gearBonuses.hp;
   const effectiveMaxMp = (player?.maxMp || 0) + gearBonuses.mp;
@@ -52,6 +54,16 @@ export function GameHeader({ player, locationIcon, locationName }: GameHeaderPro
             <span className="text-xs">💰</span>
             <span className="text-xs font-bold text-gold">{player?.gold || 0}</span>
           </div>
+          {/* Осколки Короны — премиум-валюта (lib/premium-shop.ts) — постоянно на виду и
+              кликабельны, тот же приём, что у баланса премиум-валюты в референсных F2P-играх. */}
+          <button
+            type="button"
+            onClick={onOpenPremium}
+            className="flex items-center gap-1 rounded-full bg-gold/10 border border-gold/30 px-1.5 py-0.5"
+          >
+            <span className="text-xs">👑</span>
+            <span className="text-xs font-bold text-gold">{crownShards}</span>
+          </button>
           <div className="text-xs text-muted-foreground">
             {locationIcon} {locationName?.split(' ').slice(0, 2).join(' ')}
           </div>

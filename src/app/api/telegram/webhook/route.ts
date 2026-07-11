@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { db } from '@/lib/db';
+import { findShardPack } from '@/lib/premium-shop';
 
 const BOT_TOKEN = process.env.BOT_TOKEN;
 const WEBHOOK_SECRET = process.env.TELEGRAM_WEBHOOK_SECRET;
@@ -21,6 +23,58 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
+
+    // Telegram Stars: обязателен ответ на pre_checkout_query В ТЕЧЕНИЕ 10 СЕКУНД (иначе платёж
+    // отклоняется автоматически) — до любых других проверок ниже. Валидируем сам payload
+    // (формат "shard_pack:<packId>:<telegramId>" и реальное существование пака), а не просто
+    // подтверждаем всё подряд — иначе можно было бы протолкнуть произвольный payload.
+    const preCheckout = body?.pre_checkout_query;
+    if (preCheckout) {
+      const [kind, packId] = String(preCheckout.invoice_payload ?? '').split(':');
+      const valid = kind === 'shard_pack' && !!findShardPack(packId);
+      await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/answerPreCheckoutQuery`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(
+          valid
+            ? { pre_checkout_query_id: preCheckout.id, ok: true }
+            : { pre_checkout_query_id: preCheckout.id, ok: false, error_message: 'Товар недоступен — откройте магазин заново.' },
+        ),
+      });
+      return NextResponse.json({ ok: true });
+    }
+
+    // Оплата прошла — начисляем Осколки Короны. telegramChargeId уникален в StarPurchase и
+    // служит ключом идемпотентности: если Telegram повторно доставит этот же successful_payment
+    // (сетевые проблемы на их стороне), уникальный constraint на create() бросит исключение,
+    // мы его глотаем — начисление уже случилось при первой доставке, повторно копить не нужно.
+    const successfulPayment = body?.message?.successful_payment;
+    if (successfulPayment) {
+      const [kind, packId, telegramId] = String(successfulPayment.invoice_payload ?? '').split(':');
+      const pack = kind === 'shard_pack' ? findShardPack(packId) : null;
+      if (pack && telegramId) {
+        try {
+          const player = await db.player.findUnique({ where: { telegramId } });
+          if (player) {
+            await db.$transaction(async (tx) => {
+              await tx.starPurchase.create({
+                data: {
+                  playerId: player.id,
+                  packId: pack.id,
+                  starsAmount: successfulPayment.total_amount ?? pack.stars,
+                  shardsGranted: pack.shards,
+                  telegramChargeId: successfulPayment.telegram_payment_charge_id,
+                },
+              });
+              await tx.player.update({ where: { id: player.id }, data: { crownShards: { increment: pack.shards } } });
+            });
+          }
+        } catch (e) {
+          console.log('[Premium] Payment credit skipped (likely duplicate delivery):', e);
+        }
+      }
+      return NextResponse.json({ ok: true });
+    }
 
     const chatId = body?.message?.chat?.id;
     const text = body?.message?.text;

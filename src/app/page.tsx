@@ -29,6 +29,7 @@ import {
   FortressStateView,
   FortressAssaultResultView,
   GuildData,
+  PremiumShopStateView,
 } from '@/lib/game-types';
 import { LoadingScreen } from '@/components/game/LoadingScreen';
 import { CharacterCreationScreen } from '@/components/game/CharacterCreationScreen';
@@ -48,6 +49,7 @@ import { CraftTab } from '@/components/game/CraftTab';
 import { LeaderboardTab, type LeaderboardEntry, type SeasonWinnerEntry } from '@/components/game/LeaderboardTab';
 import { PartyTab } from '@/components/game/PartyTab';
 import { GuildTab } from '@/components/game/GuildTab';
+import { PremiumShopTab } from '@/components/game/PremiumShopTab';
 
 // ===== MAIN COMPONENT =====
 export default function CursedDepths() {
@@ -84,6 +86,9 @@ export default function CursedDepths() {
   const [worldBossLoading, setWorldBossLoading] = useState(false);
   const [fortress, setFortress] = useState<FortressStateView | null>(null);
   const [fortressLoading, setFortressLoading] = useState(false);
+  const [premiumState, setPremiumState] = useState<PremiumShopStateView | null>(null);
+  const [premiumLoading, setPremiumLoading] = useState(false);
+  const [buyingPackId, setBuyingPackId] = useState<string | null>(null);
   const [stashItems, setStashItems] = useState<StashItemView[]>([]);
   const [stashCapacity, setStashCapacity] = useState(60);
   const [stashLoading, setStashLoading] = useState(false);
@@ -485,6 +490,79 @@ export default function CursedDepths() {
       return null;
     } finally {
       setFortressLoading(false);
+    }
+  };
+
+  // ===== PREMIUM SHOP (Осколки Короны за Telegram Stars — lib/premium-shop.ts) =====
+  const refreshPremiumState = useCallback(() => {
+    setPremiumLoading(true);
+    apiCall('/api/shop/premium/state')
+      .then(data => { if (data.shardPacks) setPremiumState(data); })
+      .catch(() => setMessage({ text: 'Не удалось загрузить магазин', type: 'error' }))
+      .finally(() => setPremiumLoading(false));
+  }, [apiCall]);
+
+  useEffect(() => {
+    if (tab !== 'premium' || !telegramIdRef.current) return;
+    refreshPremiumState();
+  }, [tab, refreshPremiumState]);
+
+  // Баланс Осколков Короны в GameHeader должен быть виден сразу после входа, а не только
+  // после первого открытия вкладки "Премиум" — отдельный триггер на screen==='game'.
+  useEffect(() => {
+    if (screen !== 'game' || !telegramIdRef.current) return;
+    refreshPremiumState();
+  }, [screen, refreshPremiumState]);
+
+  const handleBuyShardPack = async (packId: string) => {
+    if (!player) return;
+    setBuyingPackId(packId);
+    try {
+      const data = await apiCall('/api/shop/premium/invoice', 'POST', { packId });
+      if (data.error || !data.invoiceUrl) {
+        setMessage({ text: data.error || 'Не удалось создать счёт', type: 'error' });
+        setBuyingPackId(null);
+        return;
+      }
+      const win = typeof window !== 'undefined' ? (window as unknown as TelegramGlobal) : null;
+      const tg = win?.Telegram?.WebApp;
+      if (tg?.openInvoice) {
+        tg.openInvoice(data.invoiceUrl, (status) => {
+          setBuyingPackId(null);
+          if (status === 'paid') {
+            setMessage({ text: 'Оплата прошла! Осколки уже начислены.', type: 'success' });
+            refreshPremiumState();
+          } else if (status === 'failed') {
+            setMessage({ text: 'Оплата не прошла.', type: 'error' });
+          }
+        });
+      } else {
+        // Вне Telegram WebView (напр. обычный браузер при разработке) — открываем ссылку напрямую.
+        window.open(data.invoiceUrl, '_blank');
+        setBuyingPackId(null);
+      }
+    } catch {
+      setMessage({ text: 'Ошибка создания счёта', type: 'error' });
+      setBuyingPackId(null);
+    }
+  };
+
+  const handleRedeemSku = async (skuId: string) => {
+    if (!player) return;
+    setPremiumLoading(true);
+    try {
+      const data = await apiCall('/api/shop/premium/redeem', 'POST', { skuId });
+      if (data.error) {
+        setMessage({ text: data.error, type: 'error' });
+      } else {
+        setPlayer(data.player);
+        setMessage({ text: data.message, type: 'success' });
+        refreshPremiumState();
+      }
+    } catch {
+      setMessage({ text: 'Ошибка покупки', type: 'error' });
+    } finally {
+      setPremiumLoading(false);
     }
   };
 
@@ -1351,7 +1429,13 @@ export default function CursedDepths() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <GameHeader player={player} locationIcon={location?.icon} locationName={location?.nameRu} />
+      <GameHeader
+        player={player}
+        locationIcon={location?.icon}
+        locationName={location?.nameRu}
+        crownShards={premiumState?.crownShards ?? 0}
+        onOpenPremium={() => setTab('premium')}
+      />
 
       {/* Message toast area */}
       {message && (
@@ -1473,6 +1557,14 @@ export default function CursedDepths() {
             fortress={fortress}
             fortressLoading={fortressLoading}
             onAssaultFortress={handleAssaultFortress}
+          />
+
+          <PremiumShopTab
+            state={premiumState}
+            loading={premiumLoading}
+            buyingPackId={buyingPackId}
+            onBuyPack={handleBuyShardPack}
+            onRedeemSku={handleRedeemSku}
           />
 
           <CodexTab entries={codexEntries} loading={codexLoading} />

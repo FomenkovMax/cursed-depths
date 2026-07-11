@@ -72,6 +72,7 @@ import { dungeonModifierEffect } from '@/lib/dungeon-modifiers';
 import { abyssScaling, abyssEnemyIdForDepth, isEliteDepth } from '@/lib/abyss';
 import { FORTRESS_ID, CONTROL_GOLD_BONUS } from '@/lib/fortress';
 import { bossIntroLine, deathMessage } from '@/lib/exploration-flavor';
+import { isPremiumActive, PREMIUM_GOLD_XP_MULT } from '@/lib/premium-shop';
 
 export async function POST(req: NextRequest) {
   const auth = validateTelegramRequest(req);
@@ -150,6 +151,9 @@ export async function POST(req: NextRequest) {
         fortressGoldMult = 1 + CONTROL_GOLD_BONUS;
       }
     }
+    // Премиум-статус (lib/premium-shop.ts, куплен за Осколки Короны) — +15% золота и опыта с
+    // ЛЮБОГО боя, умножается поверх всех остальных множителей выше, тот же приём, что fortressGoldMult.
+    const premiumMult = isPremiumActive(player.premiumUntil) ? PREMIUM_GOLD_XP_MULT : 1;
 
     // Track deferred DB operations for transaction
     let itemToConsume: { id: string; delete: boolean } | null = null;
@@ -519,8 +523,8 @@ export async function POST(req: NextRequest) {
     if (enemyHp <= 0 && !combatOver) {
       combatOver = true;
       playerWon = true;
-      xpGained = Math.round(enemyTemplate.xp * dungeonEffect.xpMult * abyssEffect.xpMult);
-      goldGained = Math.round((enemyTemplate.gold + rollDice('1d4') * Math.ceil(player.level / 2)) * dungeonEffect.goldMult * abyssEffect.goldMult * fortressGoldMult);
+      xpGained = Math.round(enemyTemplate.xp * dungeonEffect.xpMult * abyssEffect.xpMult * premiumMult);
+      goldGained = Math.round((enemyTemplate.gold + rollDice('1d4') * Math.ceil(player.level / 2)) * dungeonEffect.goldMult * abyssEffect.goldMult * fortressGoldMult * premiumMult);
       droppedItems.push(...rollLoot(enemyTemplate.lootTable));
       const currencyDrop = rollCurrencyDrop(enemyTemplate.isBoss);
       if (currencyDrop) droppedItems.push(currencyDrop);
@@ -731,8 +735,8 @@ export async function POST(req: NextRequest) {
             }
           } else {
             dungeonJustCompleted = true;
-            xpGained += Math.round(dungeon.completionReward.xp * dungeonEffect.xpMult);
-            goldGained += Math.round(dungeon.completionReward.gold * dungeonEffect.goldMult * fortressGoldMult);
+            xpGained += Math.round(dungeon.completionReward.xp * dungeonEffect.xpMult * premiumMult);
+            goldGained += Math.round(dungeon.completionReward.gold * dungeonEffect.goldMult * fortressGoldMult * premiumMult);
             for (const rewardItemId of dungeon.completionReward.items ?? []) {
               const rewardItemData = ITEMS.find(i => i.id === rewardItemId);
               if (rewardItemData) {
@@ -778,8 +782,8 @@ export async function POST(req: NextRequest) {
             }
           } else {
             trialJustCompleted = true;
-            xpGained += trial.completionReward.xp;
-            goldGained += Math.round(trial.completionReward.gold * fortressGoldMult);
+            xpGained += Math.round(trial.completionReward.xp * premiumMult);
+            goldGained += Math.round(trial.completionReward.gold * fortressGoldMult * premiumMult);
             for (const rewardItemId of trial.completionReward.items ?? []) {
               const rewardItemData = ITEMS.find(i => i.id === rewardItemId);
               if (rewardItemData) {

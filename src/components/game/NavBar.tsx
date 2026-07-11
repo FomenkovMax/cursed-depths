@@ -26,12 +26,15 @@ const TAB_META: Record<GameTab, TabMeta> = {
   market: { icon: '🏛️', label: 'Рынок' },
   pvp: { icon: '⚔️', label: 'Арена' },
   leaderboard: { icon: '🏆', label: 'Топ' },
+  premium: { icon: '👑', label: 'Премиум' },
 };
 
 // Прямые пункты остаются на виду — это самые частые действия игрового цикла
-// (исследование/бой). Остальные 9 вкладок собраны в две выпадающие категории
+// (исследование/бой). Остальные вкладки собраны в две выпадающие категории
 // ("Герой" и "Мир"), как вложенное меню в Подземельях Колодца — вместо плоской
-// панели на 13 колонок, которая читалась как таблица, а не как игра.
+// панели на 13 колонок, которая читалась как таблица, а не как игра. "Премиум" —
+// отдельный прямой пункт, а не спрятан в выпадашку: витрина монетизации должна
+// быть на виду постоянно, тот же приём, что и у прочих F2P-магазинов.
 const DIRECT_TABS: GameTab[] = ['overview', 'combat', 'map', 'quests'];
 const HERO_GROUP: GameTab[] = ['inventory', 'craft', 'achievements', 'codex'];
 const WORLD_GROUP: GameTab[] = ['guild', 'party', 'market', 'pvp', 'leaderboard'];
@@ -46,16 +49,22 @@ interface NavButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   active: boolean;
   icon: string;
   label: string;
-  danger?: boolean;
+  variant?: 'default' | 'danger' | 'gold';
   dot?: boolean;
 }
+
+const VARIANT_ACTIVE_CLASS: Record<NonNullable<NavButtonProps['variant']>, string> = {
+  default: 'bg-primary/20 text-primary',
+  danger: 'bg-destructive/20 text-destructive',
+  gold: 'bg-gold/20 text-gold',
+};
 
 // forwardRef + spread ...rest — DropdownMenuTrigger asChild (Radix Slot) clones its child and
 // needs a ref plus its own event handlers (onPointerDown/onKeyDown/aria-*) attached to the real
 // <button>; without this the two group triggers below render a <button> nested inside Radix's
 // own trigger <button>, which is invalid HTML and breaks hydration.
 const NavButton = forwardRef<HTMLButtonElement, NavButtonProps>(function NavButton(
-  { active, icon, label, danger, dot, className, ...rest },
+  { active, icon, label, variant = 'default', dot, className, ...rest },
   ref,
 ) {
   return (
@@ -63,11 +72,7 @@ const NavButton = forwardRef<HTMLButtonElement, NavButtonProps>(function NavButt
       ref={ref}
       type="button"
       className={`relative flex flex-col items-center justify-center gap-0.5 h-14 rounded-md text-[10px] leading-none transition-colors ${
-        active
-          ? danger
-            ? 'bg-destructive/20 text-destructive'
-            : 'bg-primary/20 text-primary'
-          : 'text-muted-foreground'
+        active ? VARIANT_ACTIVE_CLASS[variant] : 'text-muted-foreground'
       } ${className ?? ''}`}
       {...rest}
     >
@@ -85,18 +90,26 @@ export function NavBar({ tab, onChangeTab, inCombat }: NavBarProps) {
   const worldActive = WORLD_GROUP.includes(tab);
 
   return (
-    <div className="grid grid-cols-6 gap-0.5 bg-card border-b border-border p-1">
+    <div className="grid grid-cols-7 gap-0.5 bg-card border-b border-border p-1">
       {DIRECT_TABS.map(t => (
         <NavButton
           key={t}
           active={tab === t}
           icon={TAB_META[t].icon}
           label={TAB_META[t].label}
-          danger={t === 'combat'}
+          variant={t === 'combat' ? 'danger' : 'default'}
           dot={t === 'combat' && inCombat}
           onClick={() => onChangeTab(t)}
         />
       ))}
+
+      <NavButton
+        active={tab === 'premium'}
+        icon={TAB_META.premium.icon}
+        label={TAB_META.premium.label}
+        variant="gold"
+        onClick={() => onChangeTab('premium')}
+      />
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>

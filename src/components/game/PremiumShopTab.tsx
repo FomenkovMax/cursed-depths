@@ -2,10 +2,11 @@ import { TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { PremiumShopStateView, PlayerData, FortuneSpinResultView, PetsStateView } from '@/lib/game-types';
+import { PremiumShopStateView, PlayerData, FortuneSpinResultView, PetsStateView, ExpeditionStateView } from '@/lib/game-types';
 import { FortuneWheelVisual } from '@/components/game/FortuneWheel';
 import { RaceChangePanel } from '@/components/game/RaceChangePanel';
 import { PetsPanel } from '@/components/game/PetsPanel';
+import { ExpeditionPanel } from '@/components/game/ExpeditionPanel';
 
 interface PremiumShopTabProps {
   state: PremiumShopStateView | null;
@@ -24,6 +25,12 @@ interface PremiumShopTabProps {
   activatingPetId: string | null;
   onBuyPet: (petId: string) => void;
   onActivatePet: (petId: string | null) => void;
+  expeditionState: ExpeditionStateView | null;
+  expeditionLoading: boolean;
+  startingExpeditionId: string | null;
+  claimingExpedition: boolean;
+  onStartExpedition: (tierId: string) => void;
+  onClaimExpedition: () => void;
 }
 
 function formatPremiumUntil(iso: string | null): string {
@@ -37,6 +44,7 @@ export function PremiumShopTab({
   player, spinningWheel, onSpinWheel,
   changingRace, onChangeRace,
   petsState, petsLoading, buyingPetId, activatingPetId, onBuyPet, onActivatePet,
+  expeditionState, expeditionLoading, startingExpeditionId, claimingExpedition, onStartExpedition, onClaimExpedition,
 }: PremiumShopTabProps) {
   const races = state?.raceChange.races ?? [];
 
@@ -178,6 +186,24 @@ export function PremiumShopTab({
             activatingPetId={activatingPetId}
             onBuyPet={onBuyPet}
             onActivatePet={onActivatePet}
+          />
+        </CardContent>
+      </Card>
+
+      {/* Экспедиции — премиум-эксклюзивная офлайн-механика (lib/expeditions.ts): отправить героя
+          в отлучку на время и вернуться за наградой, не блокирует остальную игру. */}
+      <Card className="border-border">
+        <CardHeader className="pb-2 pt-3 px-4">
+          <CardTitle className="text-sm">🎒 Экспедиции</CardTitle>
+        </CardHeader>
+        <CardContent className="px-4 pb-3">
+          <ExpeditionPanel
+            state={expeditionState}
+            loading={expeditionLoading}
+            starting={startingExpeditionId}
+            claiming={claimingExpedition}
+            onStart={onStartExpedition}
+            onClaim={onClaimExpedition}
           />
         </CardContent>
       </Card>

@@ -32,6 +32,7 @@ import {
   PremiumShopStateView,
   FortuneSpinResultView,
   PetsStateView,
+  ExpeditionStateView,
 } from '@/lib/game-types';
 import { LoadingScreen } from '@/components/game/LoadingScreen';
 import { CharacterCreationScreen } from '@/components/game/CharacterCreationScreen';
@@ -97,6 +98,10 @@ export default function CursedDepths() {
   const [petsLoading, setPetsLoading] = useState(false);
   const [buyingPetId, setBuyingPetId] = useState<string | null>(null);
   const [activatingPetId, setActivatingPetId] = useState<string | null>(null);
+  const [expeditionState, setExpeditionState] = useState<ExpeditionStateView | null>(null);
+  const [expeditionLoading, setExpeditionLoading] = useState(false);
+  const [startingExpeditionId, setStartingExpeditionId] = useState<string | null>(null);
+  const [claimingExpedition, setClaimingExpedition] = useState(false);
   const [stashItems, setStashItems] = useState<StashItemView[]>([]);
   const [stashCapacity, setStashCapacity] = useState(60);
   const [stashLoading, setStashLoading] = useState(false);
@@ -576,6 +581,59 @@ export default function CursedDepths() {
       setMessage({ text: 'Ошибка активации питомца', type: 'error' });
     } finally {
       setActivatingPetId(null);
+    }
+  };
+
+  // ===== ЭКСПЕДИЦИИ (lib/expeditions.ts) — премиум-эксклюзивный офлайн-таймер, не блокирует
+  // остальную игру. Тот же паттерн загрузки состояния, что и у премиум-магазина/питомцев. =====
+  const refreshExpeditionState = useCallback(() => {
+    setExpeditionLoading(true);
+    apiCall('/api/expedition/state')
+      .then(data => { if (data.tiers) setExpeditionState(data); })
+      .catch(() => setMessage({ text: 'Не удалось загрузить экспедиции', type: 'error' }))
+      .finally(() => setExpeditionLoading(false));
+  }, [apiCall]);
+
+  useEffect(() => {
+    if (tab !== 'premium' || !telegramIdRef.current) return;
+    refreshExpeditionState();
+  }, [tab, refreshExpeditionState]);
+
+  const handleStartExpedition = async (tierId: string) => {
+    if (!player) return;
+    setStartingExpeditionId(tierId);
+    try {
+      const data = await apiCall('/api/expedition/start', 'POST', { tierId });
+      if (data.error) {
+        setMessage({ text: data.error, type: 'error' });
+      } else {
+        setPlayer(data.player);
+        setMessage({ text: data.message, type: 'success' });
+        refreshExpeditionState();
+      }
+    } catch {
+      setMessage({ text: 'Ошибка отправки экспедиции', type: 'error' });
+    } finally {
+      setStartingExpeditionId(null);
+    }
+  };
+
+  const handleClaimExpedition = async () => {
+    if (!player) return;
+    setClaimingExpedition(true);
+    try {
+      const data = await apiCall('/api/expedition/claim', 'POST', {});
+      if (data.error) {
+        setMessage({ text: data.error, type: 'error' });
+      } else {
+        setPlayer(data.player);
+        setMessage({ text: data.message, type: 'success' });
+        refreshExpeditionState();
+      }
+    } catch {
+      setMessage({ text: 'Ошибка получения награды экспедиции', type: 'error' });
+    } finally {
+      setClaimingExpedition(false);
     }
   };
 
@@ -1685,6 +1743,12 @@ export default function CursedDepths() {
             activatingPetId={activatingPetId}
             onBuyPet={handleBuyPet}
             onActivatePet={handleActivatePet}
+            expeditionState={expeditionState}
+            expeditionLoading={expeditionLoading}
+            startingExpeditionId={startingExpeditionId}
+            claimingExpedition={claimingExpedition}
+            onStartExpedition={handleStartExpedition}
+            onClaimExpedition={handleClaimExpedition}
           />
 
           <CodexTab entries={codexEntries} loading={codexLoading} />

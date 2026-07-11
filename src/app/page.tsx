@@ -91,7 +91,6 @@ export default function CursedDepths() {
   const [premiumLoading, setPremiumLoading] = useState(false);
   const [buyingPackId, setBuyingPackId] = useState<string | null>(null);
   const [spinningWheel, setSpinningWheel] = useState(false);
-  const [lastFortuneResult, setLastFortuneResult] = useState<FortuneSpinResultView | null>(null);
   const [changingRace, setChangingRace] = useState(false);
   const [stashItems, setStashItems] = useState<StashItemView[]>([]);
   const [stashCapacity, setStashCapacity] = useState(60);
@@ -570,20 +569,24 @@ export default function CursedDepths() {
     }
   };
 
-  const handleSpinFortuneWheel = async () => {
-    if (!player) return;
+  // Возвращает выпавший приз вызывающему (FortuneWheelVisual) — сама анимация довода колеса до
+  // нужного сектора и показ результата после её завершения происходит уже внутри компонента,
+  // здесь только сетевой запрос и обновление состояния игрока/валюты.
+  const handleSpinFortuneWheel = async (): Promise<FortuneSpinResultView | null> => {
+    if (!player) return null;
     setSpinningWheel(true);
     try {
       const data = await apiCall('/api/fortune/spin', 'POST', {});
       if (data.error) {
         setMessage({ text: data.error, type: 'error' });
-      } else {
-        setPlayer(data.player);
-        setLastFortuneResult(data.reward);
-        refreshPremiumState();
+        return null;
       }
+      setPlayer(data.player);
+      refreshPremiumState();
+      return data.reward as FortuneSpinResultView;
     } catch {
       setMessage({ text: 'Ошибка вращения колеса', type: 'error' });
+      return null;
     } finally {
       setSpinningWheel(false);
     }
@@ -1609,7 +1612,6 @@ export default function CursedDepths() {
             onRedeemSku={handleRedeemSku}
             player={player}
             spinningWheel={spinningWheel}
-            lastFortuneResult={lastFortuneResult}
             onSpinWheel={handleSpinFortuneWheel}
             changingRace={changingRace}
             onChangeRace={handleChangeRace}

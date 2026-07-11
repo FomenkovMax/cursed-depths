@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { validateTelegramRequest } from '@/lib/auth';
 import { SHARD_PACKS, PREMIUM_CATALOG, isPremiumActive, RACE_CHANGE_COST_SHARDS } from '@/lib/premium-shop';
-import { freeSpinsPerDayFor, PAID_SPIN_COST_SHARDS } from '@/lib/fortune-wheel';
+import { freeSpinsPerDayFor, PAID_SPIN_COST_SHARDS, FORTUNE_WHEEL } from '@/lib/fortune-wheel';
 
 export async function GET(req: NextRequest) {
   const auth = validateTelegramRequest(req);
@@ -30,6 +30,15 @@ export async function GET(req: NextRequest) {
         freeSpinsLeftToday: Math.max(0, freeSpins - spinsToday),
         freeSpinsPerDay: freeSpins,
         paidSpinCost: PAID_SPIN_COST_SHARDS,
+        // Сегменты для отрисовки колеса на фронте — id должен совпадать с id, который вернёт
+        // POST /api/fortune/spin, чтобы фронт мог довернуть колесо до нужного сектора.
+        segments: FORTUNE_WHEEL.map(s => ({
+          id: s.id,
+          nameRu: s.nameRu,
+          icon: s.icon,
+          kind: s.reward.kind,
+          rarity: s.reward.kind === 'item' ? s.reward.rarity : null,
+        })),
       },
       raceChange: {
         costShards: RACE_CHANGE_COST_SHARDS,

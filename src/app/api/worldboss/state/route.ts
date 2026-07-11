@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { validateTelegramRequest } from '@/lib/auth';
-import { ensureWorldBossSpawned, DAILY_ATTACK_CAP, WORLD_BOSS_LORE } from '@/lib/world-boss';
+import { ensureWorldBossSpawned, dailyAttackCapFor, WORLD_BOSS_LORE } from '@/lib/world-boss';
+import { isPremiumActive } from '@/lib/premium-shop';
 
 export async function GET(req: NextRequest) {
   const auth = validateTelegramRequest(req);
@@ -33,11 +34,13 @@ export async function GET(req: NextRequest) {
 
     const today = new Date().toISOString().split('T')[0];
     const attacksToday = player.worldBossAttackDate === today ? player.worldBossAttacksToday : 0;
+    const attackCap = dailyAttackCapFor(isPremiumActive(player.premiumUntil));
 
     return NextResponse.json({
       boss: { incarnation: boss.incarnation, name: boss.name, hp: boss.hp, maxHp: boss.maxHp, lore: WORLD_BOSS_LORE },
       topContributors,
-      attacksLeftToday: Math.max(0, DAILY_ATTACK_CAP - attacksToday),
+      attacksLeftToday: Math.max(0, attackCap - attacksToday),
+      attackCap,
     });
   } catch (error) {
     console.error('[API] Route error:', error);

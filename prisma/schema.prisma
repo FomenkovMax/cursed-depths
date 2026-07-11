@@ -68,6 +68,9 @@ model Player {
   deathDebuffUntil DateTime? // -15% опыта до этого момента (см. lib/premium-shop.ts
                             // isDeathDebuffActive) — ставится при каждой смерти, премиум
                             // полностью иммунен (проверяется вместе с этим полем, не отдельным флагом)
+  fortuneSpinsToday Int     @default(0) // сколько раз колесо фортуны (lib/fortune-wheel.ts)
+                            // крутили сегодня — тот же паттерн lazy-reset, что worldBossAttacksToday
+  fortuneSpinDate   String? // "YYYY-MM-DD" последнего вращения
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 

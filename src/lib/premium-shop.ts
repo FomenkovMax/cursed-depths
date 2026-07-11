@@ -101,3 +101,8 @@ export function isDeathDebuffActive(deathDebuffUntil: Date | null, premiumUntil:
   if (isPremiumActive(premiumUntil)) return false;
   return !!deathDebuffUntil && deathDebuffUntil.getTime() > Date.now();
 }
+
+/** Смена расы (и, вслед за ней, класса — классы жёстко привязаны к расе, см. GameClass.raceId)
+ * — платная услуга за уже купленные Осколки, а не starter-фича, поэтому цена вне PREMIUM_CATALOG:
+ * это не разовая покупка эффекта, а сервис с собственным API (см. api/player/change-race). */
+export const RACE_CHANGE_COST_SHARDS = 400;

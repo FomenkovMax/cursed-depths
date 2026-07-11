@@ -3,7 +3,8 @@ import { db } from '@/lib/db';
 import { validateTelegramRequest } from '@/lib/auth';
 import { computeEquipmentBonuses } from '@/lib/equipment-stats';
 import type { PlayerCombatStats } from '@/lib/combat-engine';
-import { ensureWorldBossSpawned, worldBossAttackDamage, rewardForShare, maxHpForIncarnation, DAILY_ATTACK_CAP, WORLD_BOSS_NAME } from '@/lib/world-boss';
+import { ensureWorldBossSpawned, worldBossAttackDamage, rewardForShare, maxHpForIncarnation, dailyAttackCapFor, WORLD_BOSS_NAME } from '@/lib/world-boss';
+import { isPremiumActive, isDeathDebuffActive, DEATH_DEBUFF_XP_MULT } from '@/lib/premium-shop';
 
 export async function POST(req: NextRequest) {
   const auth = validateTelegramRequest(req);
@@ -20,8 +21,9 @@ export async function POST(req: NextRequest) {
 
     const today = new Date().toISOString().split('T')[0];
     const attacksSoFar = player.worldBossAttackDate === today ? player.worldBossAttacksToday : 0;
-    if (attacksSoFar >= DAILY_ATTACK_CAP) {
-      return NextResponse.json({ error: `Вы уже атаковали мирового босса ${DAILY_ATTACK_CAP} раз сегодня` }, { status: 400 });
+    const attackCap = dailyAttackCapFor(isPremiumActive(player.premiumUntil));
+    if (attacksSoFar >= attackCap) {
+      return NextResponse.json({ error: `Вы уже атаковали мирового босса ${attackCap} раз сегодня` }, { status: 400 });
     }
 
     const boss = await ensureWorldBossSpawned(db);
@@ -77,7 +79,8 @@ export async function POST(req: NextRequest) {
           const reward = rewardForShare(share);
           if (pid === player.id) myReward = reward;
 
-          let newXp = p.xp + reward.xp;
+          const xpDebuffMult = isDeathDebuffActive(p.deathDebuffUntil, p.premiumUntil) ? DEATH_DEBUFF_XP_MULT : 1;
+          let newXp = p.xp + Math.round(reward.xp * xpDebuffMult);
           let newLevel = p.level;
           let newXpToNext = p.xpToNext;
           let newStatPoints = p.statPoints;
@@ -120,7 +123,7 @@ export async function POST(req: NextRequest) {
       bossMaxHp: result.killed ? maxHpForIncarnation(boss.incarnation + 1) : result.maxHp,
       killed: result.killed,
       reward: result.myReward,
-      attacksLeftToday: Math.max(0, DAILY_ATTACK_CAP - (attacksSoFar + 1)),
+      attacksLeftToday: Math.max(0, attackCap - (attacksSoFar + 1)),
     });
   } catch (error) {
     if (error instanceof Error && error.message === 'BOSS_ALREADY_DEAD') {

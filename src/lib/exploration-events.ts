@@ -134,6 +134,66 @@ export const EXPLORATION_EVENTS: ExplorationEvent[] = [
       { id: 'retreat', label: 'Отступить', hint: 'безопасно' },
     ],
   },
+
+  // ===== Лор-загадки — проверка не характеристики, а того, что игрок УЗНАЛ из Лор-кодекса
+  // (lib/codex.ts) и описаний рас/классов. Неверный ответ не наказывает — читать кодекс не
+  // обязательно, чтобы играть, — но верный вознаграждает ощутимо и связывает мифологию
+  // с сиюминутным исследованием, а не оставляет её только в отдельной вкладке. =====
+  {
+    id: 'rift_riddle',
+    icon: '🌀',
+    textRu: 'Из трещины доносится голос, не дожидающийся ответа: «Я не бог, но меня услышали все народы. Я не создал расу, но от меня пошли два Пути. Кто я?»',
+    choices: [
+      { id: 'karsus', label: 'Карсус', hint: '?' },
+      { id: 'velarion', label: 'Веларион', hint: '?' },
+      { id: 'kessara', label: 'Кессара', hint: '?' },
+      { id: 'tornak', label: 'Торнак', hint: '?' },
+    ],
+  },
+  {
+    id: 'pillar_riddle',
+    icon: '🗿',
+    textRu: 'На потрескавшейся плите высечены четыре имени и один вопрос: «Кто из нас — Тьма, а не Свет?»',
+    choices: [
+      { id: 'kessara', label: 'Кессара', hint: '?' },
+      { id: 'ailet', label: 'Айлет', hint: '?' },
+      { id: 'tornak', label: 'Торнак', hint: '?' },
+      { id: 'velarion', label: 'Веларион', hint: '?' },
+    ],
+  },
+  {
+    id: 'ancestor_riddle',
+    icon: '🛡️',
+    textRu: 'Резьба на камне изображает воина со щитом: «Я не ударил первым — я дождался удара. Так я понял: гнев — не оружие. Кто я?»',
+    choices: [
+      { id: 'grumgar', label: 'Грумгар', hint: '?' },
+      { id: 'torin', label: 'Торин Драккар', hint: '?' },
+      { id: 'sionael', label: 'Сионаэль', hint: '?' },
+      { id: 'morvena', label: 'Морвена', hint: '?' },
+    ],
+  },
+  {
+    id: 'origin_riddle',
+    icon: '☯️',
+    textRu: 'Шёпот из ниоткуда повторяет одно и то же: «До всего были мы. Из нашего столкновения родился первый звук — не слово, не песня. Что это было?»',
+    choices: [
+      { id: 'gul', label: 'Гул', hint: '?' },
+      { id: 'karsus_ans', label: 'Карсус', hint: '?' },
+      { id: 'ash', label: 'Пепел', hint: '?' },
+      { id: 'blight', label: 'Скверна', hint: '?' },
+    ],
+  },
+  {
+    id: 'path_riddle',
+    icon: '⚖️',
+    textRu: 'Две тропы расходятся у обгорелого столба с надписью: «Один путь сгорает в правде и возрождается честнее. Как он называется?»',
+    choices: [
+      { id: 'ash', label: 'Путь Пепла', hint: '?' },
+      { id: 'blight', label: 'Путь Скверны', hint: '?' },
+      { id: 'both', label: 'Оба пути', hint: '?' },
+      { id: 'neither', label: 'Ни один', hint: '?' },
+    ],
+  },
 ];
 
 export interface EventResolution {
@@ -256,7 +316,43 @@ export function resolveEventChoice(eventId: string, choiceId: string, playerLeve
     case 'sleeping_guardian:retreat':
       return noEffect('Вы тихо отступаете, оставляя зверя спать дальше.');
 
+    case 'rift_riddle:karsus': return riddleResolution(true, 'Карсус', playerLevel);
+    case 'rift_riddle:velarion': return riddleResolution(false, 'Карсус', playerLevel);
+    case 'rift_riddle:kessara': return riddleResolution(false, 'Карсус', playerLevel);
+    case 'rift_riddle:tornak': return riddleResolution(false, 'Карсус', playerLevel);
+
+    case 'pillar_riddle:kessara': return riddleResolution(true, 'Кессара', playerLevel);
+    case 'pillar_riddle:ailet': return riddleResolution(false, 'Кессара', playerLevel);
+    case 'pillar_riddle:tornak': return riddleResolution(false, 'Кессара', playerLevel);
+    case 'pillar_riddle:velarion': return riddleResolution(false, 'Кессара', playerLevel);
+
+    case 'ancestor_riddle:grumgar': return riddleResolution(true, 'Грумгар', playerLevel);
+    case 'ancestor_riddle:torin': return riddleResolution(false, 'Грумгар', playerLevel);
+    case 'ancestor_riddle:sionael': return riddleResolution(false, 'Грумгар', playerLevel);
+    case 'ancestor_riddle:morvena': return riddleResolution(false, 'Грумгар', playerLevel);
+
+    case 'origin_riddle:gul': return riddleResolution(true, 'Гул', playerLevel);
+    case 'origin_riddle:karsus_ans': return riddleResolution(false, 'Гул', playerLevel);
+    case 'origin_riddle:ash': return riddleResolution(false, 'Гул', playerLevel);
+    case 'origin_riddle:blight': return riddleResolution(false, 'Гул', playerLevel);
+
+    case 'path_riddle:ash': return riddleResolution(true, 'Путь Пепла', playerLevel);
+    case 'path_riddle:blight': return riddleResolution(false, 'Путь Пепла', playerLevel);
+    case 'path_riddle:both': return riddleResolution(false, 'Путь Пепла', playerLevel);
+    case 'path_riddle:neither': return riddleResolution(false, 'Путь Пепла', playerLevel);
+
     default:
       return null;
   }
+}
+
+/** Верный ответ вознаграждает ощутимо (золото + опыт), неверный не наказывает — только
+ * называет правильный ответ, чтобы в следующий раз игрок уже знал. Не привязана к
+ * характеристикам: это проверка того, что игрок УЗНАЛ из Лор-кодекса, а не того, кем он играет. */
+function riddleResolution(isCorrect: boolean, correctAnswerRu: string, playerLevel: number): EventResolution {
+  if (isCorrect) {
+    const gold = rollDice('3d8') * playerLevel;
+    return { message: `Верно! Ответ — ${correctAnswerRu}. ${gold} золота и толика мудрости в награду.`, goldDelta: gold, hpDeltaPercent: 0, mpDeltaPercent: 0, xpDelta: 12 * playerLevel, itemRarity: null, startCombat: false };
+  }
+  return { message: `Неверно. Правильный ответ — ${correctAnswerRu}. Что ж, теперь вы знаете.`, goldDelta: 0, hpDeltaPercent: 0, mpDeltaPercent: 0, xpDelta: 2 * playerLevel, itemRarity: null, startCombat: false };
 }

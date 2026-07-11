@@ -7,7 +7,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { ItemIconTile } from '@/components/game/ItemIconTile';
 import { CRAFTING_RECIPES, ITEMS, RARITY_COLORS } from '@/lib/game-data';
 import { PlayerData, AFFIX_TIER_RU, AFFIX_TIER_COLORS, parseStats, parseAffixes } from '@/lib/game-types';
-import { CURRENCY_IDS } from '@/lib/item-affixes';
+import { CURRENCY_IDS, enchantCostForTier, type AffixTierName } from '@/lib/item-affixes';
 import { MAX_ENHANCEMENT_LEVEL, temperSuccessChance } from '@/lib/item-enhancement';
 
 interface CraftTabProps {
@@ -18,13 +18,16 @@ interface CraftTabProps {
   onCraft: (recipeId: string) => void;
   onApplyCurrency: (inventoryId: string, currencyItemId: string) => void;
   onTemper: (inventoryId: string) => void;
+  crownShards: number;
+  onEnchantAffix: (inventoryId: string, affixIndex: number) => void;
+  enchanting: boolean;
 }
 
 const TIER_LABELS: Record<number, string> = { 1: 'Тир I', 2: 'Тир II', 3: 'Тир III' };
 const TIER_COLORS: Record<number, string> = { 1: '#9ca3af', 2: '#3b82f6', 3: '#f59e0b' };
 const TEMPER_SCROLL_ITEM_ID = 'tempering_scroll';
 
-export function CraftTab({ player, loading, canCraftRecipe, learnedRecipeIds, onCraft, onApplyCurrency, onTemper }: CraftTabProps) {
+export function CraftTab({ player, loading, canCraftRecipe, learnedRecipeIds, onCraft, onApplyCurrency, onTemper, crownShards, onEnchantAffix, enchanting }: CraftTabProps) {
   const playerInventory = player?.inventory || [];
   const [selectedTargetId, setSelectedTargetId] = useState<string | null>(null);
   const gearItems = playerInventory.filter(i => !i.equipped && ['weapon', 'armor', 'accessory'].includes(i.type));
@@ -97,11 +100,35 @@ export function CraftTab({ player, loading, canCraftRecipe, learnedRecipeIds, on
                       <Badge key={k} variant="outline" className="text-[9px] h-4 px-1">{k} +{v}</Badge>
                     ))}
                   </div>
-                  {parseAffixes(selectedTarget.affixes).length > 0 && (
-                    <p className="text-[10px] text-muted-foreground mt-1">
-                      Свойства: {parseAffixes(selectedTarget.affixes).map(a => a.labelRu).join(', ')}
-                    </p>
-                  )}
+                  {parseAffixes(selectedTarget.affixes).length > 0 && (() => {
+                    const tier = selectedTarget.affixTier as AffixTierName | null;
+                    const enchantCost = tier ? enchantCostForTier(tier) : null;
+                    return (
+                      <div className="mt-2 pt-2 border-t border-border/40 space-y-1">
+                        <p className="text-[10px] text-muted-foreground">
+                          {enchantCost !== null
+                            ? `Точечный реброс одного свойства — 👑 ${enchantCost} за штуку (остальные не трогает):`
+                            : 'Осквернённый предмет — точечный реброс недоступен.'}
+                        </p>
+                        {parseAffixes(selectedTarget.affixes).map((a, idx) => (
+                          <div key={idx} className="flex items-center gap-2 p-1 rounded bg-secondary/10">
+                            <span className="text-[10px] flex-1">{a.labelRu} (+{a.value})</span>
+                            {enchantCost !== null && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-6 text-[9px] px-2 shrink-0"
+                                disabled={loading || enchanting || crownShards < enchantCost}
+                                onClick={() => onEnchantAffix(selectedTarget.id, idx)}
+                              >
+                                👑 {enchantCost}
+                              </Button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })()}
                 </div>
               )}
 

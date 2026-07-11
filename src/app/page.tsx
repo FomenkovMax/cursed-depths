@@ -1314,6 +1314,26 @@ export default function CursedDepths() {
     setLoading(false);
   };
 
+  // ===== ТОЧЕЧНЫЙ РЕБРОС ОДНОГО АФФИКСА (Мастерская зачарования, за Осколки Короны) =====
+  const [enchanting, setEnchanting] = useState(false);
+  const handleEnchantAffix = async (inventoryId: string, affixIndex: number) => {
+    if (!player) return;
+    setEnchanting(true);
+    try {
+      const data = await apiCall('/api/craft/enchant', 'POST', { inventoryId, affixIndex });
+      if (data.error) {
+        setMessage({ text: data.error, type: 'error' });
+      } else {
+        setMessage({ text: data.message, type: 'success' });
+        await refreshPlayer();
+        refreshPremiumState();
+      }
+    } catch {
+      setMessage({ text: 'Ошибка зачарования', type: 'error' });
+    }
+    setEnchanting(false);
+  };
+
   // ===== MARKET ACTIONS =====
   const handleMarketListItem = async (inventoryId: string, price: number) => {
     if (!player) return;
@@ -1684,7 +1704,18 @@ export default function CursedDepths() {
 
           <QuestsTab player={player} loading={loading} onClaimQuest={handleClaimQuest} />
 
-          <CraftTab player={player} loading={loading} canCraftRecipe={canCraftRecipe} learnedRecipeIds={learnedRecipeIds} onCraft={handleCraft} onApplyCurrency={handleApplyCurrency} onTemper={handleTemper} />
+          <CraftTab
+            player={player}
+            loading={loading}
+            canCraftRecipe={canCraftRecipe}
+            learnedRecipeIds={learnedRecipeIds}
+            onCraft={handleCraft}
+            onApplyCurrency={handleApplyCurrency}
+            onTemper={handleTemper}
+            crownShards={premiumState?.crownShards ?? 0}
+            onEnchantAffix={handleEnchantAffix}
+            enchanting={enchanting}
+          />
 
           <LeaderboardTab
             player={player}

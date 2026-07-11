@@ -1,10 +1,10 @@
-import { useState } from 'react';
 import { TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { PremiumShopStateView, PlayerData, FortuneSpinResultView } from '@/lib/game-types';
 import { FortuneWheelVisual } from '@/components/game/FortuneWheel';
+import { RaceChangePanel } from '@/components/game/RaceChangePanel';
 
 interface PremiumShopTabProps {
   state: PremiumShopStateView | null;
@@ -30,12 +30,7 @@ export function PremiumShopTab({
   player, spinningWheel, onSpinWheel,
   changingRace, onChangeRace,
 }: PremiumShopTabProps) {
-  const [selectedRaceId, setSelectedRaceId] = useState('');
-  const [selectedClassId, setSelectedClassId] = useState('');
-
   const races = state?.raceChange.races ?? [];
-  const selectedRace = races.find(r => r.id === selectedRaceId);
-  const availableClasses = selectedRace?.classes ?? [];
 
   return (
     <TabsContent value="premium" className="flex-1 overflow-y-auto p-4 space-y-4 m-0">
@@ -148,44 +143,15 @@ export function PremiumShopTab({
         <CardHeader className="pb-2 pt-3 px-4">
           <CardTitle className="text-sm">🧬 Смена расы</CardTitle>
         </CardHeader>
-        <CardContent className="px-4 pb-3 space-y-2">
-          <div className="text-[10px] text-muted-foreground">
-            Текущая раса: {player?.race.name ?? '—'} ({player?.class.name ?? '—'}). Стоимость смены — 👑 {state?.raceChange.costShards ?? 400}.
-          </div>
-          <select
-            className="w-full h-9 text-xs rounded-md bg-secondary/20 border border-border/60 px-2"
-            value={selectedRaceId}
-            onChange={e => { setSelectedRaceId(e.target.value); setSelectedClassId(''); }}
-          >
-            <option value="">Выберите новую расу...</option>
-            {races.map(r => (
-              <option key={r.id} value={r.id}>{r.icon} {r.name}</option>
-            ))}
-          </select>
-          {selectedRace && (
-            <select
-              className="w-full h-9 text-xs rounded-md bg-secondary/20 border border-border/60 px-2"
-              value={selectedClassId}
-              onChange={e => setSelectedClassId(e.target.value)}
-            >
-              <option value="">Выберите класс...</option>
-              {availableClasses.map(c => (
-                <option key={c.id} value={c.id}>{c.icon} {c.name}</option>
-              ))}
-            </select>
-          )}
-          <Button
-            size="sm"
-            variant="outline"
-            className="w-full h-9 text-xs"
-            disabled={changingRace || !selectedRace || !selectedClassId || (state?.crownShards ?? 0) < (state?.raceChange.costShards ?? 400)}
-            onClick={() => {
-              const cls = availableClasses.find(c => c.id === selectedClassId);
-              if (selectedRace && cls) onChangeRace(selectedRace.slug, cls.slug);
-            }}
-          >
-            {changingRace ? 'Меняем...' : '🧬 Сменить расу'}
-          </Button>
+        <CardContent className="px-4 pb-3">
+          <RaceChangePanel
+            player={player}
+            races={races}
+            costShards={state?.raceChange.costShards ?? 400}
+            crownShards={state?.crownShards ?? 0}
+            changingRace={changingRace}
+            onChangeRace={onChangeRace}
+          />
         </CardContent>
       </Card>
     </TabsContent>

@@ -27,6 +27,49 @@ function statLabel(k: string): string {
   return k === 'attack' ? 'АТК' : k === 'defense' ? 'ЗАЩ' : k === 'healHp' ? 'ЛечHP' : k === 'healMp' ? 'ЛечMP' : k === 'damage' ? 'Урон' : k;
 }
 
+// Расположение "в полный рост": голова сверху по центру, амулет и первое кольцо по бокам
+// тела, оружие и второе кольцо на уровне рук, ноги внизу — читается как силуэт персонажа,
+// а не произвольная сетка. area-имена совпадают с полями Inventory.slot.
+const PORTRAIT_AREAS = `
+  ".      head   ."
+  "amulet body   ring1"
+  "weapon hands  ring2"
+  ".      legs   ."
+`;
+const PORTRAIT_SLOTS: { slot: string; area: string }[] = [
+  { slot: 'head', area: 'head' },
+  { slot: 'amulet', area: 'amulet' },
+  { slot: 'body', area: 'body' },
+  { slot: 'ring1', area: 'ring1' },
+  { slot: 'weapon', area: 'weapon' },
+  { slot: 'hands', area: 'hands' },
+  { slot: 'ring2', area: 'ring2' },
+  { slot: 'legs', area: 'legs' },
+];
+
+function PortraitGrid({ equipped, onSelect }: { equipped: InventoryItem[]; onSelect: (item: InventoryItem) => void }) {
+  const bySlot = new Map(equipped.map(i => [i.slot, i]));
+  return (
+    <div className="grid gap-2" style={{ gridTemplateAreas: PORTRAIT_AREAS, gridTemplateColumns: 'repeat(3, 1fr)' }}>
+      {PORTRAIT_SLOTS.map(({ slot, area }) => {
+        const item = bySlot.get(slot);
+        return (
+          <div key={slot} style={{ gridArea: area }} className="flex flex-col items-center gap-1">
+            {item ? (
+              <ItemIconTile item={item} equipped onClick={() => onSelect(item)} />
+            ) : (
+              <div className="aspect-square w-full rounded-lg border border-dashed border-border/50 bg-secondary/10 flex items-center justify-center text-muted-foreground/40 text-lg">
+                {slot === 'weapon' ? '⚔️' : slot === 'head' ? '👤' : slot === 'body' ? '👕' : slot === 'hands' ? '🤚' : slot === 'legs' ? '🦵' : slot === 'amulet' ? '📿' : '💍'}
+              </div>
+            )}
+            <span className="text-[9px] text-muted-foreground text-center leading-none">{SLOT_RU[slot] ?? slot}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export function InventoryTab({
   player, loading, onEquip, onUseItem, onLearnBlueprint,
   stashItems, stashCapacity, stashLoading, onStoreItem, onRetrieveItem,
@@ -88,21 +131,16 @@ export function InventoryTab({
         </Card>
       ) : (
         <>
-          {/* Экипировано */}
+          {/* Портрет — расположение по слотам "в полный рост", а не плоская сетка: голова
+              сверху, тело в центре с амулетом/кольцом по бокам, оружие и вторая рука ниже,
+              ноги внизу. Под каждый предмет своя иконка уже есть (ItemIconTile), место под
+              арт персонажа/анимацию класса — на будущее (см. обсуждение с пользователем). */}
           <Card className="border-border">
             <CardHeader className="pb-2 pt-3 px-4">
-              <CardTitle className="text-sm">Экипировано</CardTitle>
+              <CardTitle className="text-sm">Портрет</CardTitle>
             </CardHeader>
             <CardContent className="px-4 pb-3">
-              {equipped.length === 0 ? (
-                <p className="text-xs text-muted-foreground text-center py-2">Ничего не экипировано</p>
-              ) : (
-                <div className="grid grid-cols-5 gap-2">
-                  {equipped.map(item => (
-                    <ItemIconTile key={item.id} item={item} equipped onClick={() => setDetail({ item, source: 'inventory' })} />
-                  ))}
-                </div>
-              )}
+              <PortraitGrid equipped={equipped} onSelect={item => setDetail({ item, source: 'inventory' })} />
             </CardContent>
           </Card>
 

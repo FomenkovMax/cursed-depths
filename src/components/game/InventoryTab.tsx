@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { ItemIconTile } from '@/components/game/ItemIconTile';
 import { RARITY_COLORS, RARITY_NAMES_RU } from '@/lib/game-data';
 import { PlayerData, InventoryItem, StashItemView, SLOT_RU, ITEM_TYPE_RU, AFFIX_TIER_RU, AFFIX_TIER_COLORS, parseStats, parseAffixes } from '@/lib/game-types';
 
@@ -24,34 +25,6 @@ type GridItem = InventoryItem | StashItemView;
 
 function statLabel(k: string): string {
   return k === 'attack' ? 'АТК' : k === 'defense' ? 'ЗАЩ' : k === 'healHp' ? 'ЛечHP' : k === 'healMp' ? 'ЛечMP' : k === 'damage' ? 'Урон' : k;
-}
-
-/** Плитка-иконка в духе сеточного инвентаря Подземелий Колодца: значок + бейджи
- * количества/улучшения поверх, вместо текстовой строки. Деталь предмета — по тапу. */
-function ItemTile({ item, equipped, onClick }: { item: GridItem; equipped?: boolean; onClick: () => void }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="relative aspect-square rounded-lg border bg-secondary/20 flex items-center justify-center transition-colors hover:bg-secondary/40"
-      style={{ borderColor: RARITY_COLORS[item.rarity] + (equipped ? '90' : '40') }}
-    >
-      <span className="text-2xl">{item.icon}</span>
-      {item.quantity > 1 && (
-        <span className="absolute bottom-0.5 right-0.5 text-[9px] leading-none bg-background/90 rounded px-1 py-0.5 font-medium">
-          x{item.quantity}
-        </span>
-      )}
-      {item.enhancementLevel > 0 && (
-        <span className="absolute top-0.5 left-0.5 text-[9px] leading-none text-gold font-bold">+{item.enhancementLevel}</span>
-      )}
-      {equipped && (
-        <span className="absolute -top-1 -right-1 text-[8px] leading-none bg-destructive text-destructive-foreground rounded px-1 py-0.5 rotate-6 shadow">
-          ЭКИП.
-        </span>
-      )}
-    </button>
-  );
 }
 
 export function InventoryTab({
@@ -107,7 +80,7 @@ export function InventoryTab({
             ) : (
               <div className="grid grid-cols-5 gap-2">
                 {stashItems.map(item => (
-                  <ItemTile key={item.id} item={item} onClick={() => setDetail({ item, source: 'stash' })} />
+                  <ItemIconTile key={item.id} item={item} onClick={() => setDetail({ item, source: 'stash' })} />
                 ))}
               </div>
             )}
@@ -126,7 +99,7 @@ export function InventoryTab({
               ) : (
                 <div className="grid grid-cols-5 gap-2">
                   {equipped.map(item => (
-                    <ItemTile key={item.id} item={item} equipped onClick={() => setDetail({ item, source: 'inventory' })} />
+                    <ItemIconTile key={item.id} item={item} equipped onClick={() => setDetail({ item, source: 'inventory' })} />
                   ))}
                 </div>
               )}
@@ -146,7 +119,7 @@ export function InventoryTab({
               ) : (
                 <div className="grid grid-cols-5 gap-2">
                   {unequipped.map(item => (
-                    <ItemTile key={item.id} item={item} onClick={() => setDetail({ item, source: 'inventory' })} />
+                    <ItemIconTile key={item.id} item={item} onClick={() => setDetail({ item, source: 'inventory' })} />
                   ))}
                 </div>
               )}

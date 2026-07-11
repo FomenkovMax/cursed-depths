@@ -70,7 +70,7 @@ import { rollTemperScrollDrop } from '@/lib/item-enhancement';
 import { dungeonModifierEffect } from '@/lib/dungeon-modifiers';
 import { abyssScaling, abyssEnemyIdForDepth, isEliteDepth } from '@/lib/abyss';
 import { FORTRESS_ID, CONTROL_GOLD_BONUS } from '@/lib/fortress';
-import { bossIntroLine } from '@/lib/exploration-flavor';
+import { bossIntroLine, deathMessage } from '@/lib/exploration-flavor';
 
 export async function POST(req: NextRequest) {
   const auth = validateTelegramRequest(req);
@@ -701,7 +701,7 @@ export async function POST(req: NextRequest) {
         combatLog.push({ text: `Вы возрождаетесь из пепла с ${playerHp} ХП!`, turn: currentTurn + 2 });
       } else {
         combatOver = true;
-        combatLog.push({ text: 'Вы погибли! Вернитесь в таверну для восстановления.', turn: currentTurn + 2 });
+        combatLog.push({ text: deathMessage(), turn: currentTurn + 2 });
       }
     }
 
@@ -740,6 +740,7 @@ export async function POST(req: NextRequest) {
                 combatLog.push({ text: `Найдено: ${rewardItemData.nameRu}!`, turn: currentTurn + 3 });
               }
             }
+            combatLog.push({ text: dungeon.completionLoreRu, turn: currentTurn + 3 });
             combatLog.push({ text: `Данж «${dungeon.nameRu}» пройден! Бонус: +${dungeon.completionReward.xp} XP, +${dungeon.completionReward.gold} золота`, turn: currentTurn + 3 });
           }
         } else {

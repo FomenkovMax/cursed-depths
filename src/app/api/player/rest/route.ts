@@ -3,6 +3,7 @@ import { db } from '@/lib/db';
 import { validateTelegramRequest } from '@/lib/auth';
 import { computeEquipmentBonuses } from '@/lib/equipment-stats';
 import { isInActivePartyCombat } from '@/lib/party-guards';
+import { restMessage } from '@/lib/exploration-flavor';
 
 export async function POST(req: NextRequest) {
   const auth = validateTelegramRequest(req);
@@ -27,7 +28,7 @@ export async function POST(req: NextRequest) {
       include: { inventory: true, quests: true, race: true, class: { include: { abilities: true } } },
     });
 
-    return NextResponse.json({ message: 'Вы отдохнули в таверне. HP и MP полностью восстановлены!', player: updated });
+    return NextResponse.json({ message: restMessage(), player: updated });
   } catch (error) {
     console.error('[API] Route error:', error);
     if (error instanceof Error && error.message?.includes('connection')) {

@@ -37,7 +37,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Недостаточно золота (нужно 30)' }, { status: 400 });
     }
 
-    const resolution = resolveEventChoice(eventId, choiceId, player.level);
+    // Проверки характеристик (rollStatCheck) считают эффективный стат так же, как и бой —
+    // с учётом экипировки, а не только сырых очков персонажа.
+    const equipBonuses = computeEquipmentBonuses(player.inventory);
+    const resolution = resolveEventChoice(eventId, choiceId, player.level, {
+      strength: player.strength + equipBonuses.strength,
+      dexterity: player.dexterity + equipBonuses.dexterity,
+      vitality: player.vitality + equipBonuses.vitality,
+      intellect: player.intellect + equipBonuses.intellect,
+      willpower: player.willpower + equipBonuses.willpower,
+      instinct: player.instinct + equipBonuses.instinct,
+    });
     if (!resolution) {
       return NextResponse.json({ error: 'Неизвестный выбор' }, { status: 400 });
     }
@@ -70,7 +80,6 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    const equipBonuses = computeEquipmentBonuses(player.inventory);
     const effectiveMaxHp = player.maxHp + equipBonuses.hp;
     const effectiveMaxMp = player.maxMp + equipBonuses.mp;
     // События никогда не убивают напрямую — минимум 1 HP, чтобы не давать нечестную "смерть от текста".

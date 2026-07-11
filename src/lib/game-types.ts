@@ -463,6 +463,36 @@ export interface PetsStateView {
   activePetId: string | null;
 }
 
+export interface ExpeditionTierView {
+  id: string;
+  nameRu: string;
+  icon: string;
+  hours: number;
+  descriptionRu: string;
+  itemChance: number;
+  itemRarity: string;
+}
+
+export interface ActiveExpeditionView {
+  tier: ExpeditionTierView | null;
+  endsAt: string;
+  ready: boolean;
+}
+
+export interface ExpeditionStateView {
+  premiumActive: boolean;
+  tiers: ExpeditionTierView[];
+  active: ActiveExpeditionView | null;
+}
+
+export interface ExpeditionClaimResultView {
+  message: string;
+  goldGained: number;
+  xpGained: number;
+  itemWon: string | null;
+  leveledUp: boolean;
+}
+
 export interface FortuneSpinResultView {
   id: string;
   nameRu: string;

@@ -75,6 +75,11 @@ model Player {
                              // если ни один не активен. Активный питомец обязан быть среди
                              // pets ниже (проверяется в api/pets/activate), но хранится как
                              // плоский id для той же простоты, что и dungeonModifierId.
+  expeditionTierId  String? // id тира из lib/expeditions.ts EXPEDITION_TIERS — null, если герой
+                             // никуда не отправлен. Экспедиция не блокирует обычную игру (можно
+                             // продолжать драться/исследовать параллельно) — это чисто офлайн-
+                             // таймер, премиум-эксклюзивный (см. api/expedition/start).
+  expeditionEndsAt DateTime? // когда можно будет забрать награду — null, если экспедиции нет
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 

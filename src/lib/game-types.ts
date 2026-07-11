@@ -416,12 +416,33 @@ export interface PremiumSkuView {
   costShards: number;
 }
 
+export interface FortuneWheelStateView {
+  freeSpinsLeftToday: number;
+  freeSpinsPerDay: number;
+  paidSpinCost: number;
+}
+
+export interface RaceChangeStateView {
+  costShards: number;
+  races: RaceData[];
+}
+
 export interface PremiumShopStateView {
   crownShards: number;
   premiumUntil: string | null;
   premiumActive: boolean;
   shardPacks: ShardPackView[];
   catalog: PremiumSkuView[];
+  fortuneWheel: FortuneWheelStateView;
+  raceChange: RaceChangeStateView;
+}
+
+export interface FortuneSpinResultView {
+  id: string;
+  nameRu: string;
+  icon: string;
+  kind: 'gold' | 'shards' | 'premium_days' | 'stash_slots' | 'item' | 'nothing';
+  itemWon: string | null;
 }
 
 // Telegram WebApp SDK types

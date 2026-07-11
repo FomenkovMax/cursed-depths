@@ -30,6 +30,7 @@ import {
   FortressAssaultResultView,
   GuildData,
   PremiumShopStateView,
+  FortuneSpinResultView,
 } from '@/lib/game-types';
 import { LoadingScreen } from '@/components/game/LoadingScreen';
 import { CharacterCreationScreen } from '@/components/game/CharacterCreationScreen';
@@ -89,6 +90,9 @@ export default function CursedDepths() {
   const [premiumState, setPremiumState] = useState<PremiumShopStateView | null>(null);
   const [premiumLoading, setPremiumLoading] = useState(false);
   const [buyingPackId, setBuyingPackId] = useState<string | null>(null);
+  const [spinningWheel, setSpinningWheel] = useState(false);
+  const [lastFortuneResult, setLastFortuneResult] = useState<FortuneSpinResultView | null>(null);
+  const [changingRace, setChangingRace] = useState(false);
   const [stashItems, setStashItems] = useState<StashItemView[]>([]);
   const [stashCapacity, setStashCapacity] = useState(60);
   const [stashLoading, setStashLoading] = useState(false);
@@ -563,6 +567,44 @@ export default function CursedDepths() {
       setMessage({ text: 'Ошибка покупки', type: 'error' });
     } finally {
       setPremiumLoading(false);
+    }
+  };
+
+  const handleSpinFortuneWheel = async () => {
+    if (!player) return;
+    setSpinningWheel(true);
+    try {
+      const data = await apiCall('/api/fortune/spin', 'POST', {});
+      if (data.error) {
+        setMessage({ text: data.error, type: 'error' });
+      } else {
+        setPlayer(data.player);
+        setLastFortuneResult(data.reward);
+        refreshPremiumState();
+      }
+    } catch {
+      setMessage({ text: 'Ошибка вращения колеса', type: 'error' });
+    } finally {
+      setSpinningWheel(false);
+    }
+  };
+
+  const handleChangeRace = async (raceSlug: string, classSlug: string) => {
+    if (!player) return;
+    setChangingRace(true);
+    try {
+      const data = await apiCall('/api/player/change-race', 'POST', { raceSlug, classSlug });
+      if (data.error) {
+        setMessage({ text: data.error, type: 'error' });
+      } else {
+        setPlayer(data.player);
+        setMessage({ text: data.message, type: 'success' });
+        refreshPremiumState();
+      }
+    } catch {
+      setMessage({ text: 'Ошибка смены расы', type: 'error' });
+    } finally {
+      setChangingRace(false);
     }
   };
 
@@ -1565,6 +1607,12 @@ export default function CursedDepths() {
             buyingPackId={buyingPackId}
             onBuyPack={handleBuyShardPack}
             onRedeemSku={handleRedeemSku}
+            player={player}
+            spinningWheel={spinningWheel}
+            lastFortuneResult={lastFortuneResult}
+            onSpinWheel={handleSpinFortuneWheel}
+            changingRace={changingRace}
+            onChangeRace={handleChangeRace}
           />
 
           <CodexTab entries={codexEntries} loading={codexLoading} />

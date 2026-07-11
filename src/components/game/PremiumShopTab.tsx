@@ -1,8 +1,9 @@
+import { useState } from 'react';
 import { TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { PremiumShopStateView } from '@/lib/game-types';
+import { PremiumShopStateView, PlayerData, FortuneSpinResultView } from '@/lib/game-types';
 
 interface PremiumShopTabProps {
   state: PremiumShopStateView | null;
@@ -10,6 +11,12 @@ interface PremiumShopTabProps {
   buyingPackId: string | null;
   onBuyPack: (packId: string) => void;
   onRedeemSku: (skuId: string) => void;
+  player: PlayerData | null;
+  spinningWheel: boolean;
+  lastFortuneResult: FortuneSpinResultView | null;
+  onSpinWheel: () => void;
+  changingRace: boolean;
+  onChangeRace: (raceSlug: string, classSlug: string) => void;
 }
 
 function formatPremiumUntil(iso: string | null): string {
@@ -18,7 +25,18 @@ function formatPremiumUntil(iso: string | null): string {
   return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
 }
 
-export function PremiumShopTab({ state, loading, buyingPackId, onBuyPack, onRedeemSku }: PremiumShopTabProps) {
+export function PremiumShopTab({
+  state, loading, buyingPackId, onBuyPack, onRedeemSku,
+  player, spinningWheel, lastFortuneResult, onSpinWheel,
+  changingRace, onChangeRace,
+}: PremiumShopTabProps) {
+  const [selectedRaceId, setSelectedRaceId] = useState('');
+  const [selectedClassId, setSelectedClassId] = useState('');
+
+  const races = state?.raceChange.races ?? [];
+  const selectedRace = races.find(r => r.id === selectedRaceId);
+  const availableClasses = selectedRace?.classes ?? [];
+
   return (
     <TabsContent value="premium" className="flex-1 overflow-y-auto p-4 space-y-4 m-0">
       <div className="text-center mb-2">
@@ -102,6 +120,84 @@ export function PremiumShopTab({ state, loading, buyingPackId, onBuyPack, onRede
               </div>
             );
           })}
+        </CardContent>
+      </Card>
+
+      {/* Колесо фортуны — бесплатный прокрут(ы) в день + платный за Осколки (lib/fortune-wheel.ts).
+          Лучшие призы выпадают ооооочень редко — тот же хардкорный принцип, что и в общем лут-столе. */}
+      <Card className="border-border">
+        <CardHeader className="pb-2 pt-3 px-4">
+          <CardTitle className="text-sm">🎡 Колесо фортуны</CardTitle>
+        </CardHeader>
+        <CardContent className="px-4 pb-3 space-y-3">
+          <div className="text-[10px] text-muted-foreground">
+            Бесплатных прокрутов сегодня: {state?.fortuneWheel.freeSpinsLeftToday ?? 0} из {state?.fortuneWheel.freeSpinsPerDay ?? 1}
+            {' '}(премиум получает {state ? state.fortuneWheel.freeSpinsPerDay : 2} в день). Платный прокрут — 👑 {state?.fortuneWheel.paidSpinCost ?? 50}.
+          </div>
+          {lastFortuneResult && (
+            <div className="flex items-center gap-2 p-2 rounded-lg bg-gold/10 border border-gold/30">
+              <span className="text-xl">{lastFortuneResult.icon}</span>
+              <div className="text-xs">
+                <span className="font-medium">{lastFortuneResult.nameRu}</span>
+                {lastFortuneResult.itemWon && <span className="text-muted-foreground"> — {lastFortuneResult.itemWon}</span>}
+              </div>
+            </div>
+          )}
+          <Button
+            size="sm"
+            className="w-full h-9 text-xs"
+            disabled={spinningWheel || !player}
+            onClick={onSpinWheel}
+          >
+            {spinningWheel ? 'Крутится...' : '🎡 Крутить колесо'}
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* Смена расы — раса меняется вместе с классом (классы жёстко привязаны к расе), вложенные
+          очки характеристик переносятся (api/player/change-race). */}
+      <Card className="border-border">
+        <CardHeader className="pb-2 pt-3 px-4">
+          <CardTitle className="text-sm">🧬 Смена расы</CardTitle>
+        </CardHeader>
+        <CardContent className="px-4 pb-3 space-y-2">
+          <div className="text-[10px] text-muted-foreground">
+            Текущая раса: {player?.race.name ?? '—'} ({player?.class.name ?? '—'}). Стоимость смены — 👑 {state?.raceChange.costShards ?? 400}.
+          </div>
+          <select
+            className="w-full h-9 text-xs rounded-md bg-secondary/20 border border-border/60 px-2"
+            value={selectedRaceId}
+            onChange={e => { setSelectedRaceId(e.target.value); setSelectedClassId(''); }}
+          >
+            <option value="">Выберите новую расу...</option>
+            {races.map(r => (
+              <option key={r.id} value={r.id}>{r.icon} {r.name}</option>
+            ))}
+          </select>
+          {selectedRace && (
+            <select
+              className="w-full h-9 text-xs rounded-md bg-secondary/20 border border-border/60 px-2"
+              value={selectedClassId}
+              onChange={e => setSelectedClassId(e.target.value)}
+            >
+              <option value="">Выберите класс...</option>
+              {availableClasses.map(c => (
+                <option key={c.id} value={c.id}>{c.icon} {c.name}</option>
+              ))}
+            </select>
+          )}
+          <Button
+            size="sm"
+            variant="outline"
+            className="w-full h-9 text-xs"
+            disabled={changingRace || !selectedRace || !selectedClassId || (state?.crownShards ?? 0) < (state?.raceChange.costShards ?? 400)}
+            onClick={() => {
+              const cls = availableClasses.find(c => c.id === selectedClassId);
+              if (selectedRace && cls) onChangeRace(selectedRace.slug, cls.slug);
+            }}
+          >
+            {changingRace ? 'Меняем...' : '🧬 Сменить расу'}
+          </Button>
         </CardContent>
       </Card>
     </TabsContent>

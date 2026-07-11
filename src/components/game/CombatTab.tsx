@@ -3,10 +3,11 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { ItemIconTile } from '@/components/game/ItemIconTile';
 import { ENEMIES } from '@/lib/game-data';
 import { manaCostForStage } from '@/lib/combat-engine';
 import type { BossFightState } from '@/lib/boss-mechanics';
-import { PlayerData, AbilityData, CombatLogEntry, parseStats } from '@/lib/game-types';
+import { PlayerData, AbilityData, CombatLogEntry } from '@/lib/game-types';
 import { findDungeon } from '@/lib/dungeons';
 import { findDungeonModifier } from '@/lib/dungeon-modifiers';
 import { isEliteDepth } from '@/lib/abyss';
@@ -231,31 +232,23 @@ export function CombatTab({
                   🏃 Побег
                 </Button>
 
-                {/* Use item in combat */}
+                {/* Use item in combat — сетка иконок вместо кнопок с именем текстом, как везде
+                    в остальном интерфейсе; native overflow, не Radix ScrollArea (та рендерит
+                    содержимое в display:table для замера размеров, что ломало прежний flex-wrap —
+                    с grid эта проблема не воспроизводится, но оставляем нативный скролл ради
+                    единообразия с остальными плиточными гридами). */}
                 {playerInventory.filter(i => i.type === 'consumable').length > 0 && (
                   <div className="col-span-2 border border-border/60 rounded-md p-2 bg-secondary/20">
-                    <p className="text-xs text-muted-foreground mb-1">Использовать предмет:</p>
-                    {/* Обычный overflow-y-auto, а не shadcn ScrollArea — Radix ScrollArea рендерит
-                        содержимое во внутреннем div с display:table для замера размеров, что ломает
-                        flex-wrap (кнопки перестают переноситься по строкам и вылезают за max-h,
-                        наезжая на способности ниже). Нативный скролл с flex-wrap работает корректно. */}
+                    <p className="text-xs text-muted-foreground mb-1.5">Использовать предмет:</p>
                     <div className="max-h-28 overflow-y-auto pr-1">
-                      <div className="flex gap-1 flex-wrap">
-                        {playerInventory.filter(i => i.type === 'consumable').map(item => {
-                          const stats = parseStats(item.stats);
-                          return (
-                            <Button
-                              key={item.id}
-                              variant="outline"
-                              size="sm"
-                              className="h-8 text-xs border-border"
-                              onClick={() => onCombatAction('use_item', item.itemId)}
-                              disabled={loading}
-                            >
-                              {item.icon} {item.name} {item.quantity > 1 ? `x${item.quantity}` : ''}
-                            </Button>
-                          );
-                        })}
+                      <div className="grid grid-cols-6 gap-1.5">
+                        {playerInventory.filter(i => i.type === 'consumable').map(item => (
+                          <ItemIconTile
+                            key={item.id}
+                            item={item}
+                            onClick={() => onCombatAction('use_item', item.itemId)}
+                          />
+                        ))}
                       </div>
                     </div>
                   </div>

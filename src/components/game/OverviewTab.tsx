@@ -2,8 +2,9 @@ import { TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { LOCATIONS, RARITY_COLORS } from '@/lib/game-data';
-import { PlayerData, STAT_SHORT_RU, SLOT_RU, ITEM_TYPE_RU, parseStats } from '@/lib/game-types';
+import { ItemIconTile } from '@/components/game/ItemIconTile';
+import { LOCATIONS } from '@/lib/game-data';
+import { PlayerData, STAT_SHORT_RU } from '@/lib/game-types';
 import { computeEquipmentBonuses } from '@/lib/equipment-stats';
 import { stageUnlockLevel } from '@/lib/combat-engine';
 import { parsePassiveEffect } from '@/lib/passive-engine';
@@ -11,10 +12,17 @@ import { dungeonForLocation } from '@/lib/dungeons';
 import { ABYSS_LOCATION_ID, ABYSS_MIN_LEVEL } from '@/lib/abyss';
 import { MarketPanel } from './MarketPanel';
 
+interface AdventureLogEntry {
+  id: number;
+  text: string;
+  type: 'info' | 'success' | 'error';
+}
+
 interface OverviewTabProps {
   player: PlayerData | null;
   location: typeof LOCATIONS[0] | null;
   loading: boolean;
+  adventureLog: AdventureLogEntry[];
   onExplore: () => void;
   onRest: () => void;
   onTravel: (locationId: string) => Promise<void>;
@@ -32,6 +40,7 @@ export function OverviewTab({
   player,
   location,
   loading,
+  adventureLog,
   onExplore,
   onRest,
   onTravel,
@@ -51,14 +60,15 @@ export function OverviewTab({
 
   return (
     <TabsContent value="overview" className="flex-1 overflow-y-auto p-4 space-y-4 m-0">
-      {/* Location card */}
+      {/* Location card — описание крупнее и заметнее, ближе к нарративной сцене чат-бота
+          в референсе, а не подпись мелким текстом под заголовком */}
       <Card className="border-border">
         <CardContent className="p-4">
-          <div className="flex items-center gap-3 mb-3">
-            <span className="text-3xl">{location?.icon}</span>
+          <div className="flex items-start gap-3 mb-3">
+            <span className="text-4xl leading-none">{location?.icon}</span>
             <div>
               <h3 className="font-bold text-sm">{location?.nameRu}</h3>
-              <p className="text-xs text-muted-foreground">{location?.descriptionRu}</p>
+              <p className="text-xs text-muted-foreground leading-relaxed mt-0.5">{location?.descriptionRu}</p>
             </div>
           </div>
 
@@ -109,6 +119,32 @@ export function OverviewTab({
           </div>
         </CardContent>
       </Card>
+
+      {/* Журнал похождений — свиток последних событий вместо исчезающего тоста, ближе к
+          истории чата в референсном боте: там каждое действие остаётся строкой в переписке. */}
+      {adventureLog.length > 0 && (
+        <Card className="border-border">
+          <CardHeader className="pb-2 pt-3 px-4">
+            <CardTitle className="text-sm">📖 Журнал похождений</CardTitle>
+          </CardHeader>
+          <CardContent className="px-4 pb-3">
+            <div className="max-h-32 overflow-y-auto pr-1 space-y-1">
+              {adventureLog.map(entry => (
+                <p
+                  key={entry.id}
+                  className={`text-xs leading-relaxed ${
+                    entry.type === 'success' ? 'text-uncommon' :
+                    entry.type === 'error' ? 'text-destructive' :
+                    'text-muted-foreground'
+                  }`}
+                >
+                  {entry.text}
+                </p>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Данж — разовый забег из нескольких комнат с боссом в конце (см. lib/dungeons.ts) */}
       {player && dungeon && (
@@ -263,7 +299,8 @@ export function OverviewTab({
         </Card>
       )}
 
-      {/* Equipped gear */}
+      {/* Equipped gear — компактная сводка иконками (полная информация и снятие — во вкладке
+          "Инвентарь", чтобы не дублировать один и тот же список дважды текстом) */}
       <Card className="border-border">
         <CardHeader className="pb-2 pt-3 px-4">
           <CardTitle className="text-sm">Экипировка</CardTitle>
@@ -272,34 +309,10 @@ export function OverviewTab({
           {playerInventory.filter(i => i.equipped).length === 0 ? (
             <p className="text-xs text-muted-foreground text-center">Ничего не экипировано</p>
           ) : (
-            <div className="space-y-2">
-              {playerInventory.filter(i => i.equipped).map(item => {
-                const stats = parseStats(item.stats);
-                return (
-                  <div
-                    key={item.id}
-                    className="flex items-center gap-2 p-2 rounded-lg bg-secondary/30 border"
-                    style={{ borderColor: RARITY_COLORS[item.rarity] + '50' }}
-                  >
-                    <span className="text-lg">{item.icon}</span>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-xs font-medium truncate" style={{ color: RARITY_COLORS[item.rarity] }}>
-                        {item.name}
-                      </div>
-                      <div className="text-[10px] text-muted-foreground">
-                        {SLOT_RU[item.slot || ''] || ITEM_TYPE_RU[item.type]}
-                      </div>
-                    </div>
-                    <div className="flex gap-1">
-                      {Object.entries(stats).map(([k, v]) => (
-                        <Badge key={k} variant="outline" className="text-[10px] h-4 px-1">
-                          {k === 'attack' ? 'АТК' : k === 'defense' ? 'ЗАЩ' : k === 'hp' ? 'HP' : k === 'mp' ? 'MP' : k} +{v}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })}
+            <div className="grid grid-cols-5 gap-2">
+              {playerInventory.filter(i => i.equipped).map(item => (
+                <ItemIconTile key={item.id} item={item} equipped />
+              ))}
             </div>
           )}
         </CardContent>

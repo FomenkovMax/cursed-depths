@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { ItemIconTile } from '@/components/game/ItemIconTile';
 import { RARITY_COLORS } from '@/lib/game-data';
 import { PlayerData, MarketListingView, AFFIX_TIER_RU, AFFIX_TIER_COLORS, parseStats } from '@/lib/game-types';
 
@@ -47,21 +48,23 @@ export function MarketTab({ player, listings, loading, onListItem, onBuyItem, on
             <p className="text-xs text-muted-foreground text-center">Нечего продавать (снимите экипированное)</p>
           ) : (
             <>
-              <div className="max-h-28 overflow-y-auto pr-1">
-                <div className="flex gap-1 flex-wrap">
+              <div className="max-h-40 overflow-y-auto pr-1">
+                <div className="grid grid-cols-6 gap-2">
                   {sellableItems.map(item => (
-                    <Button
+                    <ItemIconTile
                       key={item.id}
-                      variant="outline"
-                      size="sm"
-                      className={`h-8 text-xs border-border ${selectedItemId === item.id ? 'border-gold text-gold' : ''}`}
+                      item={item}
+                      selected={selectedItemId === item.id}
                       onClick={() => setSelectedItemId(item.id === selectedItemId ? null : item.id)}
-                    >
-                      {item.icon} {item.name} {item.quantity > 1 ? `x${item.quantity}` : ''}
-                    </Button>
+                    />
                   ))}
                 </div>
               </div>
+              {selectedItemId && (
+                <p className="text-[10px] text-muted-foreground">
+                  {sellableItems.find(i => i.id === selectedItemId)?.name}
+                </p>
+              )}
               <div className="flex items-center gap-2">
                 <Input
                   type="number"

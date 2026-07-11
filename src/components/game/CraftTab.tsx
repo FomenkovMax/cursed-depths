@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { ItemIconTile } from '@/components/game/ItemIconTile';
 import { CRAFTING_RECIPES, ITEMS, RARITY_COLORS } from '@/lib/game-data';
 import { PlayerData, AFFIX_TIER_RU, AFFIX_TIER_COLORS, parseStats, parseAffixes } from '@/lib/game-types';
 import { CURRENCY_IDS } from '@/lib/item-affixes';
@@ -46,15 +47,9 @@ export function CraftTab({ player, loading, canCraftRecipe, learnedRecipeIds, on
           {playerInventory.filter(i => i.type === 'material').length === 0 ? (
             <p className="text-xs text-muted-foreground text-center">Нет материалов</p>
           ) : (
-            <div className="flex gap-2 flex-wrap">
+            <div className="grid grid-cols-6 gap-2">
               {playerInventory.filter(i => i.type === 'material').map(item => (
-                <div key={item.id} className="flex items-center gap-1 bg-secondary/30 rounded px-2 py-1">
-                  <span className="text-sm">{item.icon}</span>
-                  <span className="text-xs" style={{ color: RARITY_COLORS[item.rarity] }}>
-                    {item.name}
-                  </span>
-                  <span className="text-[10px] text-muted-foreground">x{item.quantity}</span>
-                </div>
+                <ItemIconTile key={item.id} item={item} />
               ))}
             </div>
           )}
@@ -73,18 +68,15 @@ export function CraftTab({ player, loading, canCraftRecipe, learnedRecipeIds, on
           ) : (
             <>
               <p className="text-xs text-muted-foreground">Выберите предмет:</p>
-              <div className="max-h-28 overflow-y-auto pr-1">
-                <div className="flex gap-1 flex-wrap">
+              <div className="max-h-40 overflow-y-auto pr-1">
+                <div className="grid grid-cols-6 gap-2">
                   {gearItems.map(item => (
-                    <Button
+                    <ItemIconTile
                       key={item.id}
-                      variant="outline"
-                      size="sm"
-                      className={`h-8 text-xs border-border ${selectedTargetId === item.id ? 'border-gold text-gold' : ''}`}
+                      item={item}
+                      selected={selectedTargetId === item.id}
                       onClick={() => setSelectedTargetId(item.id === selectedTargetId ? null : item.id)}
-                    >
-                      {item.icon} {item.name}
-                    </Button>
+                    />
                   ))}
                 </div>
               </div>

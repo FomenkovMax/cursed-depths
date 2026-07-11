@@ -1,5 +1,7 @@
+import { useState } from 'react';
 import { TabsContent } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { CodexEntryView } from '@/lib/game-types';
 
 interface CodexTabProps {
@@ -15,7 +17,22 @@ const CATEGORY_LABELS: Record<string, string> = {
   discovery: 'Находки',
 };
 
+function CodexTile({ e, onClick }: { e: CodexEntryView; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`relative aspect-square rounded-lg border flex items-center justify-center transition-colors hover:bg-secondary/40 ${
+        e.unlocked ? 'border-gold/70 bg-gold/10' : 'border-border bg-secondary/20 opacity-60'
+      }`}
+    >
+      <span className="text-2xl">{e.unlocked ? e.icon : '🔒'}</span>
+    </button>
+  );
+}
+
 export function CodexTab({ entries, loading }: CodexTabProps) {
+  const [selected, setSelected] = useState<CodexEntryView | null>(null);
   const unlockedCount = entries.filter(e => e.unlocked).length;
   const categories = Array.from(new Set(entries.map(e => e.category)));
 
@@ -36,24 +53,36 @@ export function CodexTab({ entries, loading }: CodexTabProps) {
         </Card>
       ) : (
         categories.map(category => (
-          <div key={category} className="space-y-2">
-            <p className="text-xs font-medium text-muted-foreground pt-1">{CATEGORY_LABELS[category] ?? category}</p>
-            {entries.filter(e => e.category === category).map(e => (
-              <Card key={e.id} className={`border-border ${e.unlocked ? 'border-gold/60 bg-gold/5' : 'opacity-50'}`}>
-                <CardContent className="p-3">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xl shrink-0">{e.unlocked ? e.icon : '🔒'}</span>
-                    <span className="text-xs font-medium">{e.titleRu}</span>
-                  </div>
-                  {e.unlocked && e.textRu && (
-                    <p className="text-[11px] text-muted-foreground leading-relaxed mt-1.5">{e.textRu}</p>
-                  )}
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+          <Card key={category} className="border-border">
+            <CardContent className="p-4">
+              <p className="text-xs font-medium text-muted-foreground mb-2">{CATEGORY_LABELS[category] ?? category}</p>
+              <div className="grid grid-cols-5 gap-2">
+                {entries.filter(e => e.category === category).map(e => (
+                  <CodexTile key={e.id} e={e} onClick={() => setSelected(e)} />
+                ))}
+              </div>
+            </CardContent>
+          </Card>
         ))
       )}
+
+      <Dialog open={!!selected} onOpenChange={open => !open && setSelected(null)}>
+        <DialogContent className="max-w-xs">
+          {selected && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2 text-sm">
+                  <span className="text-2xl">{selected.unlocked ? selected.icon : '🔒'}</span>
+                  <span className={selected.unlocked ? 'text-gold' : ''}>{selected.titleRu}</span>
+                </DialogTitle>
+              </DialogHeader>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                {selected.unlocked ? (selected.textRu ?? '') : 'Запись пока не открыта — продолжайте играть, чтобы узнать больше.'}
+              </p>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </TabsContent>
   );
 }

@@ -8,6 +8,7 @@ import { initBossState } from '@/lib/boss-mechanics';
 import { computeEquipmentBonuses } from '@/lib/equipment-stats';
 import { isInActivePartyCombat } from '@/lib/party-guards';
 import { isDeathDebuffActive, DEATH_DEBUFF_XP_MULT } from '@/lib/premium-shop';
+import { findPet } from '@/lib/pets';
 
 export async function POST(req: NextRequest) {
   const auth = validateTelegramRequest(req);
@@ -40,7 +41,8 @@ export async function POST(req: NextRequest) {
 
     // Проверки характеристик (rollStatCheck) считают эффективный стат так же, как и бой —
     // с учётом экипировки, а не только сырых очков персонажа.
-    const equipBonuses = computeEquipmentBonuses(player.inventory);
+    const activePet = player.activePetId ? findPet(player.activePetId) : null;
+    const equipBonuses = computeEquipmentBonuses(player.inventory, activePet);
     const resolution = resolveEventChoice(eventId, choiceId, player.level, {
       strength: player.strength + equipBonuses.strength,
       dexterity: player.dexterity + equipBonuses.dexterity,

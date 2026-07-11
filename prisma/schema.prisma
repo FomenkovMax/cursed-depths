@@ -71,6 +71,10 @@ model Player {
   fortuneSpinsToday Int     @default(0) // сколько раз колесо фортуны (lib/fortune-wheel.ts)
                             // крутили сегодня — тот же паттерн lazy-reset, что worldBossAttacksToday
   fortuneSpinDate   String? // "YYYY-MM-DD" последнего вращения
+  activePetId       String? // id питомца из lib/pets.ts PET_CATALOG (не PlayerPet.id) — null,
+                             // если ни один не активен. Активный питомец обязан быть среди
+                             // pets ниже (проверяется в api/pets/activate), но хранится как
+                             // плоский id для той же простоты, что и dungeonModifierId.
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
@@ -88,6 +92,7 @@ model Player {
   stashItems      StashItem[]
   fortressAssaults FortressContribution[]
   starPurchases   StarPurchase[]
+  pets            PlayerPet[]
 
   @@index([telegramId])
   @@index([locationId])
@@ -112,6 +117,21 @@ model StarPurchase {
   telegramChargeId String   @unique
   createdAt        DateTime @default(now())
 
+  @@index([playerId])
+}
+
+// Коллекция питомцев-компаньонов (lib/pets.ts PET_CATALOG) — каталог статичен в коде, как
+// ITEMS/SHARD_PACKS, эта таблица только фиксирует ВЛАДЕНИЕ (кто что купил за Осколки Короны).
+// Активный питомец (даёт пассивный бонус в бою) — Player.activePetId, отдельно от владения,
+// т.к. игрок коллекционирует много питомцев, но активен всегда только один.
+model PlayerPet {
+  id         String   @id @default(cuid())
+  playerId   String
+  player     Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  petId      String   // id из PET_CATALOG
+  obtainedAt DateTime @default(now())
+
+  @@unique([playerId, petId])
   @@index([playerId])
 }
 

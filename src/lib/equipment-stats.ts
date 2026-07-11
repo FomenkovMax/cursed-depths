@@ -22,8 +22,14 @@ function emptyBonuses(): EquipmentBonuses {
   return { strength: 0, dexterity: 0, vitality: 0, intellect: 0, willpower: 0, instinct: 0, attack: 0, defense: 0, hp: 0, mp: 0 };
 }
 
-/** Суммирует статы всех экипированных предметов инвентаря в один объект бонусов. */
-export function computeEquipmentBonuses(inventory: { equipped: boolean; stats: string | null }[]): EquipmentBonuses {
+/** Суммирует статы всех экипированных предметов инвентаря (плюс бонус активного питомца,
+ * если передан — lib/pets.ts) в один объект бонусов. Питомец — необязательный второй
+ * параметр специально, чтобы существующие вызовы этой функции остались рабочими без
+ * изменений там, где активный питомец ещё не подгружен/не важен. */
+export function computeEquipmentBonuses(
+  inventory: { equipped: boolean; stats: string | null }[],
+  pet?: { bonus: Partial<Record<typeof BONUS_KEYS[number], number>> } | null
+): EquipmentBonuses {
   const bonuses = emptyBonuses();
   for (const item of inventory) {
     if (!item.equipped || !item.stats) continue;
@@ -35,6 +41,12 @@ export function computeEquipmentBonuses(inventory: { equipped: boolean; stats: s
     }
     for (const key of BONUS_KEYS) {
       const value = parsed[key];
+      if (typeof value === 'number') bonuses[key] += value;
+    }
+  }
+  if (pet) {
+    for (const key of BONUS_KEYS) {
+      const value = pet.bonus[key];
       if (typeof value === 'number') bonuses[key] += value;
     }
   }

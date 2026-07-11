@@ -1,12 +1,14 @@
 import { PlayerData } from '@/lib/game-types';
 import { computeEquipmentBonuses } from '@/lib/equipment-stats';
 import { stageUnlockLevel } from '@/lib/combat-engine';
+import { findPet } from '@/lib/pets';
 
 interface GameHeaderProps {
   player: PlayerData | null;
   locationIcon: string | undefined;
   locationName: string | undefined;
   crownShards: number;
+  activePetId: string | null;
   onOpenPremium: () => void;
 }
 
@@ -27,8 +29,9 @@ function getEvolvedStageName(player: PlayerData): string | null {
   return best?.stageName ?? null;
 }
 
-export function GameHeader({ player, locationIcon, locationName, crownShards, onOpenPremium }: GameHeaderProps) {
-  const gearBonuses = computeEquipmentBonuses(player?.inventory || []);
+export function GameHeader({ player, locationIcon, locationName, crownShards, activePetId, onOpenPremium }: GameHeaderProps) {
+  const activePet = activePetId ? findPet(activePetId) : null;
+  const gearBonuses = computeEquipmentBonuses(player?.inventory || [], activePet);
   const effectiveMaxHp = (player?.maxHp || 0) + gearBonuses.hp;
   const effectiveMaxMp = (player?.maxMp || 0) + gearBonuses.mp;
   const hpPercent = player ? Math.max(0, (player.hp / effectiveMaxHp) * 100) : 0;

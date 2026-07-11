@@ -6,6 +6,7 @@ import { ItemIconTile } from '@/components/game/ItemIconTile';
 import { LOCATIONS } from '@/lib/game-data';
 import { PlayerData, STAT_SHORT_RU } from '@/lib/game-types';
 import { computeEquipmentBonuses } from '@/lib/equipment-stats';
+import { findPet } from '@/lib/pets';
 import { stageUnlockLevel } from '@/lib/combat-engine';
 import { parsePassiveEffect } from '@/lib/passive-engine';
 import { dungeonForLocation } from '@/lib/dungeons';
@@ -36,6 +37,7 @@ interface OverviewTabProps {
   onStartDungeon: (dungeonId: string) => void;
   onStartAbyss: () => void;
   onStartTrial: (trialId: string) => void;
+  activePetId: string | null;
 }
 
 export function OverviewTab({
@@ -55,9 +57,11 @@ export function OverviewTab({
   onStartDungeon,
   onStartAbyss,
   onStartTrial,
+  activePetId,
 }: OverviewTabProps) {
   const playerInventory = player?.inventory || [];
-  const gearBonuses = computeEquipmentBonuses(playerInventory);
+  const activePet = activePetId ? findPet(activePetId) : null;
+  const gearBonuses = computeEquipmentBonuses(playerInventory, activePet);
   const dungeon = player ? dungeonForLocation(player.locationId) : null;
   const trial = player ? trialForLocation(player.locationId) : null;
   const canEnterAbyss = player && player.locationId === ABYSS_LOCATION_ID;

@@ -4,6 +4,7 @@ import { validateTelegramRequest } from '@/lib/auth';
 import { computeEquipmentBonuses } from '@/lib/equipment-stats';
 import type { PlayerCombatStats } from '@/lib/combat-engine';
 import { resolveFortressCycleIfNeeded, assaultPoints, ASSAULT_DAILY_CAP } from '@/lib/fortress';
+import { findPet } from '@/lib/pets';
 
 export async function POST(req: NextRequest) {
   const auth = validateTelegramRequest(req);
@@ -27,7 +28,8 @@ export async function POST(req: NextRequest) {
 
     const fortress = await resolveFortressCycleIfNeeded(db);
 
-    const equipBonuses = computeEquipmentBonuses(player.inventory);
+    const activePet = player.activePetId ? findPet(player.activePetId) : null;
+    const equipBonuses = computeEquipmentBonuses(player.inventory, activePet);
     const stats: PlayerCombatStats = {
       strength: player.strength + equipBonuses.strength,
       dexterity: player.dexterity + equipBonuses.dexterity,

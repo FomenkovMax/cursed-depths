@@ -73,6 +73,7 @@ import { abyssScaling, abyssEnemyIdForDepth, isEliteDepth } from '@/lib/abyss';
 import { FORTRESS_ID, CONTROL_GOLD_BONUS } from '@/lib/fortress';
 import { bossIntroLine, deathMessage } from '@/lib/exploration-flavor';
 import { isPremiumActive, PREMIUM_GOLD_XP_MULT, isDeathDebuffActive, DEATH_DEBUFF_XP_MULT, DEATH_DEBUFF_HOURS } from '@/lib/premium-shop';
+import { findPet } from '@/lib/pets';
 
 export async function POST(req: NextRequest) {
   const auth = validateTelegramRequest(req);
@@ -165,8 +166,10 @@ export async function POST(req: NextRequest) {
     // Эликсир Мощи и аналоги — устанавливается при использовании, применяется к updateData ниже.
     let consumableBuffUpdate: { attackBonus: number; fightsLeft: number } | null = null;
 
-    // Бонусы экипировки (оружие/броня/аксессуары) — единая точка подсчёта, см. lib/equipment-stats.ts
-    const equipBonuses = computeEquipmentBonuses(player.inventory);
+    // Бонусы экипировки (оружие/броня/аксессуары) + активного питомца (lib/pets.ts) — единая
+    // точка подсчёта, см. lib/equipment-stats.ts
+    const activePet = player.activePetId ? findPet(player.activePetId) : null;
+    const equipBonuses = computeEquipmentBonuses(player.inventory, activePet);
     const effectiveMaxHp = player.maxHp + equipBonuses.hp;
     const effectiveMaxMp = player.maxMp + equipBonuses.mp;
     const effectiveVitality = player.vitality + equipBonuses.vitality;

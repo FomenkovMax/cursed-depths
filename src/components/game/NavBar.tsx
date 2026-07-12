@@ -21,6 +21,7 @@ const TAB_META: Record<GameTab, TabMeta> = {
   craft: { icon: '⚒️', label: 'Крафт' },
   achievements: { icon: '🏅', label: 'Достижения' },
   codex: { icon: '📖', label: 'Кодекс' },
+  trophies: { icon: '🎖️', label: 'Трофеи' },
   guild: { icon: '🏰', label: 'Гильдия' },
   party: { icon: '👥', label: 'Пати' },
   market: { icon: '🏛️', label: 'Рынок' },
@@ -36,7 +37,7 @@ const TAB_META: Record<GameTab, TabMeta> = {
 // отдельный прямой пункт, а не спрятан в выпадашку: витрина монетизации должна
 // быть на виду постоянно, тот же приём, что и у прочих F2P-магазинов.
 const DIRECT_TABS: GameTab[] = ['overview', 'combat', 'map', 'quests'];
-const HERO_GROUP: GameTab[] = ['inventory', 'craft', 'achievements', 'codex'];
+const HERO_GROUP: GameTab[] = ['inventory', 'craft', 'achievements', 'codex', 'trophies'];
 const WORLD_GROUP: GameTab[] = ['guild', 'party', 'market', 'pvp', 'leaderboard'];
 
 interface NavBarProps {

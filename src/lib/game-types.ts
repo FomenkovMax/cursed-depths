@@ -241,7 +241,7 @@ export interface PartyCombatStateResponse {
 }
 
 export type GameScreen = 'loading' | 'creation' | 'game';
-export type GameTab = 'overview' | 'combat' | 'map' | 'inventory' | 'quests' | 'craft' | 'leaderboard' | 'party' | 'achievements' | 'guild' | 'codex' | 'market' | 'pvp' | 'premium';
+export type GameTab = 'overview' | 'combat' | 'map' | 'inventory' | 'quests' | 'craft' | 'leaderboard' | 'party' | 'achievements' | 'guild' | 'codex' | 'market' | 'pvp' | 'premium' | 'trophies';
 
 export type GameMessage = { text: string; type: 'info' | 'success' | 'error' } | null;
 
@@ -364,6 +364,24 @@ export interface GuildRaidAttackResultView {
   killed: boolean;
   reward: { gold: number; xp: number } | null;
   attacksLeftToday: number;
+}
+
+export interface TrophyEntryView {
+  enemyId: string;
+  nameRu: string;
+  icon: string;
+  locationNameRu: string;
+  defeated: boolean;
+  defeatedAt: string | null;
+}
+
+export interface TrophyRoomStateView {
+  premiumActive: boolean;
+  trophies: TrophyEntryView[];
+  collectedCount: number;
+  totalCount: number;
+  rewardGold: number;
+  rewardShards: number;
 }
 
 export interface PvpLeagueView {

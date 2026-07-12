@@ -34,8 +34,8 @@ export function MarketTab({ player, listings, loading, onListItem, onBuyItem, on
   return (
     <TabsContent value="market" className="flex-1 overflow-y-auto p-4 space-y-3 m-0">
       <div className="text-center mb-2">
-        <h3 className="font-bold text-sm">🏛️ Аукцион</h3>
-        <p className="text-xs text-muted-foreground">Торговля между игроками — комиссия 10% при продаже</p>
+        <h3 className="font-bold text-sm">🏛️ Рынок</h3>
+        <p className="text-xs text-muted-foreground">Мгновенная торговля между игроками — комиссия 10% при продаже</p>
       </div>
 
       {/* Выставить предмет на продажу */}

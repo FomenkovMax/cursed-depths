@@ -25,6 +25,7 @@ const TAB_META: Record<GameTab, TabMeta> = {
   guild: { icon: '🏰', label: 'Гильдия' },
   party: { icon: '👥', label: 'Пати' },
   market: { icon: '🏛️', label: 'Рынок' },
+  auction: { icon: '🔨', label: 'Аукцион' },
   pvp: { icon: '⚔️', label: 'Арена' },
   leaderboard: { icon: '🏆', label: 'Топ' },
   premium: { icon: '👑', label: 'Премиум' },
@@ -38,7 +39,7 @@ const TAB_META: Record<GameTab, TabMeta> = {
 // быть на виду постоянно, тот же приём, что и у прочих F2P-магазинов.
 const DIRECT_TABS: GameTab[] = ['overview', 'combat', 'map', 'quests'];
 const HERO_GROUP: GameTab[] = ['inventory', 'craft', 'achievements', 'codex', 'trophies'];
-const WORLD_GROUP: GameTab[] = ['guild', 'party', 'market', 'pvp', 'leaderboard'];
+const WORLD_GROUP: GameTab[] = ['guild', 'party', 'market', 'auction', 'pvp', 'leaderboard'];
 
 interface NavBarProps {
   tab: GameTab;

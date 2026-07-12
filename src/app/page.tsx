@@ -39,6 +39,7 @@ import {
   GuildRaidAttackResultView,
   TrophyRoomStateView,
   TitlesStateView,
+  AuctionStateView,
 } from '@/lib/game-types';
 import { LoadingScreen } from '@/components/game/LoadingScreen';
 import { CharacterCreationScreen } from '@/components/game/CharacterCreationScreen';
@@ -50,6 +51,7 @@ import { AchievementsTab } from '@/components/game/AchievementsTab';
 import { TrophyRoomTab } from '@/components/game/TrophyRoomTab';
 import { CodexTab } from '@/components/game/CodexTab';
 import { MarketTab } from '@/components/game/MarketTab';
+import { AuctionTab } from '@/components/game/AuctionTab';
 import { PvpTab } from '@/components/game/PvpTab';
 import { CombatTab } from '@/components/game/CombatTab';
 import { MapTab } from '@/components/game/MapTab';
@@ -88,6 +90,8 @@ export default function CursedDepths() {
   const [codexLoading, setCodexLoading] = useState(false);
   const [marketListings, setMarketListings] = useState<MarketListingView[]>([]);
   const [marketLoading, setMarketLoading] = useState(false);
+  const [auctionState, setAuctionState] = useState<AuctionStateView | null>(null);
+  const [auctionLoading, setAuctionLoading] = useState(false);
   const [pvpOpponents, setPvpOpponents] = useState<PvpOpponentView[]>([]);
   const [pvpMyRating, setPvpMyRating] = useState(1000);
   const [pvpMyLeague, setPvpMyLeague] = useState<PvpLeagueView | null>(null);
@@ -395,6 +399,21 @@ export default function CursedDepths() {
     if (tab !== 'market' || !telegramIdRef.current) return;
     refreshMarket();
   }, [tab, refreshMarket]);
+
+  // ===== АУКЦИОННЫЙ ДОМ (lib/auction-house.ts) — премиум-эксклюзивная альтернатива Рынку выше:
+  // отложенные ставки вместо мгновенной покупки. =====
+  const refreshAuction = useCallback(() => {
+    setAuctionLoading(true);
+    apiCall('/api/auction/listings')
+      .then(data => { if (data.premiumActive !== undefined) setAuctionState(data); })
+      .catch(() => setMessage({ text: 'Не удалось загрузить аукционный дом', type: 'error' }))
+      .finally(() => setAuctionLoading(false));
+  }, [apiCall]);
+
+  useEffect(() => {
+    if (tab !== 'auction' || !telegramIdRef.current) return;
+    refreshAuction();
+  }, [tab, refreshAuction]);
 
   // ===== PVP ARENA (lib/pvp.ts) =====
   const refreshPvpOpponents = useCallback(() => {
@@ -1525,6 +1544,61 @@ export default function CursedDepths() {
     setLoading(false);
   };
 
+  // ===== АУКЦИОННЫЙ ДОМ ACTIONS =====
+  const handleAuctionListItem = async (inventoryId: string, startingPriceValue: number, durationHours: number) => {
+    if (!player) return;
+    setLoading(true);
+    try {
+      const data = await apiCall('/api/auction/list', 'POST', { inventoryId, startingPrice: startingPriceValue, durationHours });
+      if (data.error) {
+        setMessage({ text: data.error, type: 'error' });
+      } else {
+        setMessage({ text: data.message, type: 'success' });
+        await refreshPlayer();
+        refreshAuction();
+      }
+    } catch {
+      setMessage({ text: 'Ошибка выставления лота', type: 'error' });
+    }
+    setLoading(false);
+  };
+
+  const handleAuctionBid = async (auctionId: string, amount: number) => {
+    if (!player) return;
+    setLoading(true);
+    try {
+      const data = await apiCall('/api/auction/bid', 'POST', { auctionId, amount });
+      if (data.error) {
+        setMessage({ text: data.error, type: 'error' });
+      } else {
+        setMessage({ text: data.message, type: 'success' });
+        await refreshPlayer();
+        refreshAuction();
+      }
+    } catch {
+      setMessage({ text: 'Ошибка ставки', type: 'error' });
+    }
+    setLoading(false);
+  };
+
+  const handleAuctionCancel = async (auctionId: string) => {
+    if (!player) return;
+    setLoading(true);
+    try {
+      const data = await apiCall('/api/auction/cancel', 'POST', { auctionId });
+      if (data.error) {
+        setMessage({ text: data.error, type: 'error' });
+      } else {
+        setMessage({ text: data.message, type: 'success' });
+        await refreshPlayer();
+        refreshAuction();
+      }
+    } catch {
+      setMessage({ text: 'Ошибка снятия лота', type: 'error' });
+    }
+    setLoading(false);
+  };
+
   // ===== CLAIM QUEST =====
   const handleClaimQuest = async (questId: string) => {
     if (!player) return;
@@ -1941,6 +2015,15 @@ export default function CursedDepths() {
             onListItem={handleMarketListItem}
             onBuyItem={handleMarketBuyItem}
             onCancelListing={handleMarketCancelListing}
+          />
+
+          <AuctionTab
+            player={player}
+            state={auctionState}
+            loading={auctionLoading}
+            onListItem={handleAuctionListItem}
+            onBid={handleAuctionBid}
+            onCancelAuction={handleAuctionCancel}
           />
 
           <PvpTab

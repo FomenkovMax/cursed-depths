@@ -106,6 +106,8 @@ model Player {
   guildMember     GuildMember?
   seasonRewards   SeasonReward[]
   marketListings  MarketListing[]
+  auctionsSelling Auction[] @relation("AuctionSeller")
+  auctionsBidding Auction[] @relation("AuctionBidder")
   worldBossHits   WorldBossContribution[]
   stashItems      StashItem[]
   fortressAssaults FortressContribution[]
@@ -250,6 +252,42 @@ model MarketListing {
   createdAt        DateTime @default(now())
 
   @@index([sellerId])
+}
+
+// Аукционный дом — премиум-эксклюзивная альтернатива мгновенному Рынку выше (MarketListing):
+// отложенные ставки вместо мгновенной покупки, лот закрывается по истечении времени, а не по
+// клику покупателя (lib/auction-house.ts). Тот же эскроу-приём для предмета, что у MarketListing
+// (снимок данных на строке, оригинал удалён из Inventory продавца, пока лот жив). Ставка ставит
+// голд бидера на удержание СРАЗУ (decrement при бите), а не в момент завершения — предыдущий
+// лидер получает голд обратно (increment), как только его перебивают; при закрытии лота уже
+// удержанный голд просто становится выплатой продавцу (минус комиссия AUCTION_FEE_PERCENT), без
+// повторного списания. Закрытие — ленивое (тот же паттерн, что resolveFortressCycleIfNeeded):
+// каждый GET проверяет expiresAt и резолвит просроченные лоты перед ответом.
+model Auction {
+  id               String   @id @default(cuid())
+  sellerId         String
+  seller           Player   @relation("AuctionSeller", fields: [sellerId], references: [id], onDelete: Cascade)
+  itemId           String
+  name             String
+  type             String
+  rarity           String
+  stats            String?
+  icon             String?
+  itemLevel        Int?
+  affixTier        String?
+  affixes          String?
+  enhancementLevel Int      @default(0)
+  quantity         Int      @default(1)
+  startingPrice    Int
+  currentBid       Int?
+  currentBidderId  String?
+  currentBidder    Player?  @relation("AuctionBidder", fields: [currentBidderId], references: [id])
+  expiresAt        DateTime
+  createdAt        DateTime @default(now())
+
+  @@index([sellerId])
+  @@index([currentBidderId])
+  @@index([expiresAt])
 }
 
 // Мировой босс — единственная строка-синглтон (id всегда "current"), общая HP для ВСЕХ игроков

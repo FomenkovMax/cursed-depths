@@ -40,6 +40,7 @@ import {
   TrophyRoomStateView,
   TitlesStateView,
   AuctionStateView,
+  BattlePassStateView,
 } from '@/lib/game-types';
 import { LoadingScreen } from '@/components/game/LoadingScreen';
 import { CharacterCreationScreen } from '@/components/game/CharacterCreationScreen';
@@ -116,6 +117,9 @@ export default function CursedDepths() {
   const [titlesState, setTitlesState] = useState<TitlesStateView | null>(null);
   const [titlesLoading, setTitlesLoading] = useState(false);
   const [equippingTitleId, setEquippingTitleId] = useState<string | null>(null);
+  const [battlePassState, setBattlePassState] = useState<BattlePassStateView | null>(null);
+  const [battlePassLoading, setBattlePassLoading] = useState(false);
+  const [claimingTier, setClaimingTier] = useState<number | null>(null);
   const [expeditionState, setExpeditionState] = useState<ExpeditionStateView | null>(null);
   const [expeditionLoading, setExpeditionLoading] = useState(false);
   const [startingExpeditionId, setStartingExpeditionId] = useState<string | null>(null);
@@ -701,6 +705,40 @@ export default function CursedDepths() {
       setMessage({ text: 'Ошибка экипировки титула', type: 'error' });
     } finally {
       setEquippingTitleId(null);
+    }
+  };
+
+  // ===== БОЕВОЙ ПРОПУСК (lib/battle-pass.ts) — тот же паттерн загрузки, что титулы: только
+  // на премиум-вкладке, полный премиум-лок. =====
+  const refreshBattlePassState = useCallback(() => {
+    setBattlePassLoading(true);
+    apiCall('/api/battlepass/state')
+      .then(data => { if (data.premiumActive !== undefined) setBattlePassState(data); })
+      .catch(() => setMessage({ text: 'Не удалось загрузить Боевой пропуск', type: 'error' }))
+      .finally(() => setBattlePassLoading(false));
+  }, [apiCall]);
+
+  useEffect(() => {
+    if (tab !== 'premium' || !telegramIdRef.current) return;
+    refreshBattlePassState();
+  }, [tab, refreshBattlePassState]);
+
+  const handleClaimTier = async (tier: number) => {
+    if (!player) return;
+    setClaimingTier(tier);
+    try {
+      const data = await apiCall('/api/battlepass/claim', 'POST', { tier });
+      if (data.error) {
+        setMessage({ text: data.error, type: 'error' });
+      } else {
+        setMessage({ text: data.message, type: 'success' });
+        await refreshPlayer();
+        refreshBattlePassState();
+      }
+    } catch {
+      setMessage({ text: 'Ошибка получения награды', type: 'error' });
+    } finally {
+      setClaimingTier(null);
     }
   };
 
@@ -2004,6 +2042,10 @@ export default function CursedDepths() {
             titlesLoading={titlesLoading}
             equippingTitleId={equippingTitleId}
             onEquipTitle={handleEquipTitle}
+            battlePassState={battlePassState}
+            battlePassLoading={battlePassLoading}
+            claimingTier={claimingTier}
+            onClaimTier={handleClaimTier}
           />
 
           <CodexTab entries={codexEntries} loading={codexLoading} />

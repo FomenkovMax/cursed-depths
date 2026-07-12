@@ -559,6 +559,21 @@ export interface AuctionStateView {
   durations: AuctionDurationView[];
 }
 
+export interface BattlePassTierView {
+  tier: number;
+  xpRequired: number;
+  reward: { gold?: number; crownShards?: number };
+  unlocked: boolean;
+  claimed: boolean;
+}
+
+export interface BattlePassStateView {
+  premiumActive: boolean;
+  seasonId: string;
+  xp: number;
+  tiers: BattlePassTierView[];
+}
+
 export interface ExpeditionTierView {
   id: string;
   nameRu: string;

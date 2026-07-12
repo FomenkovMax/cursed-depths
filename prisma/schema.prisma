@@ -62,6 +62,11 @@ model Player {
   fortressAssaultDate   String?
   raidBossAttacksToday  Int @default(0) // атаки гильд-рейд-босса (lib/guild-raid-boss.ts) — тот же паттерн
   raidBossAttackDate    String?
+  battlePassXp       Int    @default(0) // очки Боевого пропуска за ТЕКУЩИЙ сезон (lib/battle-pass.ts)
+                             // — растут только пока премиум активен (полный лок, как у Комнаты
+                             // трофеев), лениво сбрасываются в 0 при смене currentSeasonId()
+  battlePassSeasonId String? // "YYYY-MM" сезона, за который считается battlePassXp — сравнивается
+                             // с currentSeasonId() (lib/seasons.ts) при каждом начислении/чтении
   crownShards     Int       @default(0) // премиум-валюта "Осколки Короны" (lib/premium-shop.ts) —
                             // покупается за Telegram Stars, тратится на PREMIUM_CATALOG
   premiumUntil    DateTime? // до какого момента активен премиум-статус — null/в прошлом = нет
@@ -114,6 +119,7 @@ model Player {
   starPurchases   StarPurchase[]
   pets            PlayerPet[]
   guildRaidHits   GuildRaidContribution[]
+  battlePassClaims PlayerBattlePassClaim[]
   bossTrophies    PlayerBossTrophy[]
 
   @@index([telegramId])
@@ -630,4 +636,22 @@ model PlayerBossTrophy {
 
   @@unique([playerId, enemyId])
   @@index([playerId])
+}
+
+// Боевой пропуск — премиум-эксклюзивная сезонная прогрессия (lib/battle-pass.ts), тот же
+// месячный цикл, что currentSeasonId (lib/seasons.ts), но НЕ связан с SeasonReward (тот —
+// разовая награда топ-3 лидерборда, этот — тиры для любого игрока, набравшего очков). Player.
+// battlePassXp растёт только пока премиум активен, лениво сбрасывается в 0 при смене сезона.
+// Здесь хранится только факт получения награды за конкретный тир конкретного сезона — сами тиры
+// и их награды статичны в lib/battle-pass.ts (тот же паттерн, что PlayerAchievement/PlayerRecipe).
+model PlayerBattlePassClaim {
+  id        String   @id @default(cuid())
+  playerId  String
+  player    Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  seasonId  String   // "YYYY-MM"
+  tier      Int
+  claimedAt DateTime @default(now())
+
+  @@unique([playerId, seasonId, tier])
+  @@index([playerId, seasonId])
 }

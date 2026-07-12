@@ -80,6 +80,7 @@ export async function POST(req: NextRequest) {
         message: resolution.message,
         enemy: { ...enemy, hp: enemyHp, maxHp: enemyHp },
         player: updated,
+        checkResult: resolution.checkResult ?? null,
       });
     }
 
@@ -148,6 +149,7 @@ export async function POST(req: NextRequest) {
       foundItem,
       leveledUp,
       player: updated,
+      checkResult: resolution.checkResult ?? null,
     });
   } catch (error) {
     console.error('[API] Route error:', error);

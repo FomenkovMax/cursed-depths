@@ -597,6 +597,19 @@ export interface BattlePassStateView {
   tiers: BattlePassTierView[];
 }
 
+/** Проверка характеристики (rollStatCheck, lib/exploration-events.ts) — d20+модификатор vs СЛ,
+ * как в BG3. Раньше эти числа были видны только внутри текстовой строки message, теперь
+ * приходят структурно, чтобы фронтенд мог показать бросок как крупную цифру с цветовым кодом
+ * успех/провал, а не просто мелким текстом в тосте. */
+export interface CheckRollResultView {
+  statLabel: string;
+  roll: number;
+  modifier: number;
+  total: number;
+  dc: number;
+  success: boolean;
+}
+
 export interface WaypointView {
   id: string;
   nameRu: string;

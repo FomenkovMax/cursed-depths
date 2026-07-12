@@ -574,6 +574,18 @@ export interface BattlePassStateView {
   tiers: BattlePassTierView[];
 }
 
+export interface WaypointView {
+  id: string;
+  nameRu: string;
+  icon: string;
+}
+
+export interface WaypointsStateView {
+  premiumActive: boolean;
+  waypoints: WaypointView[];
+  currentLocationId: string;
+}
+
 export interface ExpeditionTierView {
   id: string;
   nameRu: string;

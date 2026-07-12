@@ -26,19 +26,12 @@ import {
   PvpLeagueView,
   PvpFightResultView,
   PvpSeasonRewardView,
-  WorldBossStateView,
-  WorldBossAttackResultView,
-  FortressStateView,
-  FortressAssaultResultView,
-  GuildData,
   PremiumShopStateView,
   FortuneSpinResultView,
   PetsStateView,
   ExpeditionStateView,
   BountyStateView,
   BountyHuntResultView,
-  GuildRaidBossStateView,
-  GuildRaidAttackResultView,
   TrophyRoomStateView,
   TitlesStateView,
   AuctionStateView,
@@ -54,6 +47,7 @@ import { ExplorationEventModal } from '@/components/game/ExplorationEventModal';
 import { TrialJunctionModal } from '@/components/game/TrialJunctionModal';
 import { useRespec } from '@/hooks/useRespec';
 import { useGuildUpgrades } from '@/hooks/useGuildUpgrades';
+import { useSocialFeatures } from '@/hooks/useSocialFeatures';
 import { AchievementsTab } from '@/components/game/AchievementsTab';
 import { TrophyRoomTab } from '@/components/game/TrophyRoomTab';
 import { CodexTab } from '@/components/game/CodexTab';
@@ -109,12 +103,6 @@ export default function CursedDepths() {
   const [pvpDaysUntilSeasonEnd, setPvpDaysUntilSeasonEnd] = useState<number | null>(null);
   const [pvpPreviousSeasonTop3, setPvpPreviousSeasonTop3] = useState<PvpSeasonRewardView[]>([]);
   const [pvpLoading, setPvpLoading] = useState(false);
-  const [worldBoss, setWorldBoss] = useState<WorldBossStateView | null>(null);
-  const [worldBossLoading, setWorldBossLoading] = useState(false);
-  const [fortress, setFortress] = useState<FortressStateView | null>(null);
-  const [fortressLoading, setFortressLoading] = useState(false);
-  const [guildRaidBoss, setGuildRaidBoss] = useState<GuildRaidBossStateView | null>(null);
-  const [guildRaidBossLoading, setGuildRaidBossLoading] = useState(false);
   const [premiumState, setPremiumState] = useState<PremiumShopStateView | null>(null);
   const [premiumLoading, setPremiumLoading] = useState(false);
   const [buyingPackId, setBuyingPackId] = useState<string | null>(null);
@@ -144,8 +132,6 @@ export default function CursedDepths() {
   const [stashCapacity, setStashCapacity] = useState(60);
   const [stashLoading, setStashLoading] = useState(false);
   const [party, setParty] = useState<PartyData | null>(null);
-  const [guild, setGuild] = useState<GuildData | null>(null);
-  const [guildLoading, setGuildLoading] = useState(false);
   const [partyCombatState, setPartyCombatState] = useState<PartyCombatStateResponse | null>(null);
   const [explorationEvent, setExplorationEvent] = useState<ExplorationEvent | null>(null);
   const [trialJunction, setTrialJunction] = useState<TrialJunctionView | null>(null);
@@ -346,7 +332,6 @@ export default function CursedDepths() {
   }, []);
 
   const respec = useRespec({ apiCall, onPlayerUpdate: setPlayer, onMessage: setMessage });
-  const guildUpgrades = useGuildUpgrades({ apiCall, onPlayerUpdate: setPlayer, onGuildUpdate: setGuild, onMessage: setMessage });
 
   // ===== LEADERBOARD =====
   useEffect(() => {
@@ -496,122 +481,8 @@ export default function CursedDepths() {
     refreshStash();
   }, [tab, refreshStash]);
 
-  // ===== GUILD ===== гильдия — постоянная группа, не боевая сессия, поэтому без поллинга
-  // раз в 2 сек как у Party — достаточно подгружать при открытии вкладки.
-  useEffect(() => {
-    if (tab !== 'guild' || !telegramIdRef.current) return;
-    setGuildLoading(true);
-    apiCall('/api/guild/state')
-      .then(data => { if (data.guild !== undefined) setGuild(data.guild); })
-      .catch(() => setMessage({ text: 'Не удалось загрузить гильдию', type: 'error' }))
-      .finally(() => setGuildLoading(false));
-  }, [tab, apiCall]);
-
-  // ===== WORLD BOSS (lib/social/world-boss.ts) — живёт на вкладке "guild", см. GuildTab.tsx =====
-  const refreshWorldBoss = useCallback(() => {
-    setWorldBossLoading(true);
-    apiCall('/api/worldboss/state')
-      .then(data => { if (data.boss) setWorldBoss(data); })
-      .catch(() => setMessage({ text: 'Не удалось загрузить мирового босса', type: 'error' }))
-      .finally(() => setWorldBossLoading(false));
-  }, [apiCall]);
-
-  useEffect(() => {
-    // Экран "Сегодня" на вкладке "Обзор" тоже показывает статус мирового босса — тот же
-    // приём, что уже есть у premiumState/battlePassState: подгружаем не только на "своей"
-    // вкладке, чтобы агрегатор не был пустым до первого визита в "Гильдию".
-    if ((tab !== 'guild' && tab !== 'overview') || !telegramIdRef.current) return;
-    refreshWorldBoss();
-  }, [tab, refreshWorldBoss]);
-
-  const handleAttackWorldBoss = async (): Promise<WorldBossAttackResultView | null> => {
-    if (!player) return null;
-    setWorldBossLoading(true);
-    try {
-      const data = await apiCall('/api/worldboss/attack', 'POST', {});
-      if (data.error) {
-        setMessage({ text: data.error, type: 'error' });
-        return null;
-      }
-      if (data.killed) setMessage({ text: 'Мировой босс повержен!', type: 'success' });
-      await refreshPlayer();
-      refreshWorldBoss();
-      return data as WorldBossAttackResultView;
-    } catch {
-      setMessage({ text: 'Ошибка атаки мирового босса', type: 'error' });
-      return null;
-    } finally {
-      setWorldBossLoading(false);
-    }
-  };
-
-  // ===== FORTRESS (гильд-война за территорию — lib/social/fortress.ts) =====
-  const refreshFortress = useCallback(() => {
-    setFortressLoading(true);
-    apiCall('/api/fortress/state')
-      .then(data => { if (data.cycleId) setFortress(data); })
-      .catch(() => setMessage({ text: 'Не удалось загрузить состояние Крепости', type: 'error' }))
-      .finally(() => setFortressLoading(false));
-  }, [apiCall]);
-
-  useEffect(() => {
-    if ((tab !== 'guild' && tab !== 'overview') || !telegramIdRef.current) return;
-    refreshFortress();
-  }, [tab, refreshFortress]);
-
-  const handleAssaultFortress = async (): Promise<FortressAssaultResultView | null> => {
-    if (!player) return null;
-    setFortressLoading(true);
-    try {
-      const data = await apiCall('/api/fortress/assault', 'POST', {});
-      if (data.error) {
-        setMessage({ text: data.error, type: 'error' });
-        return null;
-      }
-      refreshFortress();
-      return data as FortressAssaultResultView;
-    } catch {
-      setMessage({ text: 'Ошибка штурма Крепости', type: 'error' });
-      return null;
-    } finally {
-      setFortressLoading(false);
-    }
-  };
-
-  // ===== GUILD RAID BOSS (еженедельная КООП-цель гильдии, премиум-эксклюзив — lib/social/guild-raid-boss.ts) =====
-  const refreshGuildRaidBoss = useCallback(() => {
-    setGuildRaidBossLoading(true);
-    apiCall('/api/guildraid/state')
-      .then(data => { if (data.inGuild !== undefined) setGuildRaidBoss(data); })
-      .catch(() => setMessage({ text: 'Не удалось загрузить гильд-рейд-босса', type: 'error' }))
-      .finally(() => setGuildRaidBossLoading(false));
-  }, [apiCall]);
-
-  useEffect(() => {
-    if ((tab !== 'guild' && tab !== 'overview') || !telegramIdRef.current) return;
-    refreshGuildRaidBoss();
-  }, [tab, refreshGuildRaidBoss]);
-
-  const handleAttackGuildRaidBoss = async (): Promise<GuildRaidAttackResultView | null> => {
-    if (!player) return null;
-    setGuildRaidBossLoading(true);
-    try {
-      const data = await apiCall('/api/guildraid/attack', 'POST', {});
-      if (data.error) {
-        setMessage({ text: data.error, type: 'error' });
-        return null;
-      }
-      if (data.killed) setMessage({ text: 'Гильд-рейд-босс повержен!', type: 'success' });
-      await refreshPlayer();
-      refreshGuildRaidBoss();
-      return data as GuildRaidAttackResultView;
-    } catch {
-      setMessage({ text: 'Ошибка атаки гильд-рейд-босса', type: 'error' });
-      return null;
-    } finally {
-      setGuildRaidBossLoading(false);
-    }
-  };
+  // ===== GUILD / WORLD BOSS / FORTRESS / GUILD RAID BOSS — вынесены в useSocialFeatures()
+  // (см. вызов хука ниже, сразу после refreshPlayer) per CLAUDE.md, аудит 1.4/A1.
 
   // ===== PREMIUM SHOP (Осколки Короны за Telegram Stars — lib/premium/premium-shop.ts) =====
   const refreshPremiumState = useCallback(() => {
@@ -1009,24 +880,7 @@ export default function CursedDepths() {
     });
   }, [screen, apiCall]);
 
-  // То же самое для гильдии — "?joinGuild=<id>" (см. webhook/route.ts).
-  const joinGuildChecked = useRef(false);
-  useEffect(() => {
-    if (screen !== 'game' || joinGuildChecked.current || !telegramIdRef.current) return;
-    joinGuildChecked.current = true;
-    const guildId = new URLSearchParams(window.location.search).get('joinGuild');
-    if (!guildId) return;
-    window.history.replaceState({}, '', window.location.pathname);
-    apiCall('/api/guild/join', 'POST', { guildId }).then(data => {
-      if (data.error) {
-        setMessage({ text: data.error, type: 'error' });
-      } else {
-        setGuild(data.guild);
-        setTab('guild');
-        setMessage({ text: 'Вы вступили в гильдию!', type: 'success' });
-      }
-    });
-  }, [screen, apiCall]);
+  // То же самое для гильдии — "?joinGuild=<id>" — реализовано внутри useSocialFeatures().
 
   // ===== FLOATING DAMAGE HELPER =====
   const addFloatingDamage = useCallback((text: string, color: string) => {
@@ -1056,6 +910,12 @@ export default function CursedDepths() {
       // silent
     }
   }, []);
+
+  const social = useSocialFeatures({
+    apiCall, telegramIdRef, screen, tab, player, loading, setLoading,
+    onMessage: setMessage, onNavigateTab: setTab, refreshPlayer,
+  });
+  const guildUpgrades = useGuildUpgrades({ apiCall, onPlayerUpdate: setPlayer, onGuildUpdate: social.setGuild, onMessage: setMessage });
 
   // ===== PARTY (короткий поллинг вместо realtime-инфраструктуры — нет ни WebSocket, ни
   // Vercel-совместимого push-сервиса, поэтому "реальное время" реализовано как fetch раз в
@@ -1760,37 +1620,7 @@ export default function CursedDepths() {
     setLoading(false);
   };
 
-  // ===== GUILD: CREATE / LEAVE =====
-  const handleCreateGuild = async (name: string, tag: string) => {
-    setLoading(true);
-    try {
-      const data = await apiCall('/api/guild/create', 'POST', { name, tag });
-      if (data.error) {
-        setMessage({ text: data.error, type: 'error' });
-      } else {
-        setGuild(data.guild);
-        setMessage({ text: 'Гильдия создана!', type: 'success' });
-      }
-    } catch {
-      setMessage({ text: 'Не удалось создать гильдию', type: 'error' });
-    }
-    setLoading(false);
-  };
-
-  const handleLeaveGuild = async () => {
-    setLoading(true);
-    try {
-      const data = await apiCall('/api/guild/leave', 'POST');
-      if (data.error) {
-        setMessage({ text: data.error, type: 'error' });
-      } else {
-        setGuild(null);
-      }
-    } catch {
-      setMessage({ text: 'Не удалось покинуть гильдию', type: 'error' });
-    }
-    setLoading(false);
-  };
+  // ===== GUILD: CREATE / LEAVE — реализовано внутри useSocialFeatures() =====
 
   const handleStartPartyCombat = async () => {
     setLoading(true);
@@ -2019,9 +1849,9 @@ export default function CursedDepths() {
             activePetId={petsState?.activePetId ?? null}
             crownShards={premiumState?.crownShards ?? 0}
             battlePassXp={battlePassState?.premiumActive ? battlePassState.xp : null}
-            worldBoss={worldBoss}
-            fortress={fortress}
-            guildRaidBoss={guildRaidBoss}
+            worldBoss={social.worldBoss}
+            fortress={social.fortress}
+            guildRaidBoss={social.guildRaidBoss}
             expeditionState={expeditionState}
             bountyState={bountyState}
             onNavigateTab={setTab}
@@ -2108,20 +1938,20 @@ export default function CursedDepths() {
 
           <GuildTab
             playerId={player?.id ?? null}
-            guild={guild}
-            loading={guildLoading}
+            guild={social.guild}
+            loading={social.guildLoading}
             botUsername={process.env.NEXT_PUBLIC_BOT_USERNAME ?? null}
-            onCreateGuild={handleCreateGuild}
-            onLeaveGuild={handleLeaveGuild}
-            worldBoss={worldBoss}
-            worldBossLoading={worldBossLoading}
-            onAttackWorldBoss={handleAttackWorldBoss}
-            fortress={fortress}
-            fortressLoading={fortressLoading}
-            onAssaultFortress={handleAssaultFortress}
-            guildRaidBoss={guildRaidBoss}
-            guildRaidBossLoading={guildRaidBossLoading}
-            onAttackGuildRaidBoss={handleAttackGuildRaidBoss}
+            onCreateGuild={social.handleCreateGuild}
+            onLeaveGuild={social.handleLeaveGuild}
+            worldBoss={social.worldBoss}
+            worldBossLoading={social.worldBossLoading}
+            onAttackWorldBoss={social.handleAttackWorldBoss}
+            fortress={social.fortress}
+            fortressLoading={social.fortressLoading}
+            onAssaultFortress={social.handleAssaultFortress}
+            guildRaidBoss={social.guildRaidBoss}
+            guildRaidBossLoading={social.guildRaidBossLoading}
+            onAttackGuildRaidBoss={social.handleAttackGuildRaidBoss}
             playerGold={player?.gold ?? 0}
             donatingTreasury={guildUpgrades.donating}
             onDonateTreasury={guildUpgrades.donate}

@@ -34,6 +34,24 @@ function TrophyCard({ t }: { t: TrophyEntryView }) {
         ) : (
           <p className="text-[10px] text-muted-foreground/70 leading-relaxed">Ещё не повержен — ищите в этой локации.</p>
         )}
+        {t.rarestItemNameRu && (
+          <div className="pt-1 border-t border-border/40">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-[10px] text-muted-foreground truncate">
+                {t.rarestItemIcon} {t.rarestItemNameRu}
+              </span>
+              <span className="text-[9px] text-muted-foreground shrink-0">
+                {t.pityRemaining === 0 ? 'гарантирован!' : `через ${t.pityRemaining} побед`}
+              </span>
+            </div>
+            <div className="h-1 rounded-full bg-secondary/50 mt-1 overflow-hidden">
+              <div
+                className="h-full bg-gold/70 rounded-full"
+                style={{ width: `${Math.min(100, Math.round((t.pityCounter / t.pityCap) * 100))}%` }}
+              />
+            </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

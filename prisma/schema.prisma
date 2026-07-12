@@ -616,6 +616,7 @@ model PlayerBossTrophy {
   killCount       Int      @default(0)
   firstDefeatedAt DateTime @default(now())
   lastDefeatedAt  DateTime @default(now())
+  pityCounter     Int      @default(0)
 
   @@unique([playerId, enemyId])
   @@index([playerId])

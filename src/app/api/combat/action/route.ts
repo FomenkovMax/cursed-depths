@@ -77,6 +77,7 @@ import { findPet } from '@/lib/pets';
 import { battlePassXpForKill, effectiveBattlePassXp } from '@/lib/battle-pass';
 import { currentSeasonId } from '@/lib/seasons';
 import { TOME_DROP_CHANCE, pickUncollectedTome } from '@/lib/recipe-tomes';
+import { rarestBossDrop, pityCapFor } from '@/lib/boss-trophies';
 
 export async function POST(req: NextRequest) {
   const auth = validateTelegramRequest(req);
@@ -92,7 +93,7 @@ export async function POST(req: NextRequest) {
 
     const player = await db.player.findUnique({
       where: { telegramId },
-      include: { inventory: true, class: { include: { abilities: true } }, guildMember: true, bossTrophies: { select: { enemyId: true } }, recipes: { select: { recipeId: true } } },
+      include: { inventory: true, class: { include: { abilities: true } }, guildMember: true, bossTrophies: { select: { enemyId: true, pityCounter: true } }, recipes: { select: { recipeId: true } } },
     });
 
     if (!player) return NextResponse.json({ error: 'Персонаж не найден' }, { status: 404 });
@@ -139,6 +140,7 @@ export async function POST(req: NextRequest) {
     let xpGained = 0;
     let goldGained = 0;
     let bossTrophyGained: string | null = null;
+    let trophyPityCounter: number | null = null;
     let battlePassXpGained = 0;
     const droppedItems: string[] = [];
     // Модификатор забега по данжу (lib/dungeon-modifiers.ts) — множители 1 по всем осям, если
@@ -553,6 +555,23 @@ export async function POST(req: NextRequest) {
           text: isFirstTrophy ? '🎖️ Новый трофей в Комнате трофеев!' : '🎖️ Трофей пополнен — новая победа записана.',
           turn: currentTurn + 1,
         });
+
+        // Pity-счётчик (lib/boss-trophies.ts) — гарантирует самый редкий предмет добычи босса не
+        // позже pityCapFor(enemyId) побед подряд без него; обычный шанс из lootTable выше уже
+        // отработал в rollLoot и мог сам его выдать раньше срока.
+        const rarest = rarestBossDrop(enemyTemplate.id);
+        if (rarest) {
+          const existingPity = player.bossTrophies.find(t => t.enemyId === enemyTemplate.id)?.pityCounter ?? 0;
+          if (droppedItems.includes(rarest.itemId)) {
+            trophyPityCounter = 0;
+          } else if (existingPity + 1 >= pityCapFor(enemyTemplate.id)) {
+            droppedItems.push(rarest.itemId);
+            trophyPityCounter = 0;
+            combatLog.push({ text: '🎯 Счётчик неудач исчерпан — редчайший трофей выпадает гарантированно!', turn: currentTurn + 1 });
+          } else {
+            trophyPityCounter = existingPity + 1;
+          }
+        }
       }
 
       // Боевой пропуск (lib/battle-pass.ts) — очки только пока премиум активен, полный лок,
@@ -1033,8 +1052,12 @@ export async function POST(req: NextRequest) {
       if (bossTrophyGained) {
         await tx.playerBossTrophy.upsert({
           where: { playerId_enemyId: { playerId: player.id, enemyId: bossTrophyGained } },
-          create: { playerId: player.id, enemyId: bossTrophyGained, killCount: 1 },
-          update: { killCount: { increment: 1 }, lastDefeatedAt: new Date() },
+          create: { playerId: player.id, enemyId: bossTrophyGained, killCount: 1, pityCounter: trophyPityCounter ?? 0 },
+          update: {
+            killCount: { increment: 1 },
+            lastDefeatedAt: new Date(),
+            ...(trophyPityCounter !== null ? { pityCounter: trophyPityCounter } : {}),
+          },
         });
       }
       if (dungeonJustCompleted || trialJustCompleted) {

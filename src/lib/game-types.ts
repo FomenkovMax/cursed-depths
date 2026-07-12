@@ -184,6 +184,21 @@ export interface GuildMemberData {
   };
 }
 
+export interface CharacterSlotView {
+  id: string;
+  name: string;
+  level: number;
+  slotNumber: number;
+  active: boolean;
+  race: { nameRu: string; icon: string };
+  class: { name: string; icon: string };
+}
+
+export interface CharacterSlotsStateView {
+  characters: CharacterSlotView[];
+  maxSlots: number;
+}
+
 export interface GuildData {
   id: string;
   name: string;
@@ -246,7 +261,7 @@ export interface PartyCombatStateResponse {
 }
 
 export type GameScreen = 'loading' | 'creation' | 'game';
-export type GameTab = 'overview' | 'combat' | 'map' | 'inventory' | 'quests' | 'craft' | 'leaderboard' | 'party' | 'achievements' | 'guild' | 'codex' | 'market' | 'pvp' | 'premium' | 'trophies' | 'auction';
+export type GameTab = 'overview' | 'combat' | 'map' | 'inventory' | 'quests' | 'craft' | 'leaderboard' | 'party' | 'achievements' | 'guild' | 'codex' | 'market' | 'pvp' | 'premium' | 'trophies' | 'auction' | 'characters';
 
 export type GameMessage = { text: string; type: 'info' | 'success' | 'error' } | null;
 

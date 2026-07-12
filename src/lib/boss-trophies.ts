@@ -9,6 +9,12 @@
  * испытания) — party-бой (lib/party-combat-resolver.ts) сюда намеренно не подключён, это
  * отдельная более сложная система без собственного премиум-множителя золота/опыта; тех же
  * боссов всегда можно взять соло.
+ *
+ * Pity-счётчик: каждая победа над боссом без выпадения его самого редкого предмета (см.
+ * rarestBossDrop) увеличивает PlayerBossTrophy.pityCounter; на pityCapFor(enemyId)-й победе
+ * подряд без него предмет добавляется в добычу гарантированно, а счётчик сбрасывается.
+ * Обычный шанс из lootTable продолжает действовать на каждой попытке — pity лишь ограничивает
+ * длину невезучей серии, не заменяет базовую вероятность.
  */
 
 import { ENEMIES } from './game-data';
@@ -48,4 +54,25 @@ export const BOSS_TROPHY_LORE: Record<string, string> = {
 
 export function trophyLoreFor(enemyId: string): string {
   return BOSS_TROPHY_LORE[enemyId] ?? '';
+}
+
+const PITY_CAP_MIN = 20;
+const PITY_CAP_MAX = 120;
+
+/** Самый редкий предмет в добыче босса — тот, чей собственный шанс в lootTable ниже всех
+ * остальных строк того же босса. Это и есть предмет, на который настроен pity-счётчик ниже. */
+export function rarestBossDrop(enemyId: string): { itemId: string; chance: number } | null {
+  const enemy = ENEMIES.find(e => e.id === enemyId && e.isBoss);
+  if (!enemy || enemy.lootTable.length === 0) return null;
+  return enemy.lootTable.reduce((rarest, drop) => (drop.chance < rarest.chance ? drop : rarest));
+}
+
+/** Pity-порог для конкретного босса — примерно равен ожидаемому числу побед до естественного
+ * выпадения самого редкого предмета (1/chance), зажатому в разумных пределах: не ниже
+ * PITY_CAP_MIN (иначе гарантия обесценивает сам шанс) и не выше PITY_CAP_MAX (иначе затяжная
+ * невезучая серия растягивается на сотни боёв без всякой гарантии). */
+export function pityCapFor(enemyId: string): number {
+  const rarest = rarestBossDrop(enemyId);
+  if (!rarest) return PITY_CAP_MAX;
+  return Math.min(PITY_CAP_MAX, Math.max(PITY_CAP_MIN, Math.round(1 / rarest.chance)));
 }

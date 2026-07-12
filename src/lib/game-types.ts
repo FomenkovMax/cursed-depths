@@ -377,6 +377,11 @@ export interface TrophyEntryView {
   firstDefeatedAt: string | null;
   lastDefeatedAt: string | null;
   loreRu: string | null;
+  rarestItemNameRu: string | null;
+  rarestItemIcon: string | null;
+  pityCounter: number;
+  pityCap: number;
+  pityRemaining: number;
 }
 
 export interface TrophyRoomStateView {

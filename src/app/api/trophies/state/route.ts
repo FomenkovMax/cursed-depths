@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { validateTelegramRequest } from '@/lib/auth';
-import { LOCATIONS } from '@/lib/game-data';
-import { bossEnemies, trophyLoreFor } from '@/lib/boss-trophies';
+import { LOCATIONS, ITEMS } from '@/lib/game-data';
+import { bossEnemies, trophyLoreFor, rarestBossDrop, pityCapFor } from '@/lib/boss-trophies';
 import { isPremiumActive } from '@/lib/premium-shop';
 
 export async function GET(req: NextRequest) {
@@ -31,6 +31,10 @@ export async function GET(req: NextRequest) {
       const location = LOCATIONS.find(l => l.id === e.locationId);
       const trophy = byEnemyId.get(e.id) ?? null;
       const defeated = !!trophy && trophy.killCount > 0;
+      const rarest = rarestBossDrop(e.id);
+      const rarestItem = rarest ? ITEMS.find(i => i.id === rarest.itemId) ?? null : null;
+      const pityCap = pityCapFor(e.id);
+      const pityCounter = trophy?.pityCounter ?? 0;
       return {
         enemyId: e.id,
         nameRu: e.nameRu,
@@ -41,6 +45,11 @@ export async function GET(req: NextRequest) {
         firstDefeatedAt: trophy ? trophy.firstDefeatedAt.toISOString() : null,
         lastDefeatedAt: trophy ? trophy.lastDefeatedAt.toISOString() : null,
         loreRu: defeated ? trophyLoreFor(e.id) : null,
+        rarestItemNameRu: rarestItem?.nameRu ?? null,
+        rarestItemIcon: rarestItem?.icon ?? null,
+        pityCounter,
+        pityCap,
+        pityRemaining: Math.max(0, pityCap - pityCounter),
       };
     });
 

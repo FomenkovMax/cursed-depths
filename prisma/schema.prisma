@@ -106,6 +106,7 @@ model Player {
   starPurchases   StarPurchase[]
   pets            PlayerPet[]
   guildRaidHits   GuildRaidContribution[]
+  bossTrophies    PlayerBossTrophy[]
 
   @@index([telegramId])
   @@index([locationId])
@@ -567,4 +568,21 @@ model Ability {
 
   @@index([classId])
   @@index([stage])
+}
+
+// Комната трофеев — постоянная коллекция уникальных боссов, когда-либо поверженных игроком.
+// Запись создаётся при ЛЮБОЙ победе над боссом (combat/action.ts), независимо от премиума —
+// F2P тоже копит трофеи молча. Премиум-эксклюзив — не сама запись, а награда (золото + Осколки
+// Короны, lib/boss-trophies.ts), которая начисляется только если премиум был активен в момент
+// ИМЕННО этого первого килла; более поздняя покупка премиума не награждает задним числом уже
+// добытые трофеи, только будущие первые киллы.
+model PlayerBossTrophy {
+  id         String   @id @default(cuid())
+  playerId   String
+  player     Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  enemyId    String
+  defeatedAt DateTime @default(now())
+
+  @@unique([playerId, enemyId])
+  @@index([playerId])
 }

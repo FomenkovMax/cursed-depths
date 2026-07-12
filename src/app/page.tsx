@@ -37,6 +37,7 @@ import {
   BountyHuntResultView,
   GuildRaidBossStateView,
   GuildRaidAttackResultView,
+  TrophyRoomStateView,
 } from '@/lib/game-types';
 import { LoadingScreen } from '@/components/game/LoadingScreen';
 import { CharacterCreationScreen } from '@/components/game/CharacterCreationScreen';
@@ -45,6 +46,7 @@ import { OverviewTab } from '@/components/game/OverviewTab';
 import { ExplorationEventModal } from '@/components/game/ExplorationEventModal';
 import { TrialJunctionModal } from '@/components/game/TrialJunctionModal';
 import { AchievementsTab } from '@/components/game/AchievementsTab';
+import { TrophyRoomTab } from '@/components/game/TrophyRoomTab';
 import { CodexTab } from '@/components/game/CodexTab';
 import { MarketTab } from '@/components/game/MarketTab';
 import { PvpTab } from '@/components/game/PvpTab';
@@ -79,6 +81,8 @@ export default function CursedDepths() {
   const [previousSeasonWinners, setPreviousSeasonWinners] = useState<SeasonWinnerEntry[]>([]);
   const [achievements, setAchievements] = useState<AchievementEntry[]>([]);
   const [achievementsLoading, setAchievementsLoading] = useState(false);
+  const [trophyRoom, setTrophyRoom] = useState<TrophyRoomStateView | null>(null);
+  const [trophyRoomLoading, setTrophyRoomLoading] = useState(false);
   const [codexEntries, setCodexEntries] = useState<CodexEntryView[]>([]);
   const [codexLoading, setCodexLoading] = useState(false);
   const [marketListings, setMarketListings] = useState<MarketListingView[]>([]);
@@ -346,6 +350,16 @@ export default function CursedDepths() {
       })
       .catch(() => setMessage({ text: 'Не удалось загрузить достижения', type: 'error' }))
       .finally(() => setAchievementsLoading(false));
+  }, [tab, apiCall]);
+
+  // ===== TROPHY ROOM (lib/boss-trophies.ts) — коллекция боссов, свободна для всех, награда премиум =====
+  useEffect(() => {
+    if (tab !== 'trophies' || !telegramIdRef.current) return;
+    setTrophyRoomLoading(true);
+    apiCall('/api/trophies/state')
+      .then(data => { if (data.trophies) setTrophyRoom(data); })
+      .catch(() => setMessage({ text: 'Не удалось загрузить комнату трофеев', type: 'error' }))
+      .finally(() => setTrophyRoomLoading(false));
   }, [tab, apiCall]);
 
   // ===== CODEX (лор-кодекс, см. lib/codex.ts) =====
@@ -1820,6 +1834,8 @@ export default function CursedDepths() {
           />
 
           <AchievementsTab achievements={achievements} loading={achievementsLoading} />
+
+          <TrophyRoomTab state={trophyRoom} loading={trophyRoomLoading} />
 
           <GuildTab
             playerId={player?.id ?? null}

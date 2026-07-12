@@ -372,7 +372,10 @@ export interface TrophyEntryView {
   icon: string;
   locationNameRu: string;
   defeated: boolean;
-  defeatedAt: string | null;
+  killCount: number;
+  firstDefeatedAt: string | null;
+  lastDefeatedAt: string | null;
+  loreRu: string | null;
 }
 
 export interface TrophyRoomStateView {
@@ -380,8 +383,6 @@ export interface TrophyRoomStateView {
   trophies: TrophyEntryView[];
   collectedCount: number;
   totalCount: number;
-  rewardGold: number;
-  rewardShards: number;
 }
 
 export interface PvpLeagueView {

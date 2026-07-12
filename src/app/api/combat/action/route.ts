@@ -74,7 +74,6 @@ import { FORTRESS_ID, CONTROL_GOLD_BONUS } from '@/lib/fortress';
 import { bossIntroLine, deathMessage } from '@/lib/exploration-flavor';
 import { isPremiumActive, PREMIUM_GOLD_XP_MULT, isDeathDebuffActive, DEATH_DEBUFF_XP_MULT, DEATH_DEBUFF_HOURS } from '@/lib/premium-shop';
 import { findPet } from '@/lib/pets';
-import { TROPHY_REWARD_GOLD, TROPHY_REWARD_SHARDS } from '@/lib/boss-trophies';
 
 export async function POST(req: NextRequest) {
   const auth = validateTelegramRequest(req);
@@ -137,7 +136,6 @@ export async function POST(req: NextRequest) {
     let xpGained = 0;
     let goldGained = 0;
     let bossTrophyGained: string | null = null;
-    let trophyShardsGained = 0;
     const droppedItems: string[] = [];
     // Модификатор забега по данжу (lib/dungeon-modifiers.ts) — множители 1 по всем осям, если
     // игрок не в данже или выпал "чистый" забег без модификатора.
@@ -542,17 +540,15 @@ export async function POST(req: NextRequest) {
       if (scrollDrop) droppedItems.push(scrollDrop);
       combatLog.push({ text: `${enemyTemplate.nameRu} повержен! +${xpGained} XP, +${goldGained} золота`, turn: currentTurn + 1 });
 
-      // Комната трофеев (lib/boss-trophies.ts) — первый килл этого босса когда-либо. Запись идёт
-      // независимо от премиума, награда — только с активным премиумом в момент килла.
-      if (enemyTemplate.isBoss && !player.bossTrophies.some(t => t.enemyId === enemyTemplate.id)) {
+      // Комната трофеев (lib/boss-trophies.ts) — чисто коллекционная механика, доступна ТОЛЬКО с
+      // активным премиумом (не просто "лучше награда" — без премиума счётчик не растёт вовсе).
+      if (enemyTemplate.isBoss && premiumMult > 1) {
         bossTrophyGained = enemyTemplate.id;
-        if (premiumMult > 1) {
-          goldGained += TROPHY_REWARD_GOLD;
-          trophyShardsGained = TROPHY_REWARD_SHARDS;
-          combatLog.push({ text: `🏆 Новый трофей! +${TROPHY_REWARD_GOLD} золота, +${TROPHY_REWARD_SHARDS} 👑 Осколков Короны`, turn: currentTurn + 1 });
-        } else {
-          combatLog.push({ text: '🏆 Новый трофей! (премиум даёт награду за первый килл)', turn: currentTurn + 1 });
-        }
+        const isFirstTrophy = !player.bossTrophies.some(t => t.enemyId === enemyTemplate.id);
+        combatLog.push({
+          text: isFirstTrophy ? '🎖️ Новый трофей в Комнате трофеев!' : '🎖️ Трофей пополнен — новая победа записана.',
+          turn: currentTurn + 1,
+        });
       }
 
       const victoryHealPercent = onVictoryHealPercent(playerPassives);
@@ -871,7 +867,6 @@ export async function POST(req: NextRequest) {
       xp: newXp,
       gold: { increment: goldGained },
       ...(playerWon ? { totalKills: { increment: 1 } } : {}),
-      ...(trophyShardsGained > 0 ? { crownShards: { increment: trophyShardsGained } } : {}),
     };
 
     if (leveledUp) {
@@ -1008,7 +1003,11 @@ export async function POST(req: NextRequest) {
         await incrementQuestProgress(tx, player.id, 'kill');
       }
       if (bossTrophyGained) {
-        await tx.playerBossTrophy.create({ data: { playerId: player.id, enemyId: bossTrophyGained } });
+        await tx.playerBossTrophy.upsert({
+          where: { playerId_enemyId: { playerId: player.id, enemyId: bossTrophyGained } },
+          create: { playerId: player.id, enemyId: bossTrophyGained, killCount: 1 },
+          update: { killCount: { increment: 1 }, lastDefeatedAt: new Date() },
+        });
       }
       if (dungeonJustCompleted || trialJustCompleted) {
         await incrementQuestProgress(tx, player.id, 'dungeon');

@@ -570,18 +570,19 @@ model Ability {
   @@index([stage])
 }
 
-// Комната трофеев — постоянная коллекция уникальных боссов, когда-либо поверженных игроком.
-// Запись создаётся при ЛЮБОЙ победе над боссом (combat/action.ts), независимо от премиума —
-// F2P тоже копит трофеи молча. Премиум-эксклюзив — не сама запись, а награда (золото + Осколки
-// Короны, lib/boss-trophies.ts), которая начисляется только если премиум был активен в момент
-// ИМЕННО этого первого килла; более поздняя покупка премиума не награждает задним числом уже
-// добытые трофеи, только будущие первые киллы.
+// Комната трофеев — чисто коллекционная премиум-эксклюзивная механика (lib/boss-trophies.ts):
+// счётчик побед над каждым уникальным боссом + богатый лор, раскрывающийся после первой победы.
+// Никакой денежной награды — запись ведётся ТОЛЬКО пока премиум активен (killCount растёт с
+// каждой новой победой над этим боссом при активном премиуме); без премиума механика недоступна
+// целиком, не только "лучше награда" — та же логика, что у Экспедиций/Доски контрактов.
 model PlayerBossTrophy {
-  id         String   @id @default(cuid())
-  playerId   String
-  player     Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
-  enemyId    String
-  defeatedAt DateTime @default(now())
+  id              String   @id @default(cuid())
+  playerId        String
+  player          Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  enemyId         String
+  killCount       Int      @default(0)
+  firstDefeatedAt DateTime @default(now())
+  lastDefeatedAt  DateTime @default(now())
 
   @@unique([playerId, enemyId])
   @@index([playerId])

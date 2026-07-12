@@ -24,11 +24,14 @@ import type {
 } from '@/lib/game-types';
 
 const WALLET_CURRENCY_IDS = ['ash_shard', 'aylet_tear', 'tornak_seal', 'kessara_whisper'];
-const WALLET_CURRENCY_META: Record<string, { icon: string; nameRu: string }> = {
-  ash_shard: { icon: '🔥', nameRu: 'Осколок Пепла' },
-  aylet_tear: { icon: '💧', nameRu: 'Слеза Айлет' },
-  tornak_seal: { icon: '🗿', nameRu: 'Печать Торнака' },
-  kessara_whisper: { icon: '🌑', nameRu: 'Шёпот Кессары' },
+// Короткая функциональная подпись каждой крафт-валюты (аудит 3/C4, PoE2: "валюта = сам
+// крафт-инструмент, не просто gold-sink") — та же формулировка, что уже есть у полного
+// descriptionRu в Кузнице (CraftTab.tsx), сжатая под компактную ячейку Кошелька.
+const WALLET_CURRENCY_META: Record<string, { icon: string; nameRu: string; functionHint: string }> = {
+  ash_shard: { icon: '🔥', nameRu: 'Осколок Пепла', functionHint: 'реролл всех св-в' },
+  aylet_tear: { icon: '💧', nameRu: 'Слеза Айлет', functionHint: '+1 ранг редкости' },
+  tornak_seal: { icon: '🗿', nameRu: 'Печать Торнака', functionHint: '+1 свойство' },
+  kessara_whisper: { icon: '🌑', nameRu: 'Шёпот Кессары', functionHint: 'рискованный реролл' },
 };
 
 interface AdventureLogEntry {
@@ -105,6 +108,7 @@ export function OverviewTab({
     id,
     icon: WALLET_CURRENCY_META[id].icon,
     nameRu: WALLET_CURRENCY_META[id].nameRu,
+    functionHint: WALLET_CURRENCY_META[id].functionHint,
     quantity: playerInventory.filter(i => i.itemId === id).reduce((sum, i) => sum + i.quantity, 0),
   }));
 

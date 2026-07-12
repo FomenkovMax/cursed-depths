@@ -38,9 +38,21 @@ describe('BATTLE_PASS_TIERS', () => {
     BATTLE_PASS_TIERS.forEach((t, i) => expect(t.tier).toBe(i + 1));
   });
 
-  it('every tier grants at least one reward', () => {
+  it('every tier grants at least one reward (gold, shards, or items)', () => {
     for (const t of BATTLE_PASS_TIERS) {
-      expect((t.reward.gold ?? 0) + (t.reward.crownShards ?? 0)).toBeGreaterThan(0);
+      const hasReward = !!t.reward.gold || !!t.reward.crownShards || (t.reward.items?.length ?? 0) > 0;
+      expect(hasReward).toBe(true);
     }
+  });
+
+  it('keeps total season gold well below the pre-rebalance total, so it no longer stacks with the +15% premium gold multiplier into a pay-to-win-adjacent bonus', () => {
+    const totalGold = BATTLE_PASS_TIERS.reduce((sum, t) => sum + (t.reward.gold ?? 0), 0);
+    // Pre-rebalance total was 7800 — this guards against silently drifting back toward it.
+    expect(totalGold).toBeLessThan(2000);
+  });
+
+  it('grants at least one non-currency item reward across the season (crafting materials, consumables)', () => {
+    const totalItemRewards = BATTLE_PASS_TIERS.reduce((sum, t) => sum + (t.reward.items?.length ?? 0), 0);
+    expect(totalItemRewards).toBeGreaterThan(0);
   });
 });

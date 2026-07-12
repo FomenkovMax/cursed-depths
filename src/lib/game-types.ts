@@ -565,10 +565,17 @@ export interface AuctionStateView {
   durations: AuctionDurationView[];
 }
 
+export interface BattlePassRewardItemView {
+  itemId: string;
+  quantity: number;
+  nameRu: string;
+  icon: string;
+}
+
 export interface BattlePassTierView {
   tier: number;
   xpRequired: number;
-  reward: { gold?: number; crownShards?: number };
+  reward: { gold?: number; crownShards?: number; items?: BattlePassRewardItemView[] };
   unlocked: boolean;
   claimed: boolean;
 }

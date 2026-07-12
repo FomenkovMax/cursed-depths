@@ -7,9 +7,15 @@
  * хватило бы (то есть очки без премиума просто не появляются, а не "появляются, но не тратятся").
  */
 
+export interface BattlePassRewardItem {
+  itemId: string;
+  quantity: number;
+}
+
 export interface BattlePassReward {
   gold?: number;
   crownShards?: number;
+  items?: BattlePassRewardItem[];
 }
 
 export interface BattlePassTier {
@@ -18,22 +24,29 @@ export interface BattlePassTier {
   reward: BattlePassReward;
 }
 
+/** Состав наград пересмотрен (аудит 2026-07): раньше сезон отдавал ~7800 золота и 245 Осколков
+ * Короны — деньги без ограничения на то, что можно на них купить, ПОВЕРХ уже существующего
+ * +15% золота премиума со ЛЮБОГО боя (см. PREMIUM_GOLD_XP_MULT) — двойное усиление одной и той
+ * же оси прогресса. Теперь золото и Осколки сведены к нескольким небольшим вехам, а основной
+ * объём наград — крафтовые валюты (ash_shard/aylet_tear/tornak_seal/kessara_whisper, полезны
+ * ТОЛЬКО для точечного улучшения предметов через Кузницу — их нельзя потратить на что угодно) и
+ * расходники, которые не масштабируют силу игрока бесконечно. */
 export const BATTLE_PASS_TIERS: BattlePassTier[] = [
-  { tier: 1, xpRequired: 50, reward: { gold: 300 } },
-  { tier: 2, xpRequired: 150, reward: { gold: 400 } },
+  { tier: 1, xpRequired: 50, reward: { gold: 150 } },
+  { tier: 2, xpRequired: 150, reward: { items: [{ itemId: 'ash_shard', quantity: 1 }] } },
   { tier: 3, xpRequired: 300, reward: { crownShards: 10 } },
-  { tier: 4, xpRequired: 500, reward: { gold: 500 } },
-  { tier: 5, xpRequired: 750, reward: { gold: 600, crownShards: 20 } },
-  { tier: 6, xpRequired: 1050, reward: { gold: 600 } },
+  { tier: 4, xpRequired: 500, reward: { items: [{ itemId: 'health_potion', quantity: 3 }, { itemId: 'mana_potion', quantity: 3 }] } },
+  { tier: 5, xpRequired: 750, reward: { gold: 100, items: [{ itemId: 'aylet_tear', quantity: 1 }] } },
+  { tier: 6, xpRequired: 1050, reward: { items: [{ itemId: 'greater_health', quantity: 3 }] } },
   { tier: 7, xpRequired: 1400, reward: { crownShards: 15 } },
-  { tier: 8, xpRequired: 1800, reward: { gold: 700 } },
-  { tier: 9, xpRequired: 2250, reward: { crownShards: 15 } },
-  { tier: 10, xpRequired: 2750, reward: { gold: 1000, crownShards: 40 } },
-  { tier: 11, xpRequired: 3300, reward: { gold: 800 } },
+  { tier: 8, xpRequired: 1800, reward: { items: [{ itemId: 'tornak_seal', quantity: 1 }] } },
+  { tier: 9, xpRequired: 2250, reward: { items: [{ itemId: 'elixir_power', quantity: 2 }] } },
+  { tier: 10, xpRequired: 2750, reward: { crownShards: 20, items: [{ itemId: 'ash_shard', quantity: 1 }] } },
+  { tier: 11, xpRequired: 3300, reward: { items: [{ itemId: 'aylet_tear', quantity: 1 }, { itemId: 'tornak_seal', quantity: 1 }] } },
   { tier: 12, xpRequired: 3900, reward: { crownShards: 20 } },
-  { tier: 13, xpRequired: 4550, reward: { gold: 900 } },
-  { tier: 14, xpRequired: 5250, reward: { crownShards: 25 } },
-  { tier: 15, xpRequired: 6000, reward: { gold: 2000, crownShards: 100 } },
+  { tier: 13, xpRequired: 4550, reward: { items: [{ itemId: 'elixir_power', quantity: 2 }, { itemId: 'greater_health', quantity: 3 }] } },
+  { tier: 14, xpRequired: 5250, reward: { items: [{ itemId: 'kessara_whisper', quantity: 1 }] } },
+  { tier: 15, xpRequired: 6000, reward: { gold: 500, crownShards: 50, items: [{ itemId: 'kessara_whisper', quantity: 1 }] } },
 ];
 
 /** Очки за одну победу в бою — 10% от опыта врага, минимум 1, чтобы даже слабый противник

@@ -13,6 +13,9 @@ function rewardLabel(reward: BattlePassTierView['reward']): string {
   const parts: string[] = [];
   if (reward.gold) parts.push(`💰 ${reward.gold}`);
   if (reward.crownShards) parts.push(`👑 ${reward.crownShards}`);
+  for (const item of reward.items ?? []) {
+    parts.push(`${item.icon} ${item.nameRu} ×${item.quantity}`);
+  }
   return parts.join(' + ');
 }
 

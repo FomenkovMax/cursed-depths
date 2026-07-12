@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
     const premiumActive = isPremiumActive(player.premiumUntil);
 
     if (!player.guildMember) {
-      return NextResponse.json({ inGuild: false, premiumActive, boss: null, topContributors: [], attacksLeftToday: 0 });
+      return NextResponse.json({ inGuild: false, premiumActive, boss: null, topContributors: [], myContribution: 0, attacksLeftToday: 0 });
     }
 
     const guild = player.guildMember.guild;
@@ -56,6 +56,9 @@ export async function GET(req: NextRequest) {
         defeated: boss.hp <= 0,
       },
       topContributors,
+      // Эфемерная "валюта" этого недельного цикла (аудит 3, roguelite-референс) — сумма урона
+      // игрока за cycleId, сгорает при убийстве босса вместе со всеми GuildRaidContribution.
+      myContribution: byPlayer.get(player.id)?.damage ?? 0,
       attacksLeftToday: Math.max(0, RAID_BOSS_DAILY_ATTACK_CAP - attacksToday),
     });
   } catch (error) {

@@ -92,6 +92,11 @@ export function GuildTab({
               <Progress value={(worldBoss.boss.hp / worldBoss.boss.maxHp) * 100} className="h-2.5 flex-1" />
               <span className="text-[10px] text-muted-foreground shrink-0">{worldBoss.boss.hp}/{worldBoss.boss.maxHp}</span>
             </div>
+            {/* Эфемерная "валюта" этого воплощения (аудит 3, roguelite-референс) — сумма урона,
+                накопленная только за текущее incarnation; сгорает вместе с наградой при убийстве. */}
+            <div className="text-[10px] text-accent">
+              🔥 Ваш вклад в это воплощение: {worldBoss.myContribution} урона <span className="text-muted-foreground">(сгорает после награды)</span>
+            </div>
             {worldBoss.topContributors.length > 0 && (
               <div className="text-[10px] text-muted-foreground">
                 Лидеры урона: {worldBoss.topContributors.slice(0, 3).map(c => `${c.name} (${c.damage})`).join(', ')}
@@ -205,6 +210,11 @@ export function GuildTab({
                 <div className="flex items-center gap-2">
                   <Progress value={(guildRaidBoss.boss.hp / guildRaidBoss.boss.maxHp) * 100} className="h-2.5 flex-1" />
                   <span className="text-[10px] text-muted-foreground shrink-0">{guildRaidBoss.boss.hp}/{guildRaidBoss.boss.maxHp}</span>
+                </div>
+                {/* Эфемерная "валюта" этого недельного цикла (аудит 3, roguelite-референс) —
+                    сгорает вместе с наградой при убийстве или сменой недели. */}
+                <div className="text-[10px] text-accent">
+                  🔥 Ваш вклад в эту неделю: {guildRaidBoss.myContribution} урона <span className="text-muted-foreground">(сгорает после награды)</span>
                 </div>
                 {guildRaidBoss.topContributors.length > 0 && (
                   <div className="text-[10px] text-muted-foreground">

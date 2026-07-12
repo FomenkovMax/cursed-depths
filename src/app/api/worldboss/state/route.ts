@@ -39,6 +39,9 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       boss: { incarnation: boss.incarnation, name: boss.name, hp: boss.hp, maxHp: boss.maxHp, lore: WORLD_BOSS_LORE },
       topContributors,
+      // Эфемерная "валюта" этого воплощения босса (аудит 3, roguelite-референс) — сумма урона
+      // игрока за incarnation, сгорает при убийстве босса вместе со всеми WorldBossContribution.
+      myContribution: byPlayer.get(player.id)?.damage ?? 0,
       attacksLeftToday: Math.max(0, attackCap - attacksToday),
       attackCap,
     });

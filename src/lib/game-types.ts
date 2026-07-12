@@ -334,6 +334,9 @@ export interface WorldBossContributorView {
 export interface WorldBossStateView {
   boss: { incarnation: number; name: string; hp: number; maxHp: number; lore: string };
   topContributors: WorldBossContributorView[];
+  /** Эфемерная "валюта" текущего воплощения босса — сумма урона игрока за incarnation, сгорает
+   * при убийстве вместе со всей записью вкладов (аудит 3, roguelite-референс). */
+  myContribution: number;
   attacksLeftToday: number;
 }
 
@@ -357,6 +360,9 @@ export interface GuildRaidBossStateView {
   premiumActive: boolean;
   boss: { name: string; lore: string; cycleId: string; hp: number; maxHp: number; defeated: boolean } | null;
   topContributors: GuildRaidContributorView[];
+  /** Эфемерная "валюта" текущего недельного цикла — сумма урона игрока за cycleId, сгорает при
+   * убийстве вместе со всей записью вкладов (аудит 3, roguelite-референс). */
+  myContribution: number;
   attacksLeftToday: number;
 }
 

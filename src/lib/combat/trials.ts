@@ -86,6 +86,35 @@ export const TRIALS: Trial[] = [
     completionReward: { xp: 350, gold: 150, items: ['ailet_tear'] },
     completionLoreRu: 'Пленённая душа Рощи растворяется — на миг между деревьями проступает то, чем роща была до Скверны. Потом видение гаснет, но тропа за спиной больше не выглядит одинаковой.',
   },
+  // Короткий забег с гарантированной концовкой за 2 развилки + финальная стычка (аудит 4.1,
+  // C6) — тот же движок, что и обычные испытания выше, просто меньше развилок и заведомо
+  // слабые враги burned_village (уровень 1), чтобы забег реально занимал пару минут, а не
+  // 20-40. minLevel: 1 — доступно с самого начала игры, как "демо" механики развилок.
+  {
+    id: 'quick_ashen_gauntlet',
+    nameRu: 'Хватка Пепла',
+    icon: '⏱️',
+    descriptionRu: 'Короткая вылазка у самых Врат — два решения и стычка, и всё кончено. Для тех, у кого нет получаса на блуждания по руинам.',
+    locationId: 'burned_village',
+    minLevel: 1,
+    junctions: [
+      {
+        options: [
+          { direction: 'left', type: 'monster', enemyId: 'ashen_jackal', label: '🐺 Шакалья тропа', narrativeRu: 'Из-за обгоревшей стены выскакивает тощий шакал.' },
+          { direction: 'right', type: 'reward', goldMult: 2, label: '🪙 Рассыпанные монеты', narrativeRu: 'Кошель мертвеца лопнул при падении — часть монет уцелела.' },
+        ],
+      },
+      {
+        options: [
+          { direction: 'left', type: 'trap', hpDamagePercent: -0.06, label: '🔥 Тлеющие угли', narrativeRu: 'Пол под ногами всё ещё горяч — наступаете неудачно.' },
+          { direction: 'right', type: 'monster', enemyId: 'blighted_villager', label: '🧟 Заражённый крестьянин', narrativeRu: 'Из погреба выбирается заражённый Скверной житель.' },
+        ],
+      },
+    ],
+    bossEnemyId: 'ash_marauder',
+    completionReward: { xp: 60, gold: 25 },
+    completionLoreRu: 'Мародёр Пепла падает у порога — короткая вылазка окончена. Не эпос, но честная разминка перед настоящими руинами.',
+  },
 ];
 
 export function findTrial(id: string): Trial | null {

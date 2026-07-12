@@ -275,6 +275,12 @@ export function OverviewTab({
               </div>
             </div>
             <div className="flex items-center gap-2 mb-3 flex-wrap">
+              {/* Короткий забег (аудит 4.1, C6) — гарантированная концовка за пару решений, а не
+                  20-40 минут блуждания; отличается от обычного испытания только числом развилок,
+                  движок (lib/combat/trials.ts) тот же самый. */}
+              {trial.junctions.length <= 2 && (
+                <Badge variant="outline" className="text-[10px] h-4 px-1 text-uncommon">⏱️ Короткий забег</Badge>
+              )}
               <Badge variant="outline" className="text-[10px] h-4 px-1">🗺️ {trial.junctions.length} развилки</Badge>
               <Badge variant="outline" className="text-[10px] h-4 px-1">Ур. {trial.minLevel}+</Badge>
               <Badge variant="outline" className="text-[10px] h-4 px-1 text-gold">🎁 +{trial.completionReward.xp} XP, +{trial.completionReward.gold} 💰</Badge>

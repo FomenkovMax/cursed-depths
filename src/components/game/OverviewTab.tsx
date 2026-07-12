@@ -60,6 +60,7 @@ interface OverviewTabProps {
   expeditionState: ExpeditionStateView | null;
   bountyState: BountyStateView | null;
   onNavigateTab: (tab: GameTab) => void;
+  onOpenRespec: () => void;
 }
 
 export function OverviewTab({
@@ -88,6 +89,7 @@ export function OverviewTab({
   expeditionState,
   bountyState,
   onNavigateTab,
+  onOpenRespec,
 }: OverviewTabProps) {
   const playerInventory = player?.inventory || [];
   const activePet = activePetId ? findPet(activePetId) : null;
@@ -303,6 +305,16 @@ export function OverviewTab({
             )}
             {!!player?.statPoints && (
               <Badge className="text-[10px] h-5 bg-gold/20 text-gold">+{player.statPoints} очков</Badge>
+            )}
+            {player && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-5 px-1.5 text-[10px] border-border"
+                onClick={onOpenRespec}
+              >
+                🔄 Respec
+              </Button>
             )}
           </div>
         </CardHeader>

@@ -106,3 +106,8 @@ export function isDeathDebuffActive(deathDebuffUntil: Date | null, premiumUntil:
  * — платная услуга за уже купленные Осколки, а не starter-фича, поэтому цена вне PREMIUM_CATALOG:
  * это не разовая покупка эффекта, а сервис с собственным API (см. api/player/change-race). */
 export const RACE_CHANGE_COST_SHARDS = 400;
+
+/** Respec (lib/respec.ts) — тот же принцип, что у Смены расы: первый раз бесплатно
+ * (Player.respecAvailable), каждый следующий — за уже купленные Осколки. Дешевле смены расы,
+ * потому что не меняет идентичность персонажа, только перекладывает уже вложенные очки. */
+export const RESPEC_COST_SHARDS = 150;

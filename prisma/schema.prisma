@@ -29,6 +29,7 @@ model Player {
   willpower       Int       @default(10)
   instinct        Int       @default(10)
   statPoints      Int       @default(0) // неизрасходованные очки характеристик
+  respecAvailable Boolean   @default(true) // разовый бесплатный respec (lib/respec.ts) ещё не использован
   gold            Int       @default(0)
   locationId      String    @default("town")
   inCombat        Boolean   @default(false)

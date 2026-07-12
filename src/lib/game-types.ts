@@ -63,6 +63,7 @@ export interface PlayerData {
   willpower: number;
   instinct: number;
   statPoints: number;
+  respecAvailable: boolean;
   gold: number;
   locationId: string;
   inCombat: boolean;

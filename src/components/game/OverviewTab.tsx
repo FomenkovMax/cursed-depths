@@ -13,6 +13,15 @@ import { dungeonForLocation } from '@/lib/dungeons';
 import { trialForLocation } from '@/lib/trials';
 import { ABYSS_LOCATION_ID, ABYSS_MIN_LEVEL } from '@/lib/abyss';
 import { MarketPanel } from './MarketPanel';
+import { WalletPanel, type WalletCurrency } from './WalletPanel';
+
+const WALLET_CURRENCY_IDS = ['ash_shard', 'aylet_tear', 'tornak_seal', 'kessara_whisper'];
+const WALLET_CURRENCY_META: Record<string, { icon: string; nameRu: string }> = {
+  ash_shard: { icon: '🔥', nameRu: 'Осколок Пепла' },
+  aylet_tear: { icon: '💧', nameRu: 'Слеза Айлет' },
+  tornak_seal: { icon: '🗿', nameRu: 'Печать Торнака' },
+  kessara_whisper: { icon: '🌑', nameRu: 'Шёпот Кессары' },
+};
 
 interface AdventureLogEntry {
   id: number;
@@ -38,6 +47,8 @@ interface OverviewTabProps {
   onStartAbyss: () => void;
   onStartTrial: (trialId: string) => void;
   activePetId: string | null;
+  crownShards: number;
+  battlePassXp: number | null;
 }
 
 export function OverviewTab({
@@ -58,6 +69,8 @@ export function OverviewTab({
   onStartAbyss,
   onStartTrial,
   activePetId,
+  crownShards,
+  battlePassXp,
 }: OverviewTabProps) {
   const playerInventory = player?.inventory || [];
   const activePet = activePetId ? findPet(activePetId) : null;
@@ -65,6 +78,12 @@ export function OverviewTab({
   const dungeon = player ? dungeonForLocation(player.locationId) : null;
   const trial = player ? trialForLocation(player.locationId) : null;
   const canEnterAbyss = player && player.locationId === ABYSS_LOCATION_ID;
+  const walletCurrencies: WalletCurrency[] = WALLET_CURRENCY_IDS.map(id => ({
+    id,
+    icon: WALLET_CURRENCY_META[id].icon,
+    nameRu: WALLET_CURRENCY_META[id].nameRu,
+    quantity: playerInventory.filter(i => i.itemId === id).reduce((sum, i) => sum + i.quantity, 0),
+  }));
 
   return (
     <TabsContent value="overview" className="flex-1 overflow-y-auto p-4 space-y-4 m-0">
@@ -127,6 +146,8 @@ export function OverviewTab({
           </div>
         </CardContent>
       </Card>
+
+      <WalletPanel gold={player?.gold ?? 0} crownShards={crownShards} currencies={walletCurrencies} battlePassXp={battlePassXp} />
 
       {/* Журнал похождений — свиток последних событий вместо исчезающего тоста, ближе к
           истории чата в референсном боте: там каждое действие остаётся строкой в переписке. */}

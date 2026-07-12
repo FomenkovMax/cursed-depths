@@ -20,6 +20,7 @@ export async function GET(req: NextRequest) {
           include: { player: { include: { class: true } } },
           orderBy: { joinedAt: 'asc' },
         },
+        upgrades: { select: { upgradeId: true } },
       },
     });
 

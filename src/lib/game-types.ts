@@ -190,6 +190,8 @@ export interface GuildData {
   tag: string;
   leaderId: string;
   members: GuildMemberData[];
+  treasury: number;
+  upgrades: { upgradeId: string }[];
 }
 
 export interface PartyCombatLogEntry {

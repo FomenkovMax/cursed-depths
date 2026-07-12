@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { GuildData, WorldBossStateView, WorldBossAttackResultView, FortressStateView, FortressAssaultResultView, GuildRaidBossStateView, GuildRaidAttackResultView } from '@/lib/game-types';
 import { findTitle } from '@/lib/titles';
+import { GUILD_UPGRADES, canUnlockGuildUpgrade, type GuildBuildingId } from '@/lib/guild-upgrades';
 
 interface GuildTabProps {
   playerId: string | null;
@@ -24,13 +25,21 @@ interface GuildTabProps {
   guildRaidBoss: GuildRaidBossStateView | null;
   guildRaidBossLoading: boolean;
   onAttackGuildRaidBoss: () => Promise<GuildRaidAttackResultView | null>;
+  playerGold: number;
+  donatingTreasury: boolean;
+  onDonateTreasury: (amount: number) => void;
+  unlockingUpgradeId: string | null;
+  onUnlockUpgrade: (upgradeId: string) => void;
 }
+
+const BUILDING_ORDER: GuildBuildingId[] = ['forge', 'sanctuary'];
 
 export function GuildTab({
   playerId, guild, loading, botUsername, onCreateGuild, onLeaveGuild,
   worldBoss, worldBossLoading, onAttackWorldBoss,
   fortress, fortressLoading, onAssaultFortress,
   guildRaidBoss, guildRaidBossLoading, onAttackGuildRaidBoss,
+  playerGold, donatingTreasury, onDonateTreasury, unlockingUpgradeId, onUnlockUpgrade,
 }: GuildTabProps) {
   const [copied, setCopied] = useState(false);
   const [name, setName] = useState('');
@@ -41,8 +50,17 @@ export function GuildTab({
   const [assaulting, setAssaulting] = useState(false);
   const [lastRaidAttack, setLastRaidAttack] = useState<GuildRaidAttackResultView | null>(null);
   const [raidAttacking, setRaidAttacking] = useState(false);
+  const [donateAmount, setDonateAmount] = useState('');
 
   const inviteLink = guild && botUsername ? `https://t.me/${botUsername}?start=guild_${guild.id}` : null;
+  const unlockedUpgradeIds = new Set(guild?.upgrades.map(u => u.upgradeId) ?? []);
+
+  const handleDonate = () => {
+    const amount = Math.floor(Number(donateAmount));
+    if (!Number.isFinite(amount) || amount <= 0) return;
+    onDonateTreasury(amount);
+    setDonateAmount('');
+  };
   const isLeader = !!guild && guild.leaderId === playerId;
 
   const handleCopyInvite = async () => {
@@ -243,6 +261,82 @@ export function GuildTab({
               </CardContent>
             </Card>
           )}
+
+          {/* Гильдейское дерево построек (аудит 4.1, D2, lib/guild-upgrades.ts) — постоянные
+              пассивные бонусы за совместную активность (пожертвования в казну), в отличие от
+              рейд-босса/Крепости выше (циклические разовые события). Разблокировка — только
+              лидер, пожертвовать может любой участник. */}
+          <Card className="border-accent/50 bg-accent/5">
+            <CardHeader className="pb-2 pt-3 px-4">
+              <CardTitle className="text-sm flex items-center justify-between">
+                <span>🏗️ Постройки гильдии</span>
+                <Badge variant="outline" className="text-[10px] h-5 border-border">💰 {guild.treasury}</Badge>
+              </CardTitle>
+              <p className="text-[10px] text-muted-foreground leading-relaxed pt-0.5">
+                Казна пополняется пожертвованиями участников. Постройки дают постоянные бонусы всей гильдии.
+              </p>
+            </CardHeader>
+            <CardContent className="px-4 pb-3 space-y-3">
+              <div className="flex gap-2">
+                <Input
+                  type="number"
+                  min={1}
+                  placeholder="Сумма золота"
+                  value={donateAmount}
+                  onChange={e => setDonateAmount(e.target.value)}
+                  className="h-8 text-xs"
+                />
+                <Button
+                  variant="outline"
+                  className="h-8 text-xs border-border shrink-0"
+                  disabled={loading || donatingTreasury || Number(donateAmount) <= 0 || Number(donateAmount) > playerGold}
+                  onClick={handleDonate}
+                >
+                  Пожертвовать
+                </Button>
+              </div>
+
+              {BUILDING_ORDER.map(buildingId => {
+                const tiers = GUILD_UPGRADES.filter(u => u.buildingId === buildingId).sort((a, b) => a.tier - b.tier);
+                return (
+                  <div key={buildingId} className="space-y-1.5">
+                    <div className="text-xs font-medium">{tiers[0].buildingIcon} {tiers[0].buildingNameRu}</div>
+                    {tiers.map(def => {
+                      const unlocked = unlockedUpgradeIds.has(def.id);
+                      const canUnlock = isLeader && canUnlockGuildUpgrade(def, unlockedUpgradeIds, guild.treasury);
+                      return (
+                        <div key={def.id} className={`flex items-center justify-between gap-2 rounded p-2 text-[10px] ${unlocked ? 'bg-uncommon/10' : 'bg-secondary/30'}`}>
+                          <div className="min-w-0">
+                            <div className={`font-medium ${unlocked ? 'text-uncommon' : ''}`}>
+                              Тир {def.tier}: {def.nameRu} {unlocked && '✓'}
+                            </div>
+                            <div className="text-muted-foreground">{def.descriptionRu}</div>
+                          </div>
+                          {!unlocked && (
+                            isLeader ? (
+                              <Button
+                                variant="outline"
+                                className="h-7 text-[10px] border-border shrink-0 px-2"
+                                disabled={loading || !canUnlock || unlockingUpgradeId === def.id}
+                                onClick={() => onUnlockUpgrade(def.id)}
+                              >
+                                Построить ({def.cost})
+                              </Button>
+                            ) : (
+                              <span className="text-muted-foreground shrink-0">💰 {def.cost}</span>
+                            )
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })}
+              {!isLeader && (
+                <p className="text-[10px] text-muted-foreground text-center">Разблокировать постройки может только лидер гильдии</p>
+              )}
+            </CardContent>
+          </Card>
 
           <Card className="border-border">
             <CardHeader className="pb-2 pt-3 px-4">

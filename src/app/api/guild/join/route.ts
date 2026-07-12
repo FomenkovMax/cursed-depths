@@ -27,7 +27,10 @@ export async function POST(req: NextRequest) {
 
     const updated = await db.guild.findUnique({
       where: { id: guild.id },
-      include: { members: { include: { player: { include: { class: true } } }, orderBy: { joinedAt: 'asc' } } },
+      include: {
+        members: { include: { player: { include: { class: true } } }, orderBy: { joinedAt: 'asc' } },
+        upgrades: { select: { upgradeId: true } },
+      },
     });
     return NextResponse.json({ guild: updated });
   } catch (error) {

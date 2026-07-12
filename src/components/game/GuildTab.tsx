@@ -53,7 +53,7 @@ export function GuildTab({
   const [donateAmount, setDonateAmount] = useState('');
 
   const inviteLink = guild && botUsername ? `https://t.me/${botUsername}?start=guild_${guild.id}` : null;
-  const unlockedUpgradeIds = new Set(guild?.upgrades.map(u => u.upgradeId) ?? []);
+  const unlockedUpgradeIds = new Set(guild?.upgrades?.map(u => u.upgradeId) ?? []);
 
   const handleDonate = () => {
     const amount = Math.floor(Number(donateAmount));

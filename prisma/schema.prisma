@@ -49,6 +49,9 @@ model Player {
   dungeonRoom     Int       @default(0) // 0-based индекс текущей комнаты забега
   dungeonModifierId String? // модификатор этого забега (lib/dungeon-modifiers.ts) — null, если
                             // забега нет или выпал "чистый" забег без модификатора
+  dungeonHeatLevel Int      @default(0) // heat-уровень 0-5, ВЫБРАННЫЙ игроком перед входом в данж
+                            // (lib/dungeon-modifiers.ts) — в отличие от dungeonModifierId выше,
+                            // не случайный, действует поверх него
   abyssDepth      Int       @default(0) // текущая глубина активного забега по Бездонному Разлому
                             // (lib/abyss.ts) — 0, если не в Разломе
   bestAbyssDepth  Int       @default(0) // рекорд глубины — никогда не уменьшается, даже после

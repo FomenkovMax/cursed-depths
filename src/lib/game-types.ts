@@ -82,6 +82,7 @@ export interface PlayerData {
   dungeonId: string | null;
   dungeonRoom: number;
   dungeonModifierId: string | null;
+  dungeonHeatLevel: number;
   abyssDepth: number;
   bestAbyssDepth: number;
   inventory: InventoryItem[];

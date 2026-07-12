@@ -5,7 +5,7 @@ import { validateTelegramRequest } from '@/lib/auth';
 import { initBossState } from '@/lib/boss-mechanics';
 import { isInActivePartyCombat } from '@/lib/party-guards';
 import { findDungeon } from '@/lib/dungeons';
-import { rollDungeonModifier, findDungeonModifier, dungeonModifierEffect } from '@/lib/dungeon-modifiers';
+import { rollDungeonModifier, findDungeonModifier, dungeonModifierEffect, heatLevelEffect, heatLevelLabel, multiplyEffects, MAX_HEAT_LEVEL } from '@/lib/dungeon-modifiers';
 
 export async function POST(req: NextRequest) {
   const auth = validateTelegramRequest(req);
@@ -14,9 +14,10 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const { dungeonId } = await req.json();
+    const { dungeonId, heatLevel } = await req.json();
     const dungeon = dungeonId ? findDungeon(dungeonId) : null;
     if (!dungeon) return NextResponse.json({ error: 'Данж не найден' }, { status: 404 });
+    const heat = Math.max(0, Math.min(MAX_HEAT_LEVEL, Math.round(Number(heatLevel) || 0)));
 
     const player = await db.player.findUnique({ where: { telegramId: auth.telegramId } });
     if (!player) return NextResponse.json({ error: 'Персонаж не найден' }, { status: 404 });
@@ -39,11 +40,15 @@ export async function POST(req: NextRequest) {
 
     const modifierId = rollDungeonModifier();
     const modifier = findDungeonModifier(modifierId);
-    const effect = dungeonModifierEffect(modifierId);
+    const effect = multiplyEffects(dungeonModifierEffect(modifierId), heatLevelEffect(heat));
 
     const enemyHp = Math.round((enemy.hp + Math.floor(Math.random() * 5)) * effect.enemyHpMult);
     const introLog = [{ text: `Вы входите в ${dungeon.nameRu}. Комната 1/${dungeon.roomCount}: ${enemy.nameRu}!`, turn: 0 }];
     if (modifier) introLog.push({ text: `Модификатор забега: ${modifier.icon} ${modifier.nameRu} — ${modifier.descriptionRu}`, turn: 0 });
+    if (heat > 0) {
+      const heatLabel = heatLevelLabel(heat);
+      introLog.push({ text: `Выбранный риск: ${heatLabel.icon} ${heatLabel.nameRu} (ур. ${heat}) — враги сильнее, награда выше.`, turn: 0 });
+    }
 
     const updated = await db.player.update({
       where: { telegramId: auth.telegramId },
@@ -57,6 +62,7 @@ export async function POST(req: NextRequest) {
         dungeonId: dungeon.id,
         dungeonRoom: 0,
         dungeonModifierId: modifierId,
+        dungeonHeatLevel: heat,
       },
       include: { inventory: true, quests: true, race: true, class: { include: { abilities: true } } },
     });

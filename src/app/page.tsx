@@ -1181,11 +1181,11 @@ export default function CursedDepths() {
   };
 
   // ===== DUNGEON =====
-  const handleStartDungeon = async (dungeonId: string) => {
+  const handleStartDungeon = async (dungeonId: string, heatLevel: number) => {
     if (!player || player.inCombat) return;
     setLoading(true);
     try {
-      const data = await apiCall('/api/dungeon/start', 'POST', { dungeonId });
+      const data = await apiCall('/api/dungeon/start', 'POST', { dungeonId, heatLevel });
       if (data.error) {
         setMessage({ text: data.error, type: 'error' });
       } else {

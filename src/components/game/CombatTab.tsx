@@ -9,7 +9,7 @@ import { manaCostForStage } from '@/lib/combat-engine';
 import type { BossFightState } from '@/lib/boss-mechanics';
 import { PlayerData, AbilityData, CombatLogEntry } from '@/lib/game-types';
 import { findDungeon } from '@/lib/dungeons';
-import { findDungeonModifier } from '@/lib/dungeon-modifiers';
+import { findDungeonModifier, heatLevelLabel } from '@/lib/dungeon-modifiers';
 import { isEliteDepth } from '@/lib/abyss';
 
 const ACTIVE_EFFECT_LABELS: Record<string, string> = {
@@ -78,6 +78,11 @@ export function CombatTab({
               {dungeonModifier && (
                 <Badge className="text-[10px] h-5 bg-destructive/20 text-destructive" title={dungeonModifier.descriptionRu}>
                   {dungeonModifier.icon} {dungeonModifier.nameRu}
+                </Badge>
+              )}
+              {!!player?.dungeonHeatLevel && (
+                <Badge className="text-[10px] h-5 bg-gold/20 text-gold" title="Выбранный риск-уровень">
+                  {heatLevelLabel(player.dungeonHeatLevel).icon} ур. {player.dungeonHeatLevel}
                 </Badge>
               )}
             </div>

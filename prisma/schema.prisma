@@ -9,7 +9,21 @@ datasource db {
 
 model Player {
   id              String    @id @default(cuid())
-  telegramId      String    @unique
+  telegramId      String    @unique // "активный" ключ авторизации — см. accountId ниже
+  accountId       String?   // группирует до 2 персонажей-слотов одного Telegram-аккаунта (аудит
+                             // 4.1, D1/D3). Значение — РЕАЛЬНЫЙ telegramId владельца, общий у
+                             // обоих слотов; null у обычных (однослотовых) аккаунтов. НЕ участвует
+                             // в авторизации напрямую — только группировка для переключения слотов
+                             // (lib/social/account-slots.ts). Единственное поле, которое реально
+                             // меняется при переключении — telegramId выше: неактивный слот хранит
+                             // в telegramId детерминированный placeholder `${accountId}__slot${N}`
+                             // (см. slotNumber), активный — настоящий telegramId. Благодаря этому
+                             // остальные 80+ роутов, ищущие игрока по telegramId из заголовка
+                             // авторизации, продолжают работать БЕЗ единого изменения — они всегда
+                             // находят ровно того персонажа, что сейчас активен.
+  slotNumber      Int       @default(1) // 1 = первый (обычный) слот, 2 = второй. Стабильный номер,
+                             // не меняется при переключении — нужен, чтобы детерминированно
+                             // восстановить placeholder telegramId при уходе слота в неактив.
   name            String
   raceId          String
   race            Race      @relation(fields: [raceId], references: [id])
@@ -129,6 +143,7 @@ model Player {
   bossTrophies    PlayerBossTrophy[]
 
   @@index([telegramId])
+  @@index([accountId])
   @@index([locationId])
   @@index([level])
   @@index([raceId])

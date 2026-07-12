@@ -48,6 +48,7 @@ import { TrialJunctionModal } from '@/components/game/TrialJunctionModal';
 import { useRespec } from '@/hooks/useRespec';
 import { useGuildUpgrades } from '@/hooks/useGuildUpgrades';
 import { useSocialFeatures } from '@/hooks/useSocialFeatures';
+import { useCharacterSlots } from '@/hooks/useCharacterSlots';
 import { AchievementsTab } from '@/components/game/AchievementsTab';
 import { TrophyRoomTab } from '@/components/game/TrophyRoomTab';
 import { CodexTab } from '@/components/game/CodexTab';
@@ -62,6 +63,7 @@ import { CraftTab } from '@/components/game/CraftTab';
 import { LeaderboardTab, type LeaderboardEntry, type SeasonWinnerEntry } from '@/components/game/LeaderboardTab';
 import { PartyTab } from '@/components/game/PartyTab';
 import { GuildTab } from '@/components/game/GuildTab';
+import { CharacterSlotsTab } from '@/components/game/CharacterSlotsTab';
 import { PremiumShopTab } from '@/components/game/PremiumShopTab';
 
 // ===== MAIN COMPONENT =====
@@ -916,6 +918,7 @@ export default function CursedDepths() {
     onMessage: setMessage, onNavigateTab: setTab, refreshPlayer,
   });
   const guildUpgrades = useGuildUpgrades({ apiCall, onPlayerUpdate: setPlayer, onGuildUpdate: social.setGuild, onMessage: setMessage });
+  const characterSlots = useCharacterSlots({ apiCall, telegramIdRef, tab, onMessage: setMessage });
 
   // ===== PARTY (короткий поллинг вместо realtime-инфраструктуры — нет ни WebSocket, ни
   // Vercel-совместимого push-сервиса, поэтому "реальное время" реализовано как fetch раз в
@@ -1957,6 +1960,15 @@ export default function CursedDepths() {
             onDonateTreasury={guildUpgrades.donate}
             unlockingUpgradeId={guildUpgrades.unlockingId}
             onUnlockUpgrade={guildUpgrades.unlock}
+          />
+
+          <CharacterSlotsTab
+            state={characterSlots.state}
+            loading={characterSlots.loading}
+            creating={characterSlots.creating}
+            switchingId={characterSlots.switchingId}
+            onCreateCharacter={characterSlots.createCharacter}
+            onSwitchCharacter={characterSlots.switchCharacter}
           />
 
           <PremiumShopTab

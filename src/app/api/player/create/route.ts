@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { validateTelegramRequest } from '@/lib/auth';
-import { issueDailyQuests, issueChainQuests } from '@/lib/economy/quests';
-import { markLocationVisited } from '@/lib/economy/fast-travel';
+import { createCharacter } from '@/lib/character-creation';
 
 export async function POST(req: NextRequest) {
   try {
@@ -35,53 +34,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Этот класс недоступен для выбранной расы' }, { status: 400 });
     }
 
-    const strength = raceData.baseStrength;
-    const dexterity = raceData.baseDexterity;
-    const vitality = raceData.baseVitality;
-    const intellect = raceData.baseIntellect;
-    const willpower = raceData.baseWillpower;
-    const instinct = raceData.baseInstinct;
-
-    const maxHp = 50 + vitality * 5;
-    const maxMp = 100 + willpower * 2;
-
     // Wrap player creation + starting inventory in a transaction
     const player = await db.$transaction(async (tx) => {
-      const created = await tx.player.create({
-        data: {
-          telegramId,
-          name,
-          raceId: raceData.id,
-          classId: classData.id,
-          strength,
-          dexterity,
-          vitality,
-          intellect,
-          willpower,
-          instinct,
-          hp: maxHp,
-          maxHp,
-          mp: maxMp,
-          maxMp,
-        },
+      const created = await createCharacter(tx, {
+        telegramId,
+        name,
+        raceId: raceData.id,
+        classId: classData.id,
+        baseStrength: raceData.baseStrength,
+        baseDexterity: raceData.baseDexterity,
+        baseVitality: raceData.baseVitality,
+        baseIntellect: raceData.baseIntellect,
+        baseWillpower: raceData.baseWillpower,
+        baseInstinct: raceData.baseInstinct,
       });
-
-      // Give starting items
-      await tx.inventory.createMany({
-        data: [
-          { playerId: created.id, itemId: 'rusty_sword', name: 'Ржавый меч', type: 'weapon', rarity: 'common', equipped: true, slot: 'weapon', stats: '{"attack":2}', icon: '🗡️' },
-          { playerId: created.id, itemId: 'leather_armor', name: 'Кожаная броня', type: 'armor', rarity: 'common', equipped: true, slot: 'body', stats: '{"defense":2}', icon: '🦺' },
-          { playerId: created.id, itemId: 'health_potion', name: 'Зелье здоровья', type: 'consumable', rarity: 'common', stats: '{"healHp":15}', icon: '🧪', quantity: 3 },
-        ],
-      });
-
-      // Выдаём стартовый набор ежедневных квестов, чтобы вкладка "Квесты" не была пустой с первого входа
-      await issueDailyQuests(tx, created.id, created.level);
-      // Первый шаг каждой квестовой цепочки — постоянный прогресс поверх ежедневных заданий
-      await issueChainQuests(tx, created.id);
-
-      // Стартовая локация сразу считается "посещённой" для будущего быстрого перемещения
-      await markLocationVisited(tx, created.id, created.locationId);
 
       // Re-fetch player with inventory, quests, race and class included
       return tx.player.findUnique({

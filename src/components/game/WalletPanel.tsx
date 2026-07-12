@@ -5,6 +5,11 @@ export interface WalletCurrency {
   icon: string;
   nameRu: string;
   quantity: number;
+  /** Короткая функциональная подпись (PoE2-стиль "валюта = сам крафт-инструмент", аудит 3/C4) —
+   * что именно делает эта валюта, не просто "редкий материал". Показывается только у крафтовых
+   * валют, где сам кошелёк — единственное место в игре, откуда не видно назначение (в Кузнице
+   * уже есть полное descriptionRu при выборе валюты). */
+  functionHint?: string;
 }
 
 interface WalletPanelProps {
@@ -14,13 +19,14 @@ interface WalletPanelProps {
   battlePassXp: number | null;
 }
 
-function WalletCell({ icon, label, value }: { icon: string; label: string; value: number }) {
+function WalletCell({ icon, label, value, hint }: { icon: string; label: string; value: number; hint?: string }) {
   return (
     <div className="flex items-center gap-2 p-2 rounded-lg bg-secondary/20 border border-border/60 min-w-0">
       <span className="text-lg shrink-0">{icon}</span>
       <div className="min-w-0">
         <div className="text-sm font-bold tabular-nums leading-tight">{value}</div>
         <div className="text-[9px] text-muted-foreground truncate">{label}</div>
+        {hint && <div className="text-[8px] text-accent/80 truncate">{hint}</div>}
       </div>
     </div>
   );
@@ -42,7 +48,7 @@ export function WalletPanel({ gold, crownShards, currencies, battlePassXp }: Wal
           <WalletCell icon="👑" label="Осколки Короны" value={crownShards} />
           {battlePassXp !== null && <WalletCell icon="🎫" label="Очки пропуска" value={battlePassXp} />}
           {currencies.map(c => (
-            <WalletCell key={c.id} icon={c.icon} label={c.nameRu} value={c.quantity} />
+            <WalletCell key={c.id} icon={c.icon} label={c.nameRu} value={c.quantity} hint={c.functionHint} />
           ))}
         </div>
       </CardContent>

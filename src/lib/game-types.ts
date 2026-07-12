@@ -242,7 +242,7 @@ export interface PartyCombatStateResponse {
 }
 
 export type GameScreen = 'loading' | 'creation' | 'game';
-export type GameTab = 'overview' | 'combat' | 'map' | 'inventory' | 'quests' | 'craft' | 'leaderboard' | 'party' | 'achievements' | 'guild' | 'codex' | 'market' | 'pvp' | 'premium' | 'trophies';
+export type GameTab = 'overview' | 'combat' | 'map' | 'inventory' | 'quests' | 'craft' | 'leaderboard' | 'party' | 'achievements' | 'guild' | 'codex' | 'market' | 'pvp' | 'premium' | 'trophies' | 'auction';
 
 export type GameMessage = { text: string; type: 'info' | 'success' | 'error' } | null;
 
@@ -521,6 +521,42 @@ export interface TitlesStateView {
   premiumActive: boolean;
   titles: TitleEntryView[];
   activeTitleId: string | null;
+}
+
+export interface AuctionEntryView {
+  id: string;
+  name: string;
+  type: string;
+  rarity: string;
+  stats: string | null;
+  icon: string | null;
+  itemLevel: number | null;
+  affixTier: string | null;
+  affixes: string | null;
+  enhancementLevel: number;
+  quantity: number;
+  startingPrice: number;
+  currentBid: number | null;
+  currentBidderName: string | null;
+  minNextBid: number;
+  expiresAt: string;
+  sellerId: string;
+  sellerName: string;
+  isOwn: boolean;
+  isMyBid: boolean;
+}
+
+export interface AuctionDurationView {
+  hours: number;
+  labelRu: string;
+}
+
+export interface AuctionStateView {
+  premiumActive: boolean;
+  auctions: AuctionEntryView[];
+  maxActiveAuctions: number;
+  feePercent: number;
+  durations: AuctionDurationView[];
 }
 
 export interface ExpeditionTierView {

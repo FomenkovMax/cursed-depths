@@ -178,6 +178,7 @@ export interface GuildMemberData {
     name: string;
     level: number;
     class: { name: string; icon: string };
+    activeTitleId: string | null;
   };
 }
 
@@ -504,6 +505,22 @@ export interface PetsStateView {
   catalog: PetView[];
   ownedPetIds: string[];
   activePetId: string | null;
+}
+
+export interface TitleEntryView {
+  id: string;
+  nameRu: string;
+  icon: string;
+  colorClass: string;
+  descriptionRu: string;
+  unlocked: boolean;
+  equipped: boolean;
+}
+
+export interface TitlesStateView {
+  premiumActive: boolean;
+  titles: TitleEntryView[];
+  activeTitleId: string | null;
 }
 
 export interface ExpeditionTierView {

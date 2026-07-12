@@ -2,12 +2,13 @@ import { TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { PremiumShopStateView, PlayerData, FortuneSpinResultView, PetsStateView, ExpeditionStateView, BountyStateView, BountyHuntResultView } from '@/lib/game-types';
+import { PremiumShopStateView, PlayerData, FortuneSpinResultView, PetsStateView, ExpeditionStateView, BountyStateView, BountyHuntResultView, TitlesStateView } from '@/lib/game-types';
 import { FortuneWheelVisual } from '@/components/game/FortuneWheel';
 import { RaceChangePanel } from '@/components/game/RaceChangePanel';
 import { PetsPanel } from '@/components/game/PetsPanel';
 import { ExpeditionPanel } from '@/components/game/ExpeditionPanel';
 import { BountyBoardPanel } from '@/components/game/BountyBoardPanel';
+import { TitlesPanel } from '@/components/game/TitlesPanel';
 
 interface PremiumShopTabProps {
   state: PremiumShopStateView | null;
@@ -36,6 +37,10 @@ interface PremiumShopTabProps {
   bountyLoading: boolean;
   hunting: boolean;
   onHunt: () => Promise<BountyHuntResultView | null>;
+  titlesState: TitlesStateView | null;
+  titlesLoading: boolean;
+  equippingTitleId: string | null;
+  onEquipTitle: (titleId: string | null) => void;
 }
 
 function formatPremiumUntil(iso: string | null): string {
@@ -51,6 +56,7 @@ export function PremiumShopTab({
   petsState, petsLoading, buyingPetId, activatingPetId, onBuyPet, onActivatePet,
   expeditionState, expeditionLoading, startingExpeditionId, claimingExpedition, onStartExpedition, onClaimExpedition,
   bountyState, bountyLoading, hunting, onHunt,
+  titlesState, titlesLoading, equippingTitleId, onEquipTitle,
 }: PremiumShopTabProps) {
   const races = state?.raceChange.races ?? [];
 
@@ -226,6 +232,23 @@ export function PremiumShopTab({
             loading={bountyLoading}
             hunting={hunting}
             onHunt={onHunt}
+          />
+        </CardContent>
+      </Card>
+
+      {/* Титулы — премиум-эксклюзивная витринная механика (lib/titles.ts): статический каталог,
+          "разблокирован" считается по уже существующей статистике игрока, никакого бонуса к
+          статам, чистое отображение рядом с именем в шапке. */}
+      <Card className="border-border">
+        <CardHeader className="pb-2 pt-3 px-4">
+          <CardTitle className="text-sm">🏵️ Титулы</CardTitle>
+        </CardHeader>
+        <CardContent className="px-4 pb-3">
+          <TitlesPanel
+            state={titlesState}
+            loading={titlesLoading}
+            equippingTitleId={equippingTitleId}
+            onEquipTitle={onEquipTitle}
           />
         </CardContent>
       </Card>

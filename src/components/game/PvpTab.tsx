@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { PvpOpponentView, PvpFightResultView, PvpLeagueView } from '@/lib/game-types';
+import { PvpOpponentView, PvpFightResultView, PvpLeagueView, PvpSeasonRewardView } from '@/lib/game-types';
 
 interface PvpTabProps {
   opponents: PvpOpponentView[];
@@ -12,11 +12,18 @@ interface PvpTabProps {
   myLeague: PvpLeagueView | null;
   myWins: number;
   myLosses: number;
+  seasonId: string | null;
+  daysUntilSeasonEnd: number | null;
+  previousSeasonTop3: PvpSeasonRewardView[];
   loading: boolean;
   onChallenge: (opponentId: string) => Promise<PvpFightResultView | null>;
 }
 
-export function PvpTab({ opponents, myRating, myLeague, myWins, myLosses, loading, onChallenge }: PvpTabProps) {
+const RANK_MEDAL: Record<number, string> = { 1: '🥇', 2: '🥈', 3: '🥉' };
+
+export function PvpTab({
+  opponents, myRating, myLeague, myWins, myLosses, seasonId, daysUntilSeasonEnd, previousSeasonTop3, loading, onChallenge,
+}: PvpTabProps) {
   const [lastResult, setLastResult] = useState<PvpFightResultView | null>(null);
   const [fightingId, setFightingId] = useState<string | null>(null);
 
@@ -40,8 +47,34 @@ export function PvpTab({ opponents, myRating, myLeague, myWins, myLosses, loadin
             <div className="text-sm font-bold">{myLeague ? `${myLeague.icon} ${myLeague.nameRu}` : '—'}</div>
             <div className="text-[10px] text-muted-foreground">Рейтинг {myRating} • {myWins}П / {myLosses}Пор</div>
           </div>
+          {seasonId && (
+            <div className="text-right">
+              <div className="text-[10px] text-gold font-medium">🏆 Сезон {seasonId}</div>
+              {daysUntilSeasonEnd !== null && (
+                <div className="text-[9px] text-muted-foreground">до сброса рейтинга: {daysUntilSeasonEnd} дн.</div>
+              )}
+            </div>
+          )}
         </CardContent>
       </Card>
+
+      {previousSeasonTop3.length > 0 && (
+        <Card className="border-border">
+          <CardHeader className="pb-2 pt-3 px-4">
+            <CardTitle className="text-sm">🏆 Прошлый сезон Арены</CardTitle>
+          </CardHeader>
+          <CardContent className="px-4 pb-3 space-y-1.5">
+            {previousSeasonTop3.map(w => (
+              <div key={w.id} className="flex items-center gap-2 text-xs">
+                <span className="w-5 text-center shrink-0">{RANK_MEDAL[w.rank] ?? `#${w.rank}`}</span>
+                <span className="shrink-0">{w.player.class.icon}</span>
+                <span className="flex-1 truncate">{w.player.name}</span>
+                <span className="text-[10px] text-muted-foreground shrink-0">рейтинг {w.ratingAtEnd}</span>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
 
       {lastResult && (
         <Card className={`border-border ${lastResult.won ? 'border-uncommon/60 bg-uncommon/5' : 'border-destructive/60 bg-destructive/5'}`}>

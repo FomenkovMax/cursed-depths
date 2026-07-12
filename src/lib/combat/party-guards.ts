@@ -8,7 +8,7 @@
  * пати-движка тем временем закрывала его ходы), или начать отдельный соло-бой параллельно с
  * пати-боем — оба независимо пишут Player.hp, портя состояние друг друга.
  */
-import { db } from './db';
+import { db } from '@/lib/db';
 
 /** Состоит ли игрок в пати, которая СЕЙЧАС активно сражается (party.status === 'in_combat'). */
 export async function isInActivePartyCombat(playerId: string): Promise<boolean> {

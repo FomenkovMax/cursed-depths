@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { validateTelegramRequest } from '@/lib/auth';
-import { addItemToInventory } from '@/lib/inventory-utils';
+import { addItemToInventory } from '@/lib/economy/inventory-utils';
 
 // Комиссия при продаже — чистый sink золота, не откладывается никуда (см. schema.prisma
 // MarketListing). Продавец получает price - комиссия.

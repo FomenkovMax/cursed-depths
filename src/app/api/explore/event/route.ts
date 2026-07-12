@@ -2,13 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { ENEMIES, ITEMS } from '@/lib/game-data';
 import { validateTelegramRequest } from '@/lib/auth';
-import { resolveEventChoice } from '@/lib/exploration-events';
-import { addItemToInventory } from '@/lib/inventory-utils';
-import { initBossState } from '@/lib/boss-mechanics';
-import { computeEquipmentBonuses } from '@/lib/equipment-stats';
-import { isInActivePartyCombat } from '@/lib/party-guards';
-import { isDeathDebuffActive, DEATH_DEBUFF_XP_MULT } from '@/lib/premium-shop';
-import { findPet } from '@/lib/pets';
+import { resolveEventChoice } from '@/lib/combat/exploration-events';
+import { addItemToInventory } from '@/lib/economy/inventory-utils';
+import { initBossState } from '@/lib/combat/boss-mechanics';
+import { computeEquipmentBonuses } from '@/lib/combat/equipment-stats';
+import { isInActivePartyCombat } from '@/lib/combat/party-guards';
+import { isDeathDebuffActive, DEATH_DEBUFF_XP_MULT } from '@/lib/premium/premium-shop';
+import { findPet } from '@/lib/economy/pets';
 
 export async function POST(req: NextRequest) {
   const auth = validateTelegramRequest(req);

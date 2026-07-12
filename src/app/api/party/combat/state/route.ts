@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { validateTelegramRequest } from '@/lib/auth';
 import { ENEMIES } from '@/lib/game-data';
-import { type PartyFightState, currentActingPlayerId, AFK_TIMEOUT_MS } from '@/lib/party-combat-engine';
-import { resolvePartyAction } from '@/lib/party-combat-resolver';
+import { type PartyFightState, currentActingPlayerId, AFK_TIMEOUT_MS } from '@/lib/combat/party-combat-engine';
+import { resolvePartyAction } from '@/lib/combat/party-combat-resolver';
 
 export async function GET(req: NextRequest) {
   const auth = validateTelegramRequest(req);

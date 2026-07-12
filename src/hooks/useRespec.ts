@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 import { GameMessage, PlayerData } from '@/lib/game-types';
-import type { RespecStatField } from '@/lib/respec';
+import type { RespecStatField } from '@/lib/economy/respec';
 
 interface UseRespecArgs {
   apiCall: (url: string, method?: string, body?: unknown) => Promise<{ player?: PlayerData; message?: string; error?: string }>;

@@ -6,8 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { GuildData, WorldBossStateView, WorldBossAttackResultView, FortressStateView, FortressAssaultResultView, GuildRaidBossStateView, GuildRaidAttackResultView } from '@/lib/game-types';
-import { findTitle } from '@/lib/titles';
-import { GUILD_UPGRADES, canUnlockGuildUpgrade, type GuildBuildingId } from '@/lib/guild-upgrades';
+import { findTitle } from '@/lib/social/titles';
+import { GUILD_UPGRADES, canUnlockGuildUpgrade, type GuildBuildingId } from '@/lib/social/guild-upgrades';
 
 interface GuildTabProps {
   playerId: string | null;
@@ -97,7 +97,7 @@ export function GuildTab({
 
   return (
     <TabsContent value="guild" className="flex-1 overflow-y-auto p-4 space-y-4 m-0">
-      {/* Мировой босс — общая цель ВСЕХ игроков разом, не привязана к гильдии (lib/world-boss.ts).
+      {/* Мировой босс — общая цель ВСЕХ игроков разом, не привязана к гильдии (lib/social/world-boss.ts).
           Живёт здесь, а не отдельной вкладкой, чтобы не раздувать и без того тесную панель вкладок. */}
       {worldBoss && (
         <Card className="border-destructive/50 bg-destructive/5">
@@ -137,7 +137,7 @@ export function GuildTab({
         </Card>
       )}
 
-      {/* Крепость — гильдия-против-гильдии соревнование за территорию (lib/fortress.ts),
+      {/* Крепость — гильдия-против-гильдии соревнование за территорию (lib/social/fortress.ts),
           в отличие от мирового босса выше (общий КООП для всех). Видна всем, штурмовать
           может только член гильдии. */}
       {fortress && (
@@ -214,7 +214,7 @@ export function GuildTab({
         </Card>
       ) : (
         <>
-          {/* Гильд-рейд-босс — еженедельная КООП-цель ТОЛЬКО этой гильдии (lib/guild-raid-boss.ts),
+          {/* Гильд-рейд-босс — еженедельная КООП-цель ТОЛЬКО этой гильдии (lib/social/guild-raid-boss.ts),
               в отличие от мирового босса выше (общий для всех) и Крепости (гильдия против гильдии).
               Видна всем членам гильдии, но атаковать может только премиум — полноценный лок доступа,
               не просто бонус к попыткам. */}
@@ -262,7 +262,7 @@ export function GuildTab({
             </Card>
           )}
 
-          {/* Гильдейское дерево построек (аудит 4.1, D2, lib/guild-upgrades.ts) — постоянные
+          {/* Гильдейское дерево построек (аудит 4.1, D2, lib/social/guild-upgrades.ts) — постоянные
               пассивные бонусы за совместную активность (пожертвования в казну), в отличие от
               рейд-босса/Крепости выше (циклические разовые события). Разблокировка — только
               лидер, пожертвовать может любой участник. */}

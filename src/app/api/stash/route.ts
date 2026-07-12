@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { validateTelegramRequest } from '@/lib/auth';
-import { effectiveStashCapacity } from '@/lib/stash';
+import { effectiveStashCapacity } from '@/lib/economy/stash';
 
 export async function GET(req: NextRequest) {
   const auth = validateTelegramRequest(req);

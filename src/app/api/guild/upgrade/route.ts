@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { validateTelegramRequest } from '@/lib/auth';
-import { findGuildUpgrade, canUnlockGuildUpgrade } from '@/lib/guild-upgrades';
+import { findGuildUpgrade, canUnlockGuildUpgrade } from '@/lib/social/guild-upgrades';
 
 class CannotUnlockError extends Error {
   constructor() { super('CANNOT_UNLOCK'); }

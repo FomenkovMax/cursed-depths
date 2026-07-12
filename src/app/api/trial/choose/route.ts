@@ -2,13 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { ENEMIES, ITEMS } from '@/lib/game-data';
 import { validateTelegramRequest } from '@/lib/auth';
-import { initBossState } from '@/lib/boss-mechanics';
-import { computeEquipmentBonuses } from '@/lib/equipment-stats';
-import { addItemToInventory } from '@/lib/inventory-utils';
+import { initBossState } from '@/lib/combat/boss-mechanics';
+import { computeEquipmentBonuses } from '@/lib/combat/equipment-stats';
+import { addItemToInventory } from '@/lib/economy/inventory-utils';
 import { rollDice } from '@/lib/dice';
-import { findTrial } from '@/lib/trials';
-import { bossIntroLine } from '@/lib/exploration-flavor';
-import { findPet } from '@/lib/pets';
+import { findTrial } from '@/lib/combat/trials';
+import { bossIntroLine } from '@/lib/combat/exploration-flavor';
+import { findPet } from '@/lib/economy/pets';
 
 export async function POST(req: NextRequest) {
   const auth = validateTelegramRequest(req);

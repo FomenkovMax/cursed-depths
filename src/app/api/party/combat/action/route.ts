@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { validateTelegramRequest } from '@/lib/auth';
-import { resolvePartyAction } from '@/lib/party-combat-resolver';
+import { resolvePartyAction } from '@/lib/combat/party-combat-resolver';
 
 export async function POST(req: NextRequest) {
   const auth = validateTelegramRequest(req);

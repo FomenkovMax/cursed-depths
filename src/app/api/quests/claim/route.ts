@@ -2,9 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { ITEMS } from '@/lib/game-data';
 import { validateTelegramRequest } from '@/lib/auth';
-import { addItemToInventory } from '@/lib/inventory-utils';
-import { collectQuestItemId, advanceChainOnClaim } from '@/lib/quests';
-import { isDeathDebuffActive, DEATH_DEBUFF_XP_MULT } from '@/lib/premium-shop';
+import { addItemToInventory } from '@/lib/economy/inventory-utils';
+import { collectQuestItemId, advanceChainOnClaim } from '@/lib/economy/quests';
+import { isDeathDebuffActive, DEATH_DEBUFF_XP_MULT } from '@/lib/premium/premium-shop';
 
 /** Брошено внутри транзакции, если квест уже помечен полученным В МОМЕНТ фактической записи
  * (см. комментарий у updateMany ниже) — напр. параллельный дубликат того же запроса. */
@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
 
     if (!player) return NextResponse.json({ error: 'Персонаж не найден' }, { status: 404 });
 
-    // "Принеси предмет"-квесты (см. lib/quests.ts collectQuestType) сдаются вместе с самим
+    // "Принеси предмет"-квесты (см. lib/economy/quests.ts collectQuestType) сдаются вместе с самим
     // предметом — иначе игрок получал бы награду и оставлял себе предмет, теряя смысл сдачи.
     const requiredItemId = collectQuestItemId(quest.type);
     let turnInInventoryId: string | null = null;
@@ -80,7 +80,7 @@ export async function POST(req: NextRequest) {
       });
       if (claimResult.count === 0) throw new AlreadyClaimedError();
 
-      // Если это шаг квестовой цепочки — выдаём следующий (см. lib/quest-chains.ts)
+      // Если это шаг квестовой цепочки — выдаём следующий (см. lib/economy/quest-chains.ts)
       await advanceChainOnClaim(tx, player.id, quest.questId, player.class.path);
 
       // Give gold/XP rewards

@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { LOCATIONS, ENEMIES, CRAFTING_RECIPES } from '@/lib/game-data';
-import { stageUnlockLevel } from '@/lib/combat-engine';
-import { parseDeathWard } from '@/lib/conditional-ability-engine';
+import { stageUnlockLevel } from '@/lib/combat/combat-engine';
+import { parseDeathWard } from '@/lib/combat/conditional-ability-engine';
 import { Tabs } from '@/components/ui/tabs';
 import { NavBar } from '@/components/game/NavBar';
 import {
@@ -380,7 +380,7 @@ export default function CursedDepths() {
       .finally(() => setAchievementsLoading(false));
   }, [tab, apiCall]);
 
-  // ===== TROPHY ROOM (lib/boss-trophies.ts) — коллекция боссов, свободна для всех, награда премиум =====
+  // ===== TROPHY ROOM (lib/social/boss-trophies.ts) — коллекция боссов, свободна для всех, награда премиум =====
   useEffect(() => {
     if (tab !== 'trophies' || !telegramIdRef.current) return;
     setTrophyRoomLoading(true);
@@ -390,7 +390,7 @@ export default function CursedDepths() {
       .finally(() => setTrophyRoomLoading(false));
   }, [tab, apiCall]);
 
-  // ===== CODEX (лор-кодекс, см. lib/codex.ts) =====
+  // ===== CODEX (лор-кодекс, см. lib/social/codex.ts) =====
   useEffect(() => {
     if (tab !== 'codex' || !telegramIdRef.current) return;
     setCodexLoading(true);
@@ -406,7 +406,7 @@ export default function CursedDepths() {
       .finally(() => setCodexLoading(false));
   }, [tab, apiCall]);
 
-  // ===== MARKET (аукцион игрок-игроку, lib/inventory-utils.ts MarketListing) =====
+  // ===== MARKET (аукцион игрок-игроку, lib/economy/inventory-utils.ts MarketListing) =====
   const refreshMarket = useCallback(() => {
     setMarketLoading(true);
     apiCall('/api/market/listings')
@@ -420,7 +420,7 @@ export default function CursedDepths() {
     refreshMarket();
   }, [tab, refreshMarket]);
 
-  // ===== АУКЦИОННЫЙ ДОМ (lib/auction-house.ts) — премиум-эксклюзивная альтернатива Рынку выше:
+  // ===== АУКЦИОННЫЙ ДОМ (lib/economy/auction-house.ts) — премиум-эксклюзивная альтернатива Рынку выше:
   // отложенные ставки вместо мгновенной покупки. =====
   const refreshAuction = useCallback(() => {
     setAuctionLoading(true);
@@ -435,7 +435,7 @@ export default function CursedDepths() {
     refreshAuction();
   }, [tab, refreshAuction]);
 
-  // ===== PVP ARENA (lib/pvp.ts) =====
+  // ===== PVP ARENA (lib/combat/pvp.ts) =====
   const refreshPvpOpponents = useCallback(() => {
     setPvpLoading(true);
     apiCall('/api/pvp/opponents')
@@ -507,7 +507,7 @@ export default function CursedDepths() {
       .finally(() => setGuildLoading(false));
   }, [tab, apiCall]);
 
-  // ===== WORLD BOSS (lib/world-boss.ts) — живёт на вкладке "guild", см. GuildTab.tsx =====
+  // ===== WORLD BOSS (lib/social/world-boss.ts) — живёт на вкладке "guild", см. GuildTab.tsx =====
   const refreshWorldBoss = useCallback(() => {
     setWorldBossLoading(true);
     apiCall('/api/worldboss/state')
@@ -545,7 +545,7 @@ export default function CursedDepths() {
     }
   };
 
-  // ===== FORTRESS (гильд-война за территорию — lib/fortress.ts) =====
+  // ===== FORTRESS (гильд-война за территорию — lib/social/fortress.ts) =====
   const refreshFortress = useCallback(() => {
     setFortressLoading(true);
     apiCall('/api/fortress/state')
@@ -578,7 +578,7 @@ export default function CursedDepths() {
     }
   };
 
-  // ===== GUILD RAID BOSS (еженедельная КООП-цель гильдии, премиум-эксклюзив — lib/guild-raid-boss.ts) =====
+  // ===== GUILD RAID BOSS (еженедельная КООП-цель гильдии, премиум-эксклюзив — lib/social/guild-raid-boss.ts) =====
   const refreshGuildRaidBoss = useCallback(() => {
     setGuildRaidBossLoading(true);
     apiCall('/api/guildraid/state')
@@ -613,7 +613,7 @@ export default function CursedDepths() {
     }
   };
 
-  // ===== PREMIUM SHOP (Осколки Короны за Telegram Stars — lib/premium-shop.ts) =====
+  // ===== PREMIUM SHOP (Осколки Короны за Telegram Stars — lib/premium/premium-shop.ts) =====
   const refreshPremiumState = useCallback(() => {
     setPremiumLoading(true);
     apiCall('/api/shop/premium/state')
@@ -634,7 +634,7 @@ export default function CursedDepths() {
     refreshPremiumState();
   }, [screen, refreshPremiumState]);
 
-  // ===== ПИТОМЦЫ-КОМПАНЬОНЫ (lib/pets.ts) — тот же паттерн загрузки, что и премиум-магазин:
+  // ===== ПИТОМЦЫ-КОМПАНЬОНЫ (lib/economy/pets.ts) — тот же паттерн загрузки, что и премиум-магазин:
   // сразу при входе (для activePetId в GameHeader/OverviewTab) и при каждом открытии вкладки. =====
   const refreshPetsState = useCallback(() => {
     setPetsLoading(true);
@@ -691,7 +691,7 @@ export default function CursedDepths() {
     }
   };
 
-  // ===== ТИТУЛЫ (lib/titles.ts) — тот же паттерн загрузки, что питомцы: сразу при входе (для
+  // ===== ТИТУЛЫ (lib/social/titles.ts) — тот же паттерн загрузки, что питомцы: сразу при входе (для
   // GameHeader) и при каждом открытии премиум-вкладки. Премиум-эксклюзив целиком — без него
   // /api/titles/state отдаёт пустой каталог. =====
   const refreshTitlesState = useCallback(() => {
@@ -730,7 +730,7 @@ export default function CursedDepths() {
     }
   };
 
-  // ===== БОЕВОЙ ПРОПУСК (lib/battle-pass.ts) — тот же паттерн загрузки, что титулы: только
+  // ===== БОЕВОЙ ПРОПУСК (lib/premium/battle-pass.ts) — тот же паттерн загрузки, что титулы: только
   // на премиум-вкладке, полный премиум-лок. =====
   const refreshBattlePassState = useCallback(() => {
     setBattlePassLoading(true);
@@ -771,7 +771,7 @@ export default function CursedDepths() {
     }
   };
 
-  // ===== БЫСТРОЕ ПЕРЕМЕЩЕНИЕ (lib/fast-travel.ts) — премиум-эксклюзивный телепорт между уже
+  // ===== БЫСТРОЕ ПЕРЕМЕЩЕНИЕ (lib/economy/fast-travel.ts) — премиум-эксклюзивный телепорт между уже
   // посещёнными локациями, живёт на вкладке "Карта". =====
   const refreshWaypointsState = useCallback(() => {
     setWaypointsLoading(true);
@@ -805,7 +805,7 @@ export default function CursedDepths() {
     }
   };
 
-  // ===== ЭКСПЕДИЦИИ (lib/expeditions.ts) — премиум-эксклюзивный офлайн-таймер, не блокирует
+  // ===== ЭКСПЕДИЦИИ (lib/premium/expeditions.ts) — премиум-эксклюзивный офлайн-таймер, не блокирует
   // остальную игру. Тот же паттерн загрузки состояния, что и у премиум-магазина/питомцев. =====
   const refreshExpeditionState = useCallback(() => {
     setExpeditionLoading(true);
@@ -858,7 +858,7 @@ export default function CursedDepths() {
     }
   };
 
-  // ===== ДОСКА КОНТРАКТОВ (lib/bounty-board.ts) — премиум-эксклюзивная ежедневная охота,
+  // ===== ДОСКА КОНТРАКТОВ (lib/economy/bounty-board.ts) — премиум-эксклюзивная ежедневная охота,
   // одна попытка в день, тот же паттерн загрузки состояния, что и у остального премиум-контента. =====
   const refreshBountyState = useCallback(() => {
     setBountyLoading(true);
@@ -1234,7 +1234,7 @@ export default function CursedDepths() {
     setLoading(false);
   };
 
-  // ===== TRIALS (lib/trials.ts) — ветвящийся аналог данжей, см. combat/action.ts trial-ветку =====
+  // ===== TRIALS (lib/combat/trials.ts) — ветвящийся аналог данжей, см. combat/action.ts trial-ветку =====
   const handleStartTrial = async (trialId: string) => {
     if (!player || player.inCombat) return;
     setLoading(true);
@@ -1501,7 +1501,7 @@ export default function CursedDepths() {
     setLoading(false);
   };
 
-  // ===== STASH (сундук, отдельный от боевого инвентаря — lib/stash.ts) =====
+  // ===== STASH (сундук, отдельный от боевого инвентаря — lib/economy/stash.ts) =====
   const handleStoreItem = async (inventoryId: string) => {
     if (!player) return;
     setLoading(true);
@@ -1538,7 +1538,7 @@ export default function CursedDepths() {
     setLoading(false);
   };
 
-  // ===== APPLY CRAFT CURRENCY (Мастерская зачарования — lib/item-affixes.ts) =====
+  // ===== APPLY CRAFT CURRENCY (Мастерская зачарования — lib/economy/item-affixes.ts) =====
   const handleApplyCurrency = async (inventoryId: string, currencyItemId: string) => {
     if (!player) return;
     setLoading(true);
@@ -1556,7 +1556,7 @@ export default function CursedDepths() {
     setLoading(false);
   };
 
-  // ===== TEMPER (заточка — lib/item-enhancement.ts) =====
+  // ===== TEMPER (заточка — lib/economy/item-enhancement.ts) =====
   const handleTemper = async (inventoryId: string) => {
     if (!player) return;
     setLoading(true);
@@ -1853,7 +1853,7 @@ export default function CursedDepths() {
     if (!player) return [];
     return (player.class.abilities ?? []).filter(
       // Обереги от смерти (Последняя воля, Несокрушимый и т.п.) срабатывают сами при смертельном
-      // ударе — их нельзя скастовать вручную, см. lib/conditional-ability-engine.ts.
+      // ударе — их нельзя скастовать вручную, см. lib/combat/conditional-ability-engine.ts.
       a => a.type === 'active' && player.level >= stageUnlockLevel(a.stage) && parseDeathWard(a.description) === null
     );
   };

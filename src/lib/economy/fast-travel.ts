@@ -6,7 +6,7 @@
  * действием игрока.
  */
 
-import { db } from './db';
+import { db } from '@/lib/db';
 
 type PrismaClientLike = { visitedLocation: typeof db.visitedLocation };
 

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { getShopBuyableItems, getSellPrice, isSellableItem } from '@/lib/shop';
+import { getShopBuyableItems, getSellPrice, isSellableItem } from '@/lib/economy/shop';
 import { RARITY_COLORS, RARITY_NAMES_RU } from '@/lib/game-data';
 import { PlayerData, ITEM_TYPE_RU } from '@/lib/game-types';
 

@@ -7,9 +7,9 @@
  * убийства — до конца недели остаётся повержен, следующий появляется только на новой неделе.
  */
 
-import { basicAttackDamage, type PlayerCombatStats } from './combat-engine';
-import { currentWeekId } from './fortress';
-import { db } from './db';
+import { basicAttackDamage, type PlayerCombatStats } from '@/lib/combat/combat-engine';
+import { currentWeekId } from '@/lib/social/fortress';
+import { db } from '@/lib/db';
 
 export const RAID_BOSS_NAME = 'Разлом Стонущей Плоти';
 export const RAID_BOSS_LORE = 'Там, где гильдии разбивают лагерь надолго, Голос Карсуса находит трещину и просачивается в неё — родится существо, слепленное из отчаяния целого отряда. Убить его в одиночку невозможно по замыслу.';

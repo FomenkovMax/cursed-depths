@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { validateTelegramRequest } from '@/lib/auth';
-import { issueDailyQuests, issueChainQuests } from '@/lib/quests';
-import { markLocationVisited } from '@/lib/fast-travel';
+import { issueDailyQuests, issueChainQuests } from '@/lib/economy/quests';
+import { markLocationVisited } from '@/lib/economy/fast-travel';
 
 export async function POST(req: NextRequest) {
   try {

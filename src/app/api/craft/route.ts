@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { CRAFTING_RECIPES, ITEMS } from '@/lib/game-data';
 import { validateTelegramRequest } from '@/lib/auth';
-import { addItemToInventory } from '@/lib/inventory-utils';
-import { incrementQuestProgress } from '@/lib/quests';
+import { addItemToInventory } from '@/lib/economy/inventory-utils';
+import { incrementQuestProgress } from '@/lib/economy/quests';
 
 /** Брошено внутри транзакции, когда материала не хватило В МОМЕНТ фактического списания —
  * либо изначально, либо потому что параллельный запрос успел израсходовать его первым (см.

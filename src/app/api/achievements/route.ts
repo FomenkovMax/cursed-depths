@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { validateTelegramRequest } from '@/lib/auth';
-import { ACHIEVEMENTS, checkNewlyUnlocked, type AchievementContext } from '@/lib/achievements';
+import { ACHIEVEMENTS, checkNewlyUnlocked, type AchievementContext } from '@/lib/social/achievements';
 
 const LEGENDARY_OR_BETTER = new Set(['legendary', 'artifact', 'mythic']);
 

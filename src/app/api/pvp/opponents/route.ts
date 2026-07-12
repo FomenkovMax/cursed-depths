@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { validateTelegramRequest } from '@/lib/auth';
-import { leagueForRating } from '@/lib/pvp';
-import { currentPvpSeasonId, previousPvpSeasonId, daysUntilPvpSeasonEnd, softResetRating, PVP_SEASON_TOP_N } from '@/lib/pvp-season';
+import { leagueForRating } from '@/lib/combat/pvp';
+import { currentPvpSeasonId, previousPvpSeasonId, daysUntilPvpSeasonEnd, softResetRating, PVP_SEASON_TOP_N } from '@/lib/social/pvp-season';
 
 const OPPONENT_COUNT = 8;
 

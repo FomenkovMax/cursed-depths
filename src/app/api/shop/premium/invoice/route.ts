@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { validateTelegramRequest } from '@/lib/auth';
-import { findShardPack } from '@/lib/premium-shop';
+import { findShardPack } from '@/lib/premium/premium-shop';
 
 const BOT_TOKEN = process.env.BOT_TOKEN;
 

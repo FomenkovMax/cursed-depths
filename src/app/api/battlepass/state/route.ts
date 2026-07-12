@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { validateTelegramRequest } from '@/lib/auth';
-import { BATTLE_PASS_TIERS, effectiveBattlePassXp } from '@/lib/battle-pass';
-import { currentSeasonId } from '@/lib/seasons';
-import { isPremiumActive } from '@/lib/premium-shop';
+import { BATTLE_PASS_TIERS, effectiveBattlePassXp } from '@/lib/premium/battle-pass';
+import { currentSeasonId } from '@/lib/social/seasons';
+import { isPremiumActive } from '@/lib/premium/premium-shop';
 import { ITEMS } from '@/lib/game-data';
 
 export async function GET(req: NextRequest) {

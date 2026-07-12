@@ -13,7 +13,7 @@ const STAT_LABEL_RU: Record<string, string> = {
   intellect: 'Разум', willpower: 'Воля', instinct: 'Инстинкт',
 };
 
-/** Доска контрактов (lib/bounty-board.ts) — одна попытка в день, d20+стат против Сложности,
+/** Доска контрактов (lib/economy/bounty-board.ts) — одна попытка в день, d20+стат против Сложности,
  * гарантированный трофей из реального лут-стола цели при успехе. */
 export function BountyBoardPanel({ state, loading, hunting, onHunt }: BountyBoardPanelProps) {
   const [result, setResult] = useState<BountyHuntResultView | null>(null);

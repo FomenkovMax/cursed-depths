@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { validateTelegramRequest } from '@/lib/auth';
-import { computeEquipmentBonuses } from '@/lib/equipment-stats';
-import type { PlayerCombatStats } from '@/lib/combat-engine';
-import { ensureWorldBossSpawned, worldBossAttackDamage, rewardForShare, maxHpForIncarnation, dailyAttackCapFor, WORLD_BOSS_NAME } from '@/lib/world-boss';
-import { isPremiumActive, isDeathDebuffActive, DEATH_DEBUFF_XP_MULT } from '@/lib/premium-shop';
-import { findPet } from '@/lib/pets';
+import { computeEquipmentBonuses } from '@/lib/combat/equipment-stats';
+import type { PlayerCombatStats } from '@/lib/combat/combat-engine';
+import { ensureWorldBossSpawned, worldBossAttackDamage, rewardForShare, maxHpForIncarnation, dailyAttackCapFor, WORLD_BOSS_NAME } from '@/lib/social/world-boss';
+import { isPremiumActive, isDeathDebuffActive, DEATH_DEBUFF_XP_MULT } from '@/lib/premium/premium-shop';
+import { findPet } from '@/lib/economy/pets';
 
 export async function POST(req: NextRequest) {
   const auth = validateTelegramRequest(req);

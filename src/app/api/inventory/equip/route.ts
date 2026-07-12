@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { validateTelegramRequest } from '@/lib/auth';
-import { computeEquipmentBonuses } from '@/lib/equipment-stats';
+import { computeEquipmentBonuses } from '@/lib/combat/equipment-stats';
 import { ITEMS } from '@/lib/game-data';
-import { minLevelForRarity } from '@/lib/item-affixes';
-import { findPet } from '@/lib/pets';
+import { minLevelForRarity } from '@/lib/economy/item-affixes';
+import { findPet } from '@/lib/economy/pets';
 
 export async function POST(req: NextRequest) {
   const auth = validateTelegramRequest(req);

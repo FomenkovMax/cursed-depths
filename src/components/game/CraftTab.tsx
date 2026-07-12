@@ -7,8 +7,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { ItemIconTile } from '@/components/game/ItemIconTile';
 import { CRAFTING_RECIPES, ITEMS, RARITY_COLORS } from '@/lib/game-data';
 import { PlayerData, AFFIX_TIER_RU, AFFIX_TIER_COLORS, parseStats, parseAffixes } from '@/lib/game-types';
-import { CURRENCY_IDS, enchantCostForReroll, type AffixTierName } from '@/lib/item-affixes';
-import { MAX_ENHANCEMENT_LEVEL, temperSuccessChance } from '@/lib/item-enhancement';
+import { CURRENCY_IDS, enchantCostForReroll, type AffixTierName } from '@/lib/economy/item-affixes';
+import { MAX_ENHANCEMENT_LEVEL, temperSuccessChance } from '@/lib/economy/item-enhancement';
 
 interface CraftTabProps {
   player: PlayerData | null;
@@ -60,7 +60,7 @@ export function CraftTab({ player, loading, canCraftRecipe, learnedRecipeIds, on
       </Card>
 
       {/* Мастерская зачарования — крафт-валюта, катает случайные аффиксы на снаряжении.
-          См. lib/item-affixes.ts: rarity предмета не трогается, affixTier — независимая ось. */}
+          См. lib/economy/item-affixes.ts: rarity предмета не трогается, affixTier — независимая ось. */}
       <Card className="border-border">
         <CardHeader className="pb-2 pt-3 px-4">
           <CardTitle className="text-sm">🔮 Мастерская зачарования</CardTitle>
@@ -166,7 +166,7 @@ export function CraftTab({ player, loading, canCraftRecipe, learnedRecipeIds, on
         </CardContent>
       </Card>
 
-      {/* Закалка — риск-система заточки, см. lib/item-enhancement.ts. Использует тот же
+      {/* Закалка — риск-система заточки, см. lib/economy/item-enhancement.ts. Использует тот же
           selectedTarget, что и Мастерская зачарования выше — один и тот же предмет можно
           и перекатать, и закалить. */}
       <Card className="border-border">
@@ -209,7 +209,7 @@ export function CraftTab({ player, loading, canCraftRecipe, learnedRecipeIds, on
         </CardContent>
       </Card>
 
-      {/* Тома рецептов (lib/recipe-tomes.ts) — премиум-эксклюзивный ДОПОЛНИТЕЛЬНЫЙ шанс найти
+      {/* Тома рецептов (lib/economy/recipe-tomes.ts) — премиум-эксклюзивный ДОПОЛНИТЕЛЬНЫЙ шанс найти
           чертежи тира III (📜 ниже) с любой победы в бою, независимо от обычного шанса дропа с
           боссов — статичная подсказка, сама механика не требует отдельного экрана. */}
       <p className="text-[10px] text-muted-foreground text-center px-2">

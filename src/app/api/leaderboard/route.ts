@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { SEASON_REWARDS, currentSeasonId, previousSeasonId } from '@/lib/seasons';
+import { SEASON_REWARDS, currentSeasonId, previousSeasonId } from '@/lib/social/seasons';
 
 /** Раздаёт награду за прошлый сезон, если она ещё не выдана — вызывается на каждый GET, но
  * реально что-то делает не чаще раза в месяц (после первого успешного запуска SeasonReward

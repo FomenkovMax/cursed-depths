@@ -9,8 +9,8 @@
  * цикла. Лениво резолвится на каждый GET/assault (тот же паттерн, что season rewards/world boss).
  */
 
-import { basicAttackDamage, type PlayerCombatStats } from './combat-engine';
-import { db } from './db';
+import { basicAttackDamage, type PlayerCombatStats } from '@/lib/combat/combat-engine';
+import { db } from '@/lib/db';
 
 export const FORTRESS_ID = 'current';
 export const FORTRESS_NAME = 'Забытая Цитадель';

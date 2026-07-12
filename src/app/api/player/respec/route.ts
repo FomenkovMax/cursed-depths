@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { validateTelegramRequest } from '@/lib/auth';
-import { RESPEC_COST_SHARDS } from '@/lib/premium-shop';
-import { RESPEC_STAT_FIELDS, totalRespecBudget, validateRespecAllocations, type RespecStatField } from '@/lib/respec';
+import { RESPEC_COST_SHARDS } from '@/lib/premium/premium-shop';
+import { RESPEC_STAT_FIELDS, totalRespecBudget, validateRespecAllocations, type RespecStatField } from '@/lib/economy/respec';
 
 const RACE_BASE_FIELD: Record<RespecStatField, 'baseStrength' | 'baseDexterity' | 'baseVitality' | 'baseIntellect' | 'baseWillpower' | 'baseInstinct'> = {
   strength: 'baseStrength',

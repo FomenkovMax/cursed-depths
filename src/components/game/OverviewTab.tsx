@@ -7,14 +7,14 @@ import { Slider } from '@/components/ui/slider';
 import { ItemIconTile } from '@/components/game/ItemIconTile';
 import { LOCATIONS } from '@/lib/game-data';
 import { PlayerData, STAT_SHORT_RU } from '@/lib/game-types';
-import { computeEquipmentBonuses } from '@/lib/equipment-stats';
-import { findPet } from '@/lib/pets';
-import { stageUnlockLevel } from '@/lib/combat-engine';
-import { parsePassiveEffect } from '@/lib/passive-engine';
-import { dungeonForLocation } from '@/lib/dungeons';
-import { trialForLocation } from '@/lib/trials';
-import { MAX_HEAT_LEVEL, heatLevelEffect, heatLevelLabel } from '@/lib/dungeon-modifiers';
-import { ABYSS_LOCATION_ID, ABYSS_MIN_LEVEL } from '@/lib/abyss';
+import { computeEquipmentBonuses } from '@/lib/combat/equipment-stats';
+import { findPet } from '@/lib/economy/pets';
+import { stageUnlockLevel } from '@/lib/combat/combat-engine';
+import { parsePassiveEffect } from '@/lib/combat/passive-engine';
+import { dungeonForLocation } from '@/lib/combat/dungeons';
+import { trialForLocation } from '@/lib/combat/trials';
+import { MAX_HEAT_LEVEL, heatLevelEffect, heatLevelLabel } from '@/lib/combat/dungeon-modifiers';
+import { ABYSS_LOCATION_ID, ABYSS_MIN_LEVEL } from '@/lib/combat/abyss';
 import { MarketPanel } from './MarketPanel';
 import { WalletPanel, type WalletCurrency } from './WalletPanel';
 import { TodayPanel } from './TodayPanel';
@@ -213,7 +213,7 @@ export function OverviewTab({
         </Card>
       )}
 
-      {/* Данж — разовый забег из нескольких комнат с боссом в конце (см. lib/dungeons.ts) */}
+      {/* Данж — разовый забег из нескольких комнат с боссом в конце (см. lib/combat/dungeons.ts) */}
       {player && dungeon && (
         <Card className="border-gold/40 bg-gold/5">
           <CardContent className="p-4">
@@ -231,7 +231,7 @@ export function OverviewTab({
             </div>
 
             {/* Heat-слайдер — риск игрок выбирает САМ перед входом (в отличие от случайного
-                модификатора забега, который всё равно роллится сверху) — см. lib/dungeon-modifiers.ts */}
+                модификатора забега, который всё равно роллится сверху) — см. lib/combat/dungeon-modifiers.ts */}
             <div className="mb-3 p-2 rounded-lg bg-secondary/20 border border-border/60">
               <div className="flex items-center justify-between mb-1.5">
                 <span className="text-[10px] text-muted-foreground">
@@ -262,7 +262,7 @@ export function OverviewTab({
         </Card>
       )}
 
-      {/* Испытание — ветвящийся аналог данжа (lib/trials.ts): на каждой развилке видно тип
+      {/* Испытание — ветвящийся аналог данжа (lib/combat/trials.ts): на каждой развилке видно тип
           обеих троп заранее, маршрут можно спланировать и запомнить, а не просто идти по прямой. */}
       {player && trial && (
         <Card className="border-primary/40 bg-primary/5">
@@ -291,7 +291,7 @@ export function OverviewTab({
       )}
 
       {/* Бездонный Разлом — бесконечный соло-эндгейм, доступен только из Верхней Глуби
-          (см. lib/abyss.ts). Никакого фиксированного конца — глубина растёт, пока не сбежишь
+          (см. lib/combat/abyss.ts). Никакого фиксированного конца — глубина растёт, пока не сбежишь
           или не погибнешь; рекорд глубины сохраняется навсегда. */}
       {canEnterAbyss && player && (
         <Card className="border-destructive/40 bg-destructive/5">
@@ -318,7 +318,7 @@ export function OverviewTab({
         </Card>
       )}
 
-      {/* Market — только в Торговом дворе (см. lib/shop.ts) */}
+      {/* Market — только в Торговом дворе (см. lib/economy/shop.ts) */}
       {player && player.locationId === 'market' && (
         <MarketPanel player={player} loading={loading} onBuy={onBuyItem} onSell={onSellItem} />
       )}

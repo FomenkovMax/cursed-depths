@@ -8,7 +8,7 @@
  */
 
 import { db } from '@/lib/db';
-import { incrementQuestProgress, collectQuestType } from '@/lib/quests';
+import { incrementQuestProgress, collectQuestType } from '@/lib/economy/quests';
 
 type PrismaClientLike = { inventory: typeof db.inventory; playerQuest: typeof db.playerQuest };
 

@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { validateTelegramRequest } from '@/lib/auth';
-import { TITLE_CATALOG, type TitleRequirementContext } from '@/lib/titles';
-import { isPremiumActive } from '@/lib/premium-shop';
+import { TITLE_CATALOG, type TitleRequirementContext } from '@/lib/social/titles';
+import { isPremiumActive } from '@/lib/premium/premium-shop';
 
 export async function GET(req: NextRequest) {
   const auth = validateTelegramRequest(req);

@@ -8,7 +8,7 @@ interface UseGuildUpgradesArgs {
   onMessage: (message: GameMessage) => void;
 }
 
-/** Дерево построек само статично (src/lib/guild-upgrades.ts) — этот хук отвечает только за
+/** Дерево построек само статично (src/lib/social/guild-upgrades.ts) — этот хук отвечает только за
  * пожертвование в казну и разблокировку узла (POST-запросы + обновление guild/player), per
  * CLAUDE.md. Список построек и текущий unlocked-набор читаются из уже загруженного `guild`
  * в page.tsx, не дублируются здесь. */

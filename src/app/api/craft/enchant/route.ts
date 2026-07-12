@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { ITEMS } from '@/lib/game-data';
 import { validateTelegramRequest } from '@/lib/auth';
-import { rerollSingleAffix, enchantCostForReroll, isGearType, type AffixTierName, type RolledAffix } from '@/lib/item-affixes';
+import { rerollSingleAffix, enchantCostForReroll, isGearType, type AffixTierName, type RolledAffix } from '@/lib/economy/item-affixes';
 
 export async function POST(req: NextRequest) {
   const auth = validateTelegramRequest(req);

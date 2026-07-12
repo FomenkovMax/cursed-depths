@@ -2,9 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { rollDice } from '@/lib/dice';
 import { validateTelegramRequest } from '@/lib/auth';
-import { addItemToInventory } from '@/lib/inventory-utils';
-import { issueDailyQuests } from '@/lib/quests';
-import { isDeathDebuffActive, DEATH_DEBUFF_XP_MULT } from '@/lib/premium-shop';
+import { addItemToInventory } from '@/lib/economy/inventory-utils';
+import { issueDailyQuests } from '@/lib/economy/quests';
+import { isDeathDebuffActive, DEATH_DEBUFF_XP_MULT } from '@/lib/premium/premium-shop';
 
 /** Брошено внутри транзакции, если ежедневная награда уже забрана СЕГОДНЯ В МОМЕНТ фактической
  * записи (см. комментарий у updateMany ниже) — напр. параллельный дубликат того же запроса. */

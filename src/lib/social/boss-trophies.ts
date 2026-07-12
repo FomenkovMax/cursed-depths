@@ -17,7 +17,7 @@
  * длину невезучей серии, не заменяет базовую вероятность.
  */
 
-import { ENEMIES } from './game-data';
+import { ENEMIES } from '@/lib/game-data';
 
 export function bossEnemies() {
   return ENEMIES.filter(e => e.isBoss);

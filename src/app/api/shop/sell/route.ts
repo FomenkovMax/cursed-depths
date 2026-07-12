@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { validateTelegramRequest } from '@/lib/auth';
-import { isSellableItem, getSellPrice } from '@/lib/shop';
+import { isSellableItem, getSellPrice } from '@/lib/economy/shop';
 
 /** Брошено внутри транзакции, когда к моменту записи стака уже не осталось (см. комментарий
  * у updateMany ниже) — напр. параллельный дубликат того же запроса. Откатывает транзакцию. */

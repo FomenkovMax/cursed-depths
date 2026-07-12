@@ -5,12 +5,12 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { ItemIconTile } from '@/components/game/ItemIconTile';
 import { ENEMIES } from '@/lib/game-data';
-import { manaCostForStage } from '@/lib/combat-engine';
-import type { BossFightState } from '@/lib/boss-mechanics';
+import { manaCostForStage } from '@/lib/combat/combat-engine';
+import type { BossFightState } from '@/lib/combat/boss-mechanics';
 import { PlayerData, AbilityData, CombatLogEntry } from '@/lib/game-types';
-import { findDungeon } from '@/lib/dungeons';
-import { findDungeonModifier, heatLevelLabel } from '@/lib/dungeon-modifiers';
-import { isEliteDepth } from '@/lib/abyss';
+import { findDungeon } from '@/lib/combat/dungeons';
+import { findDungeonModifier, heatLevelLabel } from '@/lib/combat/dungeon-modifiers';
+import { isEliteDepth } from '@/lib/combat/abyss';
 
 const ACTIVE_EFFECT_LABELS: Record<string, string> = {
   player_damage_buff: 'Урон усилен',
@@ -54,7 +54,7 @@ export function CombatTab({
   const playerInventory = player?.inventory || [];
 
   // bossState — общий стейт ЛЮБОГО боя (не только боссового, несмотря на название, см.
-  // lib/boss-mechanics.ts), поэтому парсим его всегда, когда он есть, а не только для боссов —
+  // lib/combat/boss-mechanics.ts), поэтому парсим его всегда, когда он есть, а не только для боссов —
   // иначе баффы/дебаффы/щит/кулдауны/заряды для обычных врагов нигде бы не отображались.
   let bossState: BossFightState | null = null;
   if (player?.bossState) {
@@ -68,8 +68,8 @@ export function CombatTab({
     <TabsContent value="combat" className="flex-1 overflow-y-auto p-4 space-y-4 m-0">
       {player?.inCombat && enemy ? (
         <>
-          {/* Индикатор забега по данжу — см. lib/dungeons.ts — и его модификатора, если выпал
-              (lib/dungeon-modifiers.ts). */}
+          {/* Индикатор забега по данжу — см. lib/combat/dungeons.ts — и его модификатора, если выпал
+              (lib/combat/dungeon-modifiers.ts). */}
           {dungeon && (
             <div className="text-center space-x-1">
               <Badge className="text-[10px] h-5 bg-gold/20 text-gold">
@@ -88,7 +88,7 @@ export function CombatTab({
             </div>
           )}
 
-          {/* Индикатор глубины Бездонного Разлома — см. lib/abyss.ts */}
+          {/* Индикатор глубины Бездонного Разлома — см. lib/combat/abyss.ts */}
           {!dungeon && player && player.abyssDepth > 0 && (
             <div className="text-center">
               <Badge className={`text-[10px] h-5 ${isEliteDepth(player.abyssDepth) ? 'bg-destructive/20 text-destructive' : 'bg-destructive/10 text-destructive/80'}`}>

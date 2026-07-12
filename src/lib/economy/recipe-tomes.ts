@@ -7,7 +7,7 @@
  * тот же принцип, что у премиум-множителя золота/опыта, но как источник дропа, а не число.
  */
 
-import { ITEMS, CRAFTING_RECIPES, type Item } from './game-data';
+import { ITEMS, CRAFTING_RECIPES, type Item } from '@/lib/game-data';
 
 export const TOME_DROP_CHANCE = 0.01; // 1% с любой победы в бою, только премиум
 

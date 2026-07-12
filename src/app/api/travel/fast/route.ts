@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { LOCATIONS } from '@/lib/game-data';
 import { validateTelegramRequest } from '@/lib/auth';
-import { isInActivePartyCombat } from '@/lib/party-guards';
-import { isPremiumActive } from '@/lib/premium-shop';
+import { isInActivePartyCombat } from '@/lib/combat/party-guards';
+import { isPremiumActive } from '@/lib/premium/premium-shop';
 
 export async function POST(req: NextRequest) {
   const auth = validateTelegramRequest(req);

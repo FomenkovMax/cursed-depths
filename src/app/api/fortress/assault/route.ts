@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { validateTelegramRequest } from '@/lib/auth';
-import { computeEquipmentBonuses } from '@/lib/equipment-stats';
-import type { PlayerCombatStats } from '@/lib/combat-engine';
-import { resolveFortressCycleIfNeeded, assaultPoints, ASSAULT_DAILY_CAP } from '@/lib/fortress';
-import { findPet } from '@/lib/pets';
+import { computeEquipmentBonuses } from '@/lib/combat/equipment-stats';
+import type { PlayerCombatStats } from '@/lib/combat/combat-engine';
+import { resolveFortressCycleIfNeeded, assaultPoints, ASSAULT_DAILY_CAP } from '@/lib/social/fortress';
+import { findPet } from '@/lib/economy/pets';
 
 export async function POST(req: NextRequest) {
   const auth = validateTelegramRequest(req);

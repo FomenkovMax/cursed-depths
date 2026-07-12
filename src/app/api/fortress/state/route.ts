@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { validateTelegramRequest } from '@/lib/auth';
-import { resolveFortressCycleIfNeeded, ASSAULT_DAILY_CAP, FORTRESS_NAME, FORTRESS_LORE } from '@/lib/fortress';
+import { resolveFortressCycleIfNeeded, ASSAULT_DAILY_CAP, FORTRESS_NAME, FORTRESS_LORE } from '@/lib/social/fortress';
 
 export async function GET(req: NextRequest) {
   const auth = validateTelegramRequest(req);

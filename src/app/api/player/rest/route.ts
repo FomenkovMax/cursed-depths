@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { validateTelegramRequest } from '@/lib/auth';
-import { computeEquipmentBonuses } from '@/lib/equipment-stats';
-import { isInActivePartyCombat } from '@/lib/party-guards';
-import { restMessage } from '@/lib/exploration-flavor';
-import { findPet } from '@/lib/pets';
+import { computeEquipmentBonuses } from '@/lib/combat/equipment-stats';
+import { isInActivePartyCombat } from '@/lib/combat/party-guards';
+import { restMessage } from '@/lib/combat/exploration-flavor';
+import { findPet } from '@/lib/economy/pets';
 
 export async function POST(req: NextRequest) {
   const auth = validateTelegramRequest(req);

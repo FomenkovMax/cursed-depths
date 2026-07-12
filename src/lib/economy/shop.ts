@@ -17,7 +17,7 @@
  * того, что сейчас надето — по половине заявленной цены (value).
  */
 
-import { ITEMS, type Item } from './game-data';
+import { ITEMS, type Item } from '@/lib/game-data';
 
 export const SHOP_SELL_MULTIPLIER = 0.5;
 

@@ -24,6 +24,7 @@ import {
   PvpOpponentView,
   PvpLeagueView,
   PvpFightResultView,
+  PvpSeasonRewardView,
   WorldBossStateView,
   WorldBossAttackResultView,
   FortressStateView,
@@ -101,6 +102,9 @@ export default function CursedDepths() {
   const [pvpMyLeague, setPvpMyLeague] = useState<PvpLeagueView | null>(null);
   const [pvpMyWins, setPvpMyWins] = useState(0);
   const [pvpMyLosses, setPvpMyLosses] = useState(0);
+  const [pvpSeasonId, setPvpSeasonId] = useState<string | null>(null);
+  const [pvpDaysUntilSeasonEnd, setPvpDaysUntilSeasonEnd] = useState<number | null>(null);
+  const [pvpPreviousSeasonTop3, setPvpPreviousSeasonTop3] = useState<PvpSeasonRewardView[]>([]);
   const [pvpLoading, setPvpLoading] = useState(false);
   const [worldBoss, setWorldBoss] = useState<WorldBossStateView | null>(null);
   const [worldBossLoading, setWorldBossLoading] = useState(false);
@@ -437,6 +441,9 @@ export default function CursedDepths() {
         if (data.myLeague) setPvpMyLeague(data.myLeague);
         if (typeof data.myWins === 'number') setPvpMyWins(data.myWins);
         if (typeof data.myLosses === 'number') setPvpMyLosses(data.myLosses);
+        if (data.seasonId) setPvpSeasonId(data.seasonId);
+        if (typeof data.daysUntilSeasonEnd === 'number') setPvpDaysUntilSeasonEnd(data.daysUntilSeasonEnd);
+        if (data.previousSeasonTop3) setPvpPreviousSeasonTop3(data.previousSeasonTop3);
       })
       .catch(() => setMessage({ text: 'Не удалось загрузить арену', type: 'error' }))
       .finally(() => setPvpLoading(false));
@@ -2152,6 +2159,9 @@ export default function CursedDepths() {
             myLeague={pvpMyLeague}
             myWins={pvpMyWins}
             myLosses={pvpMyLosses}
+            seasonId={pvpSeasonId}
+            daysUntilSeasonEnd={pvpDaysUntilSeasonEnd}
+            previousSeasonTop3={pvpPreviousSeasonTop3}
             loading={pvpLoading}
             onChallenge={handlePvpChallenge}
           />

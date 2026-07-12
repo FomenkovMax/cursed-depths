@@ -422,6 +422,15 @@ export interface PvpFightResultView {
   leveledUp: boolean;
 }
 
+export interface PvpSeasonRewardView {
+  id: string;
+  season: string;
+  rank: number;
+  ratingAtEnd: number;
+  awardedAt: string;
+  player: { name: string; class: { icon: string } };
+}
+
 export interface MarketListingView {
   id: string;
   itemId: string;

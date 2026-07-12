@@ -114,6 +114,7 @@ model Player {
   recipes         PlayerRecipe[]
   guildMember     GuildMember?
   seasonRewards   SeasonReward[]
+  pvpSeasonRewards PvpSeasonReward[]
   marketListings  MarketListing[]
   auctionsSelling Auction[] @relation("AuctionSeller")
   auctionsBidding Auction[] @relation("AuctionBidder")
@@ -482,6 +483,23 @@ model SeasonReward {
   rewardGold Int
   rewardXp   Int
   awardedAt  DateTime @default(now())
+
+  @@unique([season, rank])
+  @@index([season])
+}
+
+// Итог топ-3 сезона Арены (lib/pvp-season.ts, ~7 недель) — ЧИСТО информационная запись без
+// золота/предметов/титулов (в отличие от SeasonReward выше): PvP-рейтинг после этого момента
+// мягко сжимается к базе у ВСЕХ игроков, а не только у топ-3, так что "награда" здесь — навсегда
+// зафиксированное место в истории лиги, не механическое преимущество.
+model PvpSeasonReward {
+  id          String   @id @default(cuid())
+  season      String
+  rank        Int
+  playerId    String
+  player      Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  ratingAtEnd Int
+  awardedAt   DateTime @default(now())
 
   @@unique([season, rank])
   @@index([season])

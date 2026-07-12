@@ -37,11 +37,11 @@
 import { db } from '@/lib/db';
 import { ENEMIES, ITEMS } from '@/lib/game-data';
 import { rollDice, rollLoot } from '@/lib/dice';
-import { addItemToInventory } from '@/lib/inventory-utils';
-import { incrementQuestProgress } from '@/lib/quests';
-import { computeEquipmentBonuses } from '@/lib/equipment-stats';
-import { rollGearInstance, rollCurrencyDrop } from '@/lib/item-affixes';
-import { rollTemperScrollDrop } from '@/lib/item-enhancement';
+import { addItemToInventory } from '@/lib/economy/inventory-utils';
+import { incrementQuestProgress } from '@/lib/economy/quests';
+import { computeEquipmentBonuses } from '@/lib/combat/equipment-stats';
+import { rollGearInstance, rollCurrencyDrop } from '@/lib/economy/item-affixes';
+import { rollTemperScrollDrop } from '@/lib/economy/item-enhancement';
 import {
   basicAttackDamage,
   mitigateDamage,
@@ -51,7 +51,7 @@ import {
   extractBossOverridePercent,
   EFFECT_DURATION_TURNS,
   type PlayerCombatStats,
-} from '@/lib/combat-engine';
+} from '@/lib/combat/combat-engine';
 import {
   bossAcMultiplier,
   applyDamageToBoss,
@@ -60,8 +60,8 @@ import {
   resolveBossTurn,
   blockRandomMechanics,
   tickBlockedMechanics,
-} from '@/lib/boss-mechanics';
-import { parsePassiveEffect, describesGroupPassiveAura, type PassiveEffect } from '@/lib/passive-engine';
+} from '@/lib/combat/boss-mechanics';
+import { parsePassiveEffect, describesGroupPassiveAura, type PassiveEffect } from '@/lib/combat/passive-engine';
 import {
   parseDeathWard,
   parseArmedEffects,
@@ -70,7 +70,7 @@ import {
   parseActivatedOnBlockCounter,
   parseDebuffAmplify,
   type DeathWardEffect,
-} from '@/lib/conditional-ability-engine';
+} from '@/lib/combat/conditional-ability-engine';
 import {
   PASSIVE_CRIT_MULTIPLIER,
   hpThresholdBonuses,
@@ -95,7 +95,7 @@ import {
   onBlockCounterPercent,
   healChanceCleanseCurseChance,
   enemyHealCapPercent,
-} from '@/lib/passive-runtime';
+} from '@/lib/combat/passive-runtime';
 import {
   type PartyFightState,
   currentActingPlayerId,
@@ -115,7 +115,7 @@ import {
   armMemberEffect,
   peekMemberArmedEffectPercent,
   consumeMemberArmedEffects,
-} from '@/lib/party-combat-engine';
+} from '@/lib/combat/party-combat-engine';
 
 interface AuraMemberRow { id: string; level: number; class: { abilities: { type: string; stage: number; description: string }[] } }
 

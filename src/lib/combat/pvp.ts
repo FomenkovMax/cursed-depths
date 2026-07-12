@@ -18,7 +18,7 @@
  * работы, не попытка притвориться полной копией solo-движка.
  */
 
-import { basicAttackDamage, mitigateDamage, resolveAbility, manaCostForStage, type PlayerCombatStats } from './combat-engine';
+import { basicAttackDamage, mitigateDamage, resolveAbility, manaCostForStage, type PlayerCombatStats } from '@/lib/combat/combat-engine';
 
 export interface PvpAbility {
   description: string;

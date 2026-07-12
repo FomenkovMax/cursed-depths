@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { validateTelegramRequest } from '@/lib/auth';
-import { SHARD_PACKS, PREMIUM_CATALOG, isPremiumActive, RACE_CHANGE_COST_SHARDS } from '@/lib/premium-shop';
-import { freeSpinsPerDayFor, PAID_SPIN_COST_SHARDS, FORTUNE_WHEEL } from '@/lib/fortune-wheel';
+import { SHARD_PACKS, PREMIUM_CATALOG, isPremiumActive, RACE_CHANGE_COST_SHARDS } from '@/lib/premium/premium-shop';
+import { freeSpinsPerDayFor, PAID_SPIN_COST_SHARDS, FORTUNE_WHEEL } from '@/lib/economy/fortune-wheel';
 
 export async function GET(req: NextRequest) {
   const auth = validateTelegramRequest(req);

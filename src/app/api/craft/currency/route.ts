@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { ITEMS } from '@/lib/game-data';
 import { validateTelegramRequest } from '@/lib/auth';
-import { applyCurrency, isGearType, type AffixTierName, type CurrencyId, type RolledAffix, CURRENCY_IDS } from '@/lib/item-affixes';
+import { applyCurrency, isGearType, type AffixTierName, type CurrencyId, type RolledAffix, CURRENCY_IDS } from '@/lib/economy/item-affixes';
 
 export async function POST(req: NextRequest) {
   const auth = validateTelegramRequest(req);

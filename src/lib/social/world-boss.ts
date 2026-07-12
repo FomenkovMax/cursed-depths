@@ -6,8 +6,8 @@
  * игроку. Респавнится сразу после убийства, каждое следующее воплощение чуть крепче.
  */
 
-import { basicAttackDamage, type PlayerCombatStats } from './combat-engine';
-import { db } from './db';
+import { basicAttackDamage, type PlayerCombatStats } from '@/lib/combat/combat-engine';
+import { db } from '@/lib/db';
 
 type PrismaClientLike = { worldBoss: typeof db.worldBoss };
 

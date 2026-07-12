@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { validateTelegramRequest } from '@/lib/auth';
-import { resolveExpiredAuctionsIfNeeded, minNextBid, MAX_ACTIVE_AUCTIONS, AUCTION_FEE_PERCENT, AUCTION_DURATIONS } from '@/lib/auction-house';
-import { isPremiumActive } from '@/lib/premium-shop';
+import { resolveExpiredAuctionsIfNeeded, minNextBid, MAX_ACTIVE_AUCTIONS, AUCTION_FEE_PERCENT, AUCTION_DURATIONS } from '@/lib/economy/auction-house';
+import { isPremiumActive } from '@/lib/premium/premium-shop';
 
 export async function GET(req: NextRequest) {
   const auth = validateTelegramRequest(req);

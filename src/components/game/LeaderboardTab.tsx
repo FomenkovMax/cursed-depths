@@ -2,7 +2,7 @@ import { TabsContent } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { PlayerData } from '@/lib/game-types';
-import { findTitle } from '@/lib/titles';
+import { findTitle } from '@/lib/social/titles';
 
 export interface LeaderboardEntry {
   id: string;
@@ -46,7 +46,7 @@ export function LeaderboardTab({ player, leaderboard, loading, currentSeason, pr
       </div>
 
       {/* Награды за прошлый сезон — топ-3 получают золото и опыт в начале каждого месяца
-          (см. GET /api/leaderboard, lib/seasons.ts). Прогресс игроков при этом НЕ сбрасывается. */}
+          (см. GET /api/leaderboard, lib/social/seasons.ts). Прогресс игроков при этом НЕ сбрасывается. */}
       {previousSeasonWinners.length > 0 && (
         <Card className="border-gold/40 bg-gold/5">
           <CardHeader className="pb-2 pt-3 px-4">

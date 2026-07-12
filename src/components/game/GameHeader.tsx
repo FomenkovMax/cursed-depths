@@ -1,8 +1,8 @@
 import { PlayerData } from '@/lib/game-types';
-import { computeEquipmentBonuses } from '@/lib/equipment-stats';
-import { stageUnlockLevel } from '@/lib/combat-engine';
-import { findPet } from '@/lib/pets';
-import { findTitle } from '@/lib/titles';
+import { computeEquipmentBonuses } from '@/lib/combat/equipment-stats';
+import { stageUnlockLevel } from '@/lib/combat/combat-engine';
+import { findPet } from '@/lib/economy/pets';
+import { findTitle } from '@/lib/social/titles';
 
 interface GameHeaderProps {
   player: PlayerData | null;
@@ -65,7 +65,7 @@ export function GameHeader({ player, locationIcon, locationName, crownShards, ac
             <span className="text-xs">💰</span>
             <span className="text-xs font-bold text-gold">{player?.gold || 0}</span>
           </div>
-          {/* Осколки Короны — премиум-валюта (lib/premium-shop.ts) — постоянно на виду и
+          {/* Осколки Короны — премиум-валюта (lib/premium/premium-shop.ts) — постоянно на виду и
               кликабельны, тот же приём, что у баланса премиум-валюты в референсных F2P-играх. */}
           <button
             type="button"

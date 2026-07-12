@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { validateTelegramRequest } from '@/lib/auth';
-import { findPet } from '@/lib/pets';
+import { findPet } from '@/lib/economy/pets';
 
 /** Брошено внутри транзакции, если Осколков не хватило В МОМЕНТ фактического списания (тот
  * же паттерн идемпотентности, что и в shop/buy, quests/claim — updateMany с условием). */

@@ -9,7 +9,7 @@
  */
 
 import { db } from '@/lib/db';
-import { QUEST_CHAINS, chainStepQuestId, parseChainStepQuestId } from '@/lib/quest-chains';
+import { QUEST_CHAINS, chainStepQuestId, parseChainStepQuestId } from '@/lib/economy/quest-chains';
 
 type QuestClient = { playerQuest: typeof db.playerQuest };
 

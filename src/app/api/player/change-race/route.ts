@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { validateTelegramRequest } from '@/lib/auth';
-import { RACE_CHANGE_COST_SHARDS } from '@/lib/premium-shop';
+import { RACE_CHANGE_COST_SHARDS } from '@/lib/premium/premium-shop';
 
 const STAT_FIELDS = ['strength', 'dexterity', 'vitality', 'intellect', 'willpower', 'instinct'] as const;
 type StatField = typeof STAT_FIELDS[number];

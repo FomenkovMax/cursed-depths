@@ -4,18 +4,18 @@ import { ENEMIES, LOCATIONS, ITEMS } from '@/lib/game-data';
 import { rollDice, rollLoot } from '@/lib/dice';
 import { validateTelegramRequest } from '@/lib/auth';
 import { getCached, setCached, CACHE_TTL } from '@/lib/cache';
-import { addItemToInventory } from '@/lib/inventory-utils';
-import { initBossState } from '@/lib/boss-mechanics';
-import { incrementQuestProgress } from '@/lib/quests';
-import { stageUnlockLevel } from '@/lib/combat-engine';
-import { parsePassiveEffect, type PassiveEffect } from '@/lib/passive-engine';
-import { outOfCombatRegen } from '@/lib/passive-runtime';
-import { computeEquipmentBonuses } from '@/lib/equipment-stats';
-import { isInActivePartyCombat } from '@/lib/party-guards';
-import { EXPLORATION_EVENTS } from '@/lib/exploration-events';
-import { rollGearInstance } from '@/lib/item-affixes';
-import { goldFindMessage, encounterMessage } from '@/lib/exploration-flavor';
-import { findPet } from '@/lib/pets';
+import { addItemToInventory } from '@/lib/economy/inventory-utils';
+import { initBossState } from '@/lib/combat/boss-mechanics';
+import { incrementQuestProgress } from '@/lib/economy/quests';
+import { stageUnlockLevel } from '@/lib/combat/combat-engine';
+import { parsePassiveEffect, type PassiveEffect } from '@/lib/combat/passive-engine';
+import { outOfCombatRegen } from '@/lib/combat/passive-runtime';
+import { computeEquipmentBonuses } from '@/lib/combat/equipment-stats';
+import { isInActivePartyCombat } from '@/lib/combat/party-guards';
+import { EXPLORATION_EVENTS } from '@/lib/combat/exploration-events';
+import { rollGearInstance } from '@/lib/economy/item-affixes';
+import { goldFindMessage, encounterMessage } from '@/lib/combat/exploration-flavor';
+import { findPet } from '@/lib/economy/pets';
 
 export async function POST(req: NextRequest) {
   const auth = validateTelegramRequest(req);
@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Вне-боевая регенерация (forest-whisper и аналоги) — каждый вызов /api/explore это единственный
-    // в игре реальный аналог "хода вне боя" (см. заголовок lib/passive-engine.ts).
+    // в игре реальный аналог "хода вне боя" (см. заголовок lib/combat/passive-engine.ts).
     const playerLevel = player.level;
     const passives: PassiveEffect[] = player.class.abilities
       .filter(a => a.type === 'passive' && playerLevel >= stageUnlockLevel(a.stage))
@@ -86,7 +86,7 @@ export async function POST(req: NextRequest) {
     const roll = Math.random();
     if (roll < 0.25) {
       // Narrative mini-event with a choice — resolved separately via /api/explore/event,
-      // see lib/exploration-events.ts. Player state isn't touched yet, only the "explore"
+      // see lib/combat/exploration-events.ts. Player state isn't touched yet, only the "explore"
       // quest counter, since the event itself is what the player was looking for.
       const event = EXPLORATION_EVENTS[Math.floor(Math.random() * EXPLORATION_EVENTS.length)];
       const updated = await db.$transaction(async (tx) => {

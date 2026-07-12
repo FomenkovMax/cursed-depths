@@ -2,9 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { validateTelegramRequest } from '@/lib/auth';
 import { ITEMS } from '@/lib/game-data';
-import { addItemToInventory } from '@/lib/inventory-utils';
-import { isPremiumActive } from '@/lib/premium-shop';
-import { rollFortuneWheel, freeSpinsPerDayFor, PAID_SPIN_COST_SHARDS } from '@/lib/fortune-wheel';
+import { addItemToInventory } from '@/lib/economy/inventory-utils';
+import { isPremiumActive } from '@/lib/premium/premium-shop';
+import { rollFortuneWheel, freeSpinsPerDayFor, PAID_SPIN_COST_SHARDS } from '@/lib/economy/fortune-wheel';
 
 export async function POST(req: NextRequest) {
   const auth = validateTelegramRequest(req);

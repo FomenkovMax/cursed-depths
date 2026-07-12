@@ -4,11 +4,11 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { manaCostForStage } from '@/lib/combat-engine';
+import { manaCostForStage } from '@/lib/combat/combat-engine';
 import { PartyData, PartyCombatStateResponse, AbilityData } from '@/lib/game-types';
 
 // Личные баффы/активированные стойки участника (см. PartyMemberEffectKind в
-// lib/party-combat-engine.ts) — те же ярлыки, что и в CombatTab.tsx для одиночного боя, плюс
+// lib/combat/party-combat-engine.ts) — те же ярлыки, что и в CombatTab.tsx для одиночного боя, плюс
 // player_dodge_buff, которого у соло-боя нет отдельным полем (там смешан в activeEffects без
 // подписи, тут — своя запись).
 const MEMBER_EFFECT_LABELS: Record<string, string> = {
@@ -19,7 +19,7 @@ const MEMBER_EFFECT_LABELS: Record<string, string> = {
 };
 
 // "Заряженные" одноразовые эффекты участника (см. PartyArmedEffectKind) — ждут следующего
-// нанесённого/полученного удара, см. lib/conditional-ability-engine.ts.
+// нанесённого/полученного удара, см. lib/combat/conditional-ability-engine.ts.
 const ARMED_EFFECT_LABELS: Record<string, string> = {
   reduce_next_incoming: 'Снижает след. удар',
   boost_next_outgoing: 'След. атака изменена',

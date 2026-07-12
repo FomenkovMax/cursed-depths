@@ -11,7 +11,7 @@
  * замена на сейчас, а не попытка выдать за то, что описано в документе.
  */
 
-import { ENEMIES } from './game-data';
+import { ENEMIES } from '@/lib/game-data';
 
 export const ABYSS_LOCATION_ID = 'upper_deep';
 export const ABYSS_MIN_LEVEL = 5;

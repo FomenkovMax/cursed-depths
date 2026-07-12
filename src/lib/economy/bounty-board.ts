@@ -5,7 +5,7 @@
  * лут-стола — не случайный дроп с шансом, а осознанная охота за конкретной наградой.
  */
 
-import { ENEMIES, ITEMS, type Item } from './game-data';
+import { ENEMIES, ITEMS, type Item } from '@/lib/game-data';
 
 export const BOUNTY_DC = 15;
 export const BOUNTY_STAT = 'instinct' as const;

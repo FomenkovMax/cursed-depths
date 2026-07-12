@@ -2,10 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { ENEMIES } from '@/lib/game-data';
 import { validateTelegramRequest } from '@/lib/auth';
-import { initBossState } from '@/lib/boss-mechanics';
-import { isInActivePartyCombat } from '@/lib/party-guards';
-import { findDungeon } from '@/lib/dungeons';
-import { rollDungeonModifier, findDungeonModifier, dungeonModifierEffect, heatLevelEffect, heatLevelLabel, multiplyEffects, MAX_HEAT_LEVEL } from '@/lib/dungeon-modifiers';
+import { initBossState } from '@/lib/combat/boss-mechanics';
+import { isInActivePartyCombat } from '@/lib/combat/party-guards';
+import { findDungeon } from '@/lib/combat/dungeons';
+import { rollDungeonModifier, findDungeonModifier, dungeonModifierEffect, heatLevelEffect, heatLevelLabel, multiplyEffects, MAX_HEAT_LEVEL } from '@/lib/combat/dungeon-modifiers';
 
 export async function POST(req: NextRequest) {
   const auth = validateTelegramRequest(req);

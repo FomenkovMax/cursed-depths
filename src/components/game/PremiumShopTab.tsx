@@ -95,7 +95,7 @@ export function PremiumShopTab({
       </Card>
 
       {/* Покупка Осколков за Telegram Stars — единственный разрешённый способ платить за
-          цифровые товары внутри Telegram (см. lib/premium-shop.ts). Реальные деньги идут
+          цифровые товары внутри Telegram (см. lib/premium/premium-shop.ts). Реальные деньги идут
           только здесь; каталог ниже тратит уже начисленные Осколки. */}
       <Card className="border-border">
         <CardHeader className="pb-2 pt-3 px-4">
@@ -152,7 +152,7 @@ export function PremiumShopTab({
         </CardContent>
       </Card>
 
-      {/* Колесо фортуны — бесплатный прокрут(ы) в день + платный за Осколки (lib/fortune-wheel.ts).
+      {/* Колесо фортуны — бесплатный прокрут(ы) в день + платный за Осколки (lib/economy/fortune-wheel.ts).
           Лучшие призы выпадают ооооочень редко — тот же хардкорный принцип, что и в общем лут-столе. */}
       <Card className="border-border">
         <CardHeader className="pb-2 pt-3 px-4">
@@ -189,7 +189,7 @@ export function PremiumShopTab({
         </CardContent>
       </Card>
 
-      {/* Питомцы-компаньоны — коллекционные, покупаются за Осколки (lib/pets.ts), активный
+      {/* Питомцы-компаньоны — коллекционные, покупаются за Осколки (lib/economy/pets.ts), активный
           даёт пассивный бонус к статам в бою. Владеть можно многими сразу — коллекционирование
           ради самого коллекционирования, а не только ради сильнейшего бонуса. */}
       <Card className="border-border">
@@ -208,7 +208,7 @@ export function PremiumShopTab({
         </CardContent>
       </Card>
 
-      {/* Экспедиции — премиум-эксклюзивная офлайн-механика (lib/expeditions.ts): отправить героя
+      {/* Экспедиции — премиум-эксклюзивная офлайн-механика (lib/premium/expeditions.ts): отправить героя
           в отлучку на время и вернуться за наградой, не блокирует остальную игру. */}
       <Card className="border-border">
         <CardHeader className="pb-2 pt-3 px-4">
@@ -226,7 +226,7 @@ export function PremiumShopTab({
         </CardContent>
       </Card>
 
-      {/* Доска контрактов — премиум-эксклюзивная ежедневная охота (lib/bounty-board.ts): одна
+      {/* Доска контрактов — премиум-эксклюзивная ежедневная охота (lib/economy/bounty-board.ts): одна
           попытка в день, d20+Инстинкт против Сложности, гарантированный трофей при успехе. */}
       <Card className="border-border">
         <CardHeader className="pb-2 pt-3 px-4">
@@ -242,7 +242,7 @@ export function PremiumShopTab({
         </CardContent>
       </Card>
 
-      {/* Титулы — премиум-эксклюзивная витринная механика (lib/titles.ts): статический каталог,
+      {/* Титулы — премиум-эксклюзивная витринная механика (lib/social/titles.ts): статический каталог,
           "разблокирован" считается по уже существующей статистике игрока, никакого бонуса к
           статам, чистое отображение рядом с именем в шапке. */}
       <Card className="border-border">
@@ -259,7 +259,7 @@ export function PremiumShopTab({
         </CardContent>
       </Card>
 
-      {/* Боевой пропуск — премиум-эксклюзивная сезонная прогрессия (lib/battle-pass.ts): очки за
+      {/* Боевой пропуск — премиум-эксклюзивная сезонная прогрессия (lib/premium/battle-pass.ts): очки за
           победы в бою (только пока премиум активен), тиры с наградами, месячный цикл. */}
       <Card className="border-border">
         <CardHeader className="pb-2 pt-3 px-4">

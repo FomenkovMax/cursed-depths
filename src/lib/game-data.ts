@@ -1,4 +1,4 @@
-import type { BossMechanics } from './boss-mechanics';
+import type { BossMechanics } from '@/lib/combat/boss-mechanics';
 
 // ===== LOCATIONS =====
 // Акт 1: Пепельные Врата (Люди), уровни 1-3. Акт 2: Корневая Роща (Эльфы), уровни 3-4.

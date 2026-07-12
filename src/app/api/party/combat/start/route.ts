@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { validateTelegramRequest } from '@/lib/auth';
 import { ENEMIES } from '@/lib/game-data';
-import { initPartyFightState, scaleEnemyHpForPartySize } from '@/lib/party-combat-engine';
+import { initPartyFightState, scaleEnemyHpForPartySize } from '@/lib/combat/party-combat-engine';
 
 export async function POST(req: NextRequest) {
   const auth = validateTelegramRequest(req);
@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
     if (party.status !== 'forming') return NextResponse.json({ error: 'Пати уже в бою' }, { status: 400 });
 
     // Соло-бой и пати-бой пишут Player.hp независимо друг от друга (PartyCombat не трогает
-    // Player.inCombat — см. lib/party-guards.ts) — если хоть один участник уже в соло-бою,
+    // Player.inCombat — см. lib/combat/party-guards.ts) — если хоть один участник уже в соло-бою,
     // старт пати-боя даст ему сражаться в обеих системах одновременно, портя его же HP.
     const memberInSoloCombat = party.members.find(m => m.player.inCombat);
     if (memberInSoloCombat) {

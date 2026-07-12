@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { validateTelegramRequest } from '@/lib/auth';
-import { isInActivePartyCombat } from '@/lib/party-guards';
-import { findTrial } from '@/lib/trials';
+import { isInActivePartyCombat } from '@/lib/combat/party-guards';
+import { findTrial } from '@/lib/combat/trials';
 
 export async function POST(req: NextRequest) {
   const auth = validateTelegramRequest(req);

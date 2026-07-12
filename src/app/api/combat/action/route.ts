@@ -4,7 +4,7 @@ import { ENEMIES, ITEMS } from '@/lib/game-data';
 import { rollDice, rollLoot } from '@/lib/dice';
 import { validateTelegramRequest } from '@/lib/auth';
 import { getCached, setCached, CACHE_TTL } from '@/lib/cache';
-import { addItemToInventory } from '@/lib/inventory-utils';
+import { addItemToInventory } from '@/lib/economy/inventory-utils';
 import {
   basicAttackDamage,
   mitigateDamage,
@@ -14,7 +14,7 @@ import {
   extractBossOverridePercent,
   EFFECT_DURATION_TURNS,
   type PlayerCombatStats,
-} from '@/lib/combat-engine';
+} from '@/lib/combat/combat-engine';
 import {
   initBossState,
   applyDamageToBoss,
@@ -25,9 +25,9 @@ import {
   blockRandomMechanics,
   tickBlockedMechanics,
   type BossFightState,
-} from '@/lib/boss-mechanics';
-import { addActiveEffect, activeEffectBonus, tickActiveEffects, tickCooldowns, applyDamageToPlayerShield, armEffect, consumeArmedEffects, peekArmedEffectPercent } from '@/lib/combat-effects';
-import { parsePassiveEffect, type PassiveEffect } from '@/lib/passive-engine';
+} from '@/lib/combat/boss-mechanics';
+import { addActiveEffect, activeEffectBonus, tickActiveEffects, tickCooldowns, applyDamageToPlayerShield, armEffect, consumeArmedEffects, peekArmedEffectPercent } from '@/lib/combat/combat-effects';
+import { parsePassiveEffect, type PassiveEffect } from '@/lib/combat/passive-engine';
 import {
   parseDeathWard,
   parseArmedEffects,
@@ -36,7 +36,7 @@ import {
   parseActivatedOnBlockCounter,
   parseDebuffAmplify,
   type DeathWardEffect,
-} from '@/lib/conditional-ability-engine';
+} from '@/lib/combat/conditional-ability-engine';
 import {
   PASSIVE_CRIT_MULTIPLIER,
   hpThresholdBonuses,
@@ -61,24 +61,24 @@ import {
   onBlockCounterPercent,
   healChanceCleanseCurseChance,
   enemyHealCapPercent,
-} from '@/lib/passive-runtime';
-import { computeEquipmentBonuses } from '@/lib/equipment-stats';
-import { incrementQuestProgress } from '@/lib/quests';
-import { findDungeon } from '@/lib/dungeons';
-import { findTrial, type TrialRoomOption } from '@/lib/trials';
-import { rollGearInstance, rollCurrencyDrop } from '@/lib/item-affixes';
-import { rollTemperScrollDrop } from '@/lib/item-enhancement';
-import { dungeonModifierEffect, heatLevelEffect, multiplyEffects } from '@/lib/dungeon-modifiers';
-import { abyssScaling, abyssEnemyIdForDepth, isEliteDepth } from '@/lib/abyss';
-import { FORTRESS_ID, CONTROL_GOLD_BONUS } from '@/lib/fortress';
-import { bossIntroLine, deathMessage } from '@/lib/exploration-flavor';
-import { isPremiumActive, PREMIUM_GOLD_XP_MULT, isDeathDebuffActive, DEATH_DEBUFF_XP_MULT, DEATH_DEBUFF_HOURS } from '@/lib/premium-shop';
-import { findPet } from '@/lib/pets';
-import { battlePassXpForKill, effectiveBattlePassXp } from '@/lib/battle-pass';
-import { currentSeasonId } from '@/lib/seasons';
-import { TOME_DROP_CHANCE, pickUncollectedTome } from '@/lib/recipe-tomes';
-import { rarestBossDrop, pityCapFor } from '@/lib/boss-trophies';
-import { guildGoldMultBonus, guildXpMultBonus } from '@/lib/guild-upgrades';
+} from '@/lib/combat/passive-runtime';
+import { computeEquipmentBonuses } from '@/lib/combat/equipment-stats';
+import { incrementQuestProgress } from '@/lib/economy/quests';
+import { findDungeon } from '@/lib/combat/dungeons';
+import { findTrial, type TrialRoomOption } from '@/lib/combat/trials';
+import { rollGearInstance, rollCurrencyDrop } from '@/lib/economy/item-affixes';
+import { rollTemperScrollDrop } from '@/lib/economy/item-enhancement';
+import { dungeonModifierEffect, heatLevelEffect, multiplyEffects } from '@/lib/combat/dungeon-modifiers';
+import { abyssScaling, abyssEnemyIdForDepth, isEliteDepth } from '@/lib/combat/abyss';
+import { FORTRESS_ID, CONTROL_GOLD_BONUS } from '@/lib/social/fortress';
+import { bossIntroLine, deathMessage } from '@/lib/combat/exploration-flavor';
+import { isPremiumActive, PREMIUM_GOLD_XP_MULT, isDeathDebuffActive, DEATH_DEBUFF_XP_MULT, DEATH_DEBUFF_HOURS } from '@/lib/premium/premium-shop';
+import { findPet } from '@/lib/economy/pets';
+import { battlePassXpForKill, effectiveBattlePassXp } from '@/lib/premium/battle-pass';
+import { currentSeasonId } from '@/lib/social/seasons';
+import { TOME_DROP_CHANCE, pickUncollectedTome } from '@/lib/economy/recipe-tomes';
+import { rarestBossDrop, pityCapFor } from '@/lib/social/boss-trophies';
+import { guildGoldMultBonus, guildXpMultBonus } from '@/lib/social/guild-upgrades';
 
 export async function POST(req: NextRequest) {
   const auth = validateTelegramRequest(req);
@@ -144,17 +144,17 @@ export async function POST(req: NextRequest) {
     let trophyPityCounter: number | null = null;
     let battlePassXpGained = 0;
     const droppedItems: string[] = [];
-    // Модификатор забега по данжу (lib/dungeon-modifiers.ts) — два независимых слоя,
+    // Модификатор забега по данжу (lib/combat/dungeon-modifiers.ts) — два независимых слоя,
     // перемножаемых друг на друга: случайный dungeonModifierId (роллится при входе) и
     // dungeonHeatLevel — риск, который игрок ВЫБРАЛ сам перед входом (см. dungeon/start).
     // Множители 1 по всем осям, если игрок не в данже.
     const dungeonEffect = player.dungeonId
       ? multiplyEffects(dungeonModifierEffect(player.dungeonModifierId), heatLevelEffect(player.dungeonHeatLevel))
       : dungeonModifierEffect(null);
-    // Масштабирование Бездонного Разлома (lib/abyss.ts) — растёт с глубиной, взаимоисключающе
+    // Масштабирование Бездонного Разлома (lib/combat/abyss.ts) — растёт с глубиной, взаимоисключающе
     // с dungeonEffect (игрок не может быть одновременно в данже и в Разломе).
     const abyssEffect = player.abyssDepth > 0 ? abyssScaling(player.abyssDepth) : { hpMult: 1, damageMult: 1, goldMult: 1, xpMult: 1 };
-    // Крепость (lib/fortress.ts) — гильдия, контролирующая Крепость на текущей неделе, даёт
+    // Крепость (lib/social/fortress.ts) — гильдия, контролирующая Крепость на текущей неделе, даёт
     // всем своим участникам +10% золота с ЛЮБОГО боя (не только в данже/Разломе), независимо
     // от dungeonEffect/abyssEffect выше — умножается поверх них.
     let fortressGoldMult = 1;
@@ -164,7 +164,7 @@ export async function POST(req: NextRequest) {
         fortressGoldMult = 1 + CONTROL_GOLD_BONUS;
       }
     }
-    // Премиум-статус (lib/premium-shop.ts, куплен за Осколки Короны) — +15% золота и опыта с
+    // Премиум-статус (lib/premium/premium-shop.ts, куплен за Осколки Короны) — +15% золота и опыта с
     // ЛЮБОГО боя, умножается поверх всех остальных множителей выше, тот же приём, что fortressGoldMult.
     const premiumMult = isPremiumActive(player.premiumUntil) ? PREMIUM_GOLD_XP_MULT : 1;
     // Дебафф смерти (-15% опыта, премиум иммунен) умножается ОТДЕЛЬНО от premiumMult — оба не
@@ -175,7 +175,7 @@ export async function POST(req: NextRequest) {
     // плоского стата: +20% золота и опыта с любого боя, пока экипирован. Прямая проверка itemId,
     // без парсинга текста — тот же приём, что у premiumMult/fortressGoldMult выше.
     const uniqueItemGoldXpMult = player.inventory.some(i => i.equipped && i.itemId === 'ring_unquenchable_thirst') ? 1.2 : 1;
-    // Гильдейское дерево построек (аудит 4.1, D2, lib/guild-upgrades.ts) — постоянные пассивные
+    // Гильдейское дерево построек (аудит 4.1, D2, lib/social/guild-upgrades.ts) — постоянные пассивные
     // бонусы, разблокированные лидером за казну, накопленную пожертвованиями участников.
     // Умножается поверх всех остальных множителей выше, тот же приём, что fortressGoldMult.
     let guildGoldMult = 1;
@@ -196,8 +196,8 @@ export async function POST(req: NextRequest) {
     // Эликсир Мощи и аналоги — устанавливается при использовании, применяется к updateData ниже.
     let consumableBuffUpdate: { attackBonus: number; fightsLeft: number } | null = null;
 
-    // Бонусы экипировки (оружие/броня/аксессуары) + активного питомца (lib/pets.ts) — единая
-    // точка подсчёта, см. lib/equipment-stats.ts
+    // Бонусы экипировки (оружие/броня/аксессуары) + активного питомца (lib/economy/pets.ts) — единая
+    // точка подсчёта, см. lib/combat/equipment-stats.ts
     const activePet = player.activePetId ? findPet(player.activePetId) : null;
     const equipBonuses = computeEquipmentBonuses(player.inventory, activePet);
     const effectiveMaxHp = player.maxHp + equipBonuses.hp;
@@ -218,7 +218,7 @@ export async function POST(req: NextRequest) {
     // + временный бонус атаки от Эликсира Мощи (elixir_power) — действует пока consumableFightsLeft > 0.
     const weaponBonus = equipBonuses.attack + (player.consumableFightsLeft > 0 ? player.consumableAttackBonus : 0);
 
-    // Пассивки игрока (открытые по уровню) — разобраны эвристически, см. lib/passive-engine.ts.
+    // Пассивки игрока (открытые по уровню) — разобраны эвристически, см. lib/combat/passive-engine.ts.
     const playerPassives: PassiveEffect[] = player.class.abilities
       .filter(a => a.type === 'passive' && player.level >= stageUnlockLevel(a.stage))
       .map(a => parsePassiveEffect(a.description))
@@ -230,7 +230,7 @@ export async function POST(req: NextRequest) {
 
     /**
      * Инкрементирует счётчик ударов и считает множитель от "каждый N-й удар"/"раз в N ударов"
-     * пассивок + снимает "заряженные" одноразовые эффекты (см. lib/conditional-ability-engine.ts),
+     * пассивок + снимает "заряженные" одноразовые эффекты (см. lib/combat/conditional-ability-engine.ts),
      * ждавшие следующей результативной атаки/способности игрока.
      */
     function applyPassiveOffenseBonuses(forceCrit = false): { mult: number; messages: string[]; lifestealPercent: number; ignoreDefensePercent: number } {
@@ -376,7 +376,7 @@ export async function POST(req: NextRequest) {
         combatLog.push({ text: `Нужен уровень ${stageUnlockLevel(ability.stage)}!`, turn: currentTurn });
       } else if (parseDeathWard(ability.description)) {
         // "Обереги от смерти" (Последняя воля, Несокрушимый и т.п.) срабатывают САМИ при смертельном
-        // ударе — их нельзя скастовать вручную, см. lib/conditional-ability-engine.ts.
+        // ударе — их нельзя скастовать вручную, см. lib/combat/conditional-ability-engine.ts.
         combatLog.push({ text: 'Эта способность срабатывает автоматически при смертельном ударе — использовать её вручную нельзя.', turn: currentTurn });
       } else if ((bossState.abilityCooldowns[ability.slug] ?? 0) > 0) {
         combatLog.push({ text: `${ability.icon} ${ability.name} ещё перезаряжается: осталось ${bossState.abilityCooldowns[ability.slug]} х.`, turn: currentTurn });
@@ -569,7 +569,7 @@ export async function POST(req: NextRequest) {
       if (scrollDrop) droppedItems.push(scrollDrop);
       combatLog.push({ text: `${enemyTemplate.nameRu} повержен! +${xpGained} XP, +${goldGained} золота`, turn: currentTurn + 1 });
 
-      // Комната трофеев (lib/boss-trophies.ts) — чисто коллекционная механика, доступна ТОЛЬКО с
+      // Комната трофеев (lib/social/boss-trophies.ts) — чисто коллекционная механика, доступна ТОЛЬКО с
       // активным премиумом (не просто "лучше награда" — без премиума счётчик не растёт вовсе).
       if (enemyTemplate.isBoss && premiumMult > 1) {
         bossTrophyGained = enemyTemplate.id;
@@ -579,7 +579,7 @@ export async function POST(req: NextRequest) {
           turn: currentTurn + 1,
         });
 
-        // Pity-счётчик (lib/boss-trophies.ts) — гарантирует самый редкий предмет добычи босса не
+        // Pity-счётчик (lib/social/boss-trophies.ts) — гарантирует самый редкий предмет добычи босса не
         // позже pityCapFor(enemyId) побед подряд без него; обычный шанс из lootTable выше уже
         // отработал в rollLoot и мог сам его выдать раньше срока.
         const rarest = rarestBossDrop(enemyTemplate.id);
@@ -597,13 +597,13 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      // Боевой пропуск (lib/battle-pass.ts) — очки только пока премиум активен, полный лок,
+      // Боевой пропуск (lib/premium/battle-pass.ts) — очки только пока премиум активен, полный лок,
       // как у Комнаты трофеев (не просто "лучше награда").
       if (premiumMult > 1) {
         battlePassXpGained = battlePassXpForKill(enemyTemplate.xp);
       }
 
-      // Тома рецептов (lib/recipe-tomes.ts) — премиум-эксклюзивный ДОПОЛНИТЕЛЬНЫЙ источник тех
+      // Тома рецептов (lib/economy/recipe-tomes.ts) — премиум-эксклюзивный ДОПОЛНИТЕЛЬНЫЙ источник тех
       // же 6 чертежей тира 3, что уже штучно капают всем игрокам из lootTable боссов; F2P-шанс
       // не меняется, премиум просто получает независимый шанс с ЛЮБОЙ победы.
       if (premiumMult > 1) {
@@ -639,7 +639,7 @@ export async function POST(req: NextRequest) {
       const armorBonus = equipBonuses.defense;
       const isDefending = action === 'defend' && !actionNegated;
       // "Заряженный" эффект "снижает/блокирует урон следующего удара" (last-line, shield-of-faith
-      // и т.п., см. lib/conditional-ability-engine.ts) — снимается ровно на этот удар врага.
+      // и т.п., см. lib/combat/conditional-ability-engine.ts) — снимается ровно на этот удар врага.
       // percent >= 1 означает полную блокировку ("Блокирует следующую атаку") — обрабатывается
       // отдельно ниже как fullyBlocked, а не через обычный 0.9-капped totalReduction.
       const armedBlock = consumeArmedEffects(bossState, 'reduce_next_incoming');
@@ -735,7 +735,7 @@ export async function POST(req: NextRequest) {
                 combatLog.push({ text: `Блокирование восстанавливает вам ${healAmount} ХП!`, turn: currentTurn + 1 });
               }
               // Пассивный контрудар после блока (tornak-foundation, bone-spike) + активированный кастом
-              // (retaliation-hammer, counter-blow, см. lib/conditional-ability-engine.ts) складываются.
+              // (retaliation-hammer, counter-blow, см. lib/combat/conditional-ability-engine.ts) складываются.
               const blockCounterPercent = onBlockCounterPercent(playerPassives) + activeEffectBonus(bossState, 'on_block_counter_active');
               if (blockCounterPercent > 0) {
                 const counterDmg = Math.round(incomingDamage * blockCounterPercent);
@@ -770,7 +770,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Check if player is dead (с учётом одноразового воскрешения — Феникс-пассивка ИЛИ активный
-    // оберег от смерти вроде "Последней воли"/"Несокрушимого", см. lib/conditional-ability-engine.ts —
+    // оберег от смерти вроде "Последней воли"/"Несокрушимого", см. lib/combat/conditional-ability-engine.ts —
     // оба делят один и тот же bossState.deathSaveUsed: одно "последнее слово" за бой на персонажа).
     if (playerHp <= 0) {
       const reviveHealPercent = deathSaveHealPercent(playerPassives);
@@ -804,7 +804,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Data (комната данжа) — переиспользует обычный движок одиночного боя целиком (см.
-    // lib/dungeons.ts): если игрок выиграл бой И в данже есть ещё комнаты, следующий враг
+    // lib/combat/dungeons.ts): если игрок выиграл бой И в данже есть ещё комнаты, следующий враг
     // спавнится сразу вместо завершения боя (combatOver остаётся true — этот КОНКРЕТНЫЙ бой
     // с этим врагом окончен, — но inCombat ниже выставится обратно в true с новым врагом).
     // Финальная комната (босс) даёт бонусную награду поверх обычной, забег завершается штатно.
@@ -847,7 +847,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Испытания (lib/trials.ts) — ветвящийся аналог данжей выше. Отличие от линейной ветки:
+    // Испытания (lib/combat/trials.ts) — ветвящийся аналог данжей выше. Отличие от линейной ветки:
     // при победе в комнате-развилке НЕ спавним следующего врага автоматически — если развилок
     // ещё осталось, отдаём варианты направлений во фронт (trialNextJunctionOptions), а бой
     // не продолжается (inCombat=false), пока игрок не выберет через /api/trial/choose. Комната
@@ -894,7 +894,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Бездонный Разлом (lib/abyss.ts) — тот же паттерн, что и у данжей выше, но без конца:
+    // Бездонный Разлом (lib/combat/abyss.ts) — тот же паттерн, что и у данжей выше, но без конца:
     // при победе всегда спавнится следующая, более глубокая комната, пока игрок не сбежит
     // или не погибнет. bestAbyssDepth обновляется отдельно ниже, в updateData.
     let abyssNextEnemy: typeof ENEMIES[0] | null = null;
@@ -1019,7 +1019,7 @@ export async function POST(req: NextRequest) {
         if (goldLoss > 0) {
           combatLog.push({ text: `Вы потеряли ${goldLoss} золота при смерти.`, turn: currentTurn + 2 });
         }
-        // Дебафф -15% опыта на 24 часа (lib/premium-shop.ts) — премиум полностью иммунен, ставить
+        // Дебафф -15% опыта на 24 часа (lib/premium/premium-shop.ts) — премиум полностью иммунен, ставить
         // дебафф ему бессмысленно (isDeathDebuffActive всё равно проигнорирует поле из-за премиума).
         if (!isPremiumActive(player.premiumUntil)) {
           updateData.deathDebuffUntil = new Date(Date.now() + DEATH_DEBUFF_HOURS * 60 * 60 * 1000);

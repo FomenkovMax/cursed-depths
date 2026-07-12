@@ -31,7 +31,7 @@
  * debuff_amplify (переиспользует уже существующие addMemberEffect/memberEffectBonus как есть).
  */
 
-import { initBossState, type BossFightState, type BossMechanics, type BlockableMechanic } from './boss-mechanics';
+import { initBossState, type BossFightState, type BossMechanics, type BlockableMechanic } from '@/lib/combat/boss-mechanics';
 
 export type { BossFightState };
 

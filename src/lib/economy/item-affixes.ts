@@ -12,7 +12,7 @@
  * которое имеет смысл расширять дальше по реальному фидбеку игроков, а не гадать заранее.
  */
 
-import type { Item } from './game-data';
+import type { Item } from '@/lib/game-data';
 
 export type StatKey = 'strength' | 'dexterity' | 'vitality' | 'intellect' | 'willpower' | 'instinct' | 'attack' | 'defense' | 'hp' | 'mp';
 export type GearSlot = 'weapon' | 'armor' | 'accessory';

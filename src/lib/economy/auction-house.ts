@@ -7,8 +7,8 @@
  * каждый GET резолвит просроченные лоты перед ответом, никакой cron-инфраструктуры не нужно.
  */
 
-import { addItemToInventory } from './inventory-utils';
-import { db } from './db';
+import { addItemToInventory } from '@/lib/economy/inventory-utils';
+import { db } from '@/lib/db';
 
 export const AUCTION_FEE_PERCENT = 0.1; // тот же процент, что и у мгновенного Рынка (market/buy)
 export const MAX_ACTIVE_AUCTIONS = 5; // отдельный от Рынка (10) лимит — премиум-фича скромнее

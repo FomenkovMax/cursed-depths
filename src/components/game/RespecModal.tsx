@@ -3,8 +3,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { PlayerData, STAT_SHORT_RU } from '@/lib/game-types';
-import { RESPEC_STAT_FIELDS, totalRespecBudget, type RespecStatField } from '@/lib/respec';
-import { RESPEC_COST_SHARDS } from '@/lib/premium-shop';
+import { RESPEC_STAT_FIELDS, totalRespecBudget, type RespecStatField } from '@/lib/economy/respec';
+import { RESPEC_COST_SHARDS } from '@/lib/premium/premium-shop';
 
 interface RespecModalProps {
   open: boolean;

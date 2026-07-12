@@ -12,7 +12,7 @@
  * не только боссовых механик).
  */
 
-import type { BossFightState } from './boss-mechanics';
+import type { BossFightState } from '@/lib/combat/boss-mechanics';
 
 type ActiveEffectKind = 'player_damage_buff' | 'enemy_damage_debuff' | 'enemy_dot' | 'on_block_counter_active' | 'debuff_amplify' | 'player_dodge_buff' | 'summon_damage';
 

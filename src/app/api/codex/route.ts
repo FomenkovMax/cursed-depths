@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { validateTelegramRequest } from '@/lib/auth';
-import { CODEX_ENTRIES, checkNewlyUnlockedCodex, type CodexContext } from '@/lib/codex';
+import { CODEX_ENTRIES, checkNewlyUnlockedCodex, type CodexContext } from '@/lib/social/codex';
 
 export async function GET(req: NextRequest) {
   const auth = validateTelegramRequest(req);

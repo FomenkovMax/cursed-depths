@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import { GameMessage, RaceData, STAT_SHORT_RU, PATH_NAMES_RU, ROLE_NAMES_RU } from '@/lib/game-types';
 
-// Короткая философия каждого Пути из мифологии мира (см. lib/codex.ts 'karsus_paths') —
+// Короткая философия каждого Пути из мифологии мира (см. lib/social/codex.ts 'karsus_paths') —
 // связывает механический выбор класса (path: 'ash'|'blight') с тем, ЧТО это значит в лоре,
 // прямо в момент выбора, а не только постфактум в кодексе, до которого игрок дойдёт нескоро.
 const PATH_FLAVOR_RU: Record<string, string> = {
@@ -210,7 +210,7 @@ export function CharacterCreationScreen({
                               {cls.primaryStat}
                             </Badge>
                           </div>
-                          {/* Философия Пути (karsus_paths, lib/codex.ts) — тот же принцип, что и
+                          {/* Философия Пути (karsus_paths, lib/social/codex.ts) — тот же принцип, что и
                               лор расы выше: разворачивается только для выбранного класса. */}
                           {charClass === cls.slug && (
                             <p className="text-[11px] text-muted-foreground leading-relaxed mt-2 pt-2 border-t border-border/60 italic">

@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { validateTelegramRequest } from '@/lib/auth';
-import { addItemToInventory } from '@/lib/inventory-utils';
-import { getShopBuyableItems } from '@/lib/shop';
+import { addItemToInventory } from '@/lib/economy/inventory-utils';
+import { getShopBuyableItems } from '@/lib/economy/shop';
 
 /** Брошено внутри транзакции, когда золота не хватило В МОМЕНТ фактического списания (см.
  * комментарий у updateMany ниже). Откатывает транзакцию целиком. */

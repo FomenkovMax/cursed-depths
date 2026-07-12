@@ -2,12 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { validateTelegramRequest } from '@/lib/auth';
 import { ENEMIES } from '@/lib/game-data';
-import { pickRandomBountyEnemyId, pickGuaranteedBountyItem, BOUNTY_DC, BOUNTY_STAT, BOUNTY_BONUS_GOLD } from '@/lib/bounty-board';
-import { rollStatCheck } from '@/lib/exploration-events';
-import { isPremiumActive, isDeathDebuffActive, DEATH_DEBUFF_XP_MULT, PREMIUM_GOLD_XP_MULT } from '@/lib/premium-shop';
-import { computeEquipmentBonuses } from '@/lib/equipment-stats';
-import { findPet } from '@/lib/pets';
-import { addItemToInventory } from '@/lib/inventory-utils';
+import { pickRandomBountyEnemyId, pickGuaranteedBountyItem, BOUNTY_DC, BOUNTY_STAT, BOUNTY_BONUS_GOLD } from '@/lib/economy/bounty-board';
+import { rollStatCheck } from '@/lib/combat/exploration-events';
+import { isPremiumActive, isDeathDebuffActive, DEATH_DEBUFF_XP_MULT, PREMIUM_GOLD_XP_MULT } from '@/lib/premium/premium-shop';
+import { computeEquipmentBonuses } from '@/lib/combat/equipment-stats';
+import { findPet } from '@/lib/economy/pets';
+import { addItemToInventory } from '@/lib/economy/inventory-utils';
 
 export async function POST(req: NextRequest) {
   const auth = validateTelegramRequest(req);

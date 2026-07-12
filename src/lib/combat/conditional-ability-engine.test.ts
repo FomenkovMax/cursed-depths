@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { parseDeathWard } from './conditional-ability-engine';
-import { ITEMS } from './game-data';
+import { ITEMS } from '@/lib/game-data';
 
 describe('parseDeathWard — item reuse (audit 3, C2)', () => {
   it('recognizes the death-ward text on "Клык Пепельной Верности" the same way it already recognizes class abilities', () => {

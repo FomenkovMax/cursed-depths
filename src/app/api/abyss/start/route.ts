@@ -2,9 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { ENEMIES } from '@/lib/game-data';
 import { validateTelegramRequest } from '@/lib/auth';
-import { initBossState } from '@/lib/boss-mechanics';
-import { isInActivePartyCombat } from '@/lib/party-guards';
-import { ABYSS_LOCATION_ID, ABYSS_MIN_LEVEL, abyssEnemyIdForDepth, abyssScaling } from '@/lib/abyss';
+import { initBossState } from '@/lib/combat/boss-mechanics';
+import { isInActivePartyCombat } from '@/lib/combat/party-guards';
+import { ABYSS_LOCATION_ID, ABYSS_MIN_LEVEL, abyssEnemyIdForDepth, abyssScaling } from '@/lib/combat/abyss';
 
 export async function POST(req: NextRequest) {
   const auth = validateTelegramRequest(req);

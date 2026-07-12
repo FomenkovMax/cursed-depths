@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { validateTelegramRequest } from '@/lib/auth';
-import { findPremiumSku } from '@/lib/premium-shop';
-import { addItemToInventory } from '@/lib/inventory-utils';
+import { findPremiumSku } from '@/lib/premium/premium-shop';
+import { addItemToInventory } from '@/lib/economy/inventory-utils';
 import { ITEMS } from '@/lib/game-data';
 
 export async function POST(req: NextRequest) {

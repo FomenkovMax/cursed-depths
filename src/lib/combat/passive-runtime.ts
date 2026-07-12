@@ -19,7 +19,7 @@
  * аналог "критического удара" для системы без бросков попадания.
  */
 
-import type { PassiveEffect } from './passive-engine';
+import type { PassiveEffect } from '@/lib/combat/passive-engine';
 
 export const PASSIVE_CRIT_MULTIPLIER = 2;
 

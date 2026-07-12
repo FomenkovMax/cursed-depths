@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { validateTelegramRequest } from '@/lib/auth';
-import { isGearType } from '@/lib/item-affixes';
-import { applyTemper } from '@/lib/item-enhancement';
-import { incrementQuestProgress } from '@/lib/quests';
+import { isGearType } from '@/lib/economy/item-affixes';
+import { applyTemper } from '@/lib/economy/item-enhancement';
+import { incrementQuestProgress } from '@/lib/economy/quests';
 
 const TEMPER_SCROLL_ITEM_ID = 'tempering_scroll';
 

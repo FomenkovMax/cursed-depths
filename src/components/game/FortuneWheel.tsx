@@ -31,7 +31,7 @@ interface FortuneWheelVisualProps {
 }
 
 /** Визуальное колесо — размер сектора одинаковый для всех призов ради читаемости, реальная
- * вероятность (см. lib/fortune-wheel.ts FORTUNE_WHEEL.weight) сильно отличается от визуального
+ * вероятность (см. lib/economy/fortune-wheel.ts FORTUNE_WHEEL.weight) сильно отличается от визуального
  * размера, как и в любом другом колесе фортуны с редкими призами. */
 export function FortuneWheelVisual({ segments, disabled, onSpin }: FortuneWheelVisualProps) {
   const [rotation, setRotation] = useState(0);

@@ -24,7 +24,7 @@ export function MapTab({ player, location, loading, onTravel, waypointsState, wa
         <p className="text-xs text-muted-foreground">Выберите локацию для путешествия</p>
       </div>
 
-      {/* Быстрое перемещение — премиум-эксклюзив (lib/fast-travel.ts): телепорт напрямую в любую
+      {/* Быстрое перемещение — премиум-эксклюзив (lib/economy/fast-travel.ts): телепорт напрямую в любую
           УЖЕ посещённую локацию, минуя граф связей ниже (тот остаётся бесплатным и мгновенным,
           но только между соседями). */}
       <Card className="border-border">

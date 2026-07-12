@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { validateTelegramRequest } from '@/lib/auth';
-import { issueChainQuests } from '@/lib/quests';
+import { issueChainQuests } from '@/lib/economy/quests';
 
 export async function GET(req: NextRequest) {
   const auth = validateTelegramRequest(req);

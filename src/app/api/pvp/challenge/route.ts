@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { validateTelegramRequest } from '@/lib/auth';
-import { computeEquipmentBonuses } from '@/lib/equipment-stats';
-import { stageUnlockLevel, type PlayerCombatStats } from '@/lib/combat-engine';
-import { simulatePvpFight, eloDelta, clampRating, leagueForRating, type PvpCombatant } from '@/lib/pvp';
-import { incrementQuestProgress } from '@/lib/quests';
-import { isDeathDebuffActive, DEATH_DEBUFF_XP_MULT } from '@/lib/premium-shop';
-import { findPet } from '@/lib/pets';
+import { computeEquipmentBonuses } from '@/lib/combat/equipment-stats';
+import { stageUnlockLevel, type PlayerCombatStats } from '@/lib/combat/combat-engine';
+import { simulatePvpFight, eloDelta, clampRating, leagueForRating, type PvpCombatant } from '@/lib/combat/pvp';
+import { incrementQuestProgress } from '@/lib/economy/quests';
+import { isDeathDebuffActive, DEATH_DEBUFF_XP_MULT } from '@/lib/premium/premium-shop';
+import { findPet } from '@/lib/economy/pets';
 
 async function buildCombatant(playerId: string) {
   const player = await db.player.findUnique({

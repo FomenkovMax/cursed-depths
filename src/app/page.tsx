@@ -47,8 +47,10 @@ import { LoadingScreen } from '@/components/game/LoadingScreen';
 import { CharacterCreationScreen } from '@/components/game/CharacterCreationScreen';
 import { GameHeader } from '@/components/game/GameHeader';
 import { OverviewTab } from '@/components/game/OverviewTab';
+import { RespecModal } from '@/components/game/RespecModal';
 import { ExplorationEventModal } from '@/components/game/ExplorationEventModal';
 import { TrialJunctionModal } from '@/components/game/TrialJunctionModal';
+import { useRespec } from '@/hooks/useRespec';
 import { AchievementsTab } from '@/components/game/AchievementsTab';
 import { TrophyRoomTab } from '@/components/game/TrophyRoomTab';
 import { CodexTab } from '@/components/game/CodexTab';
@@ -335,6 +337,8 @@ export default function CursedDepths() {
     }
     return data;
   }, []);
+
+  const respec = useRespec({ apiCall, onPlayerUpdate: setPlayer, onMessage: setMessage });
 
   // ===== LEADERBOARD =====
   useEffect(() => {
@@ -1946,6 +1950,14 @@ export default function CursedDepths() {
 
       <ExplorationEventModal event={explorationEvent} loading={loading} onChoose={handleEventChoice} />
       <TrialJunctionModal junction={trialJunction} loading={loading} onChoose={handleTrialChoose} />
+      <RespecModal
+        open={respec.open}
+        player={player}
+        crownShards={premiumState?.crownShards ?? 0}
+        submitting={respec.submitting}
+        onClose={() => respec.setOpen(false)}
+        onSubmit={respec.submit}
+      />
 
       {/* Main content */}
       <main className="flex-1 overflow-hidden">
@@ -1978,6 +1990,7 @@ export default function CursedDepths() {
             expeditionState={expeditionState}
             bountyState={bountyState}
             onNavigateTab={setTab}
+            onOpenRespec={() => respec.setOpen(true)}
           />
 
           <CombatTab

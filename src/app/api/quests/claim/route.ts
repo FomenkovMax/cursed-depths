@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { Prisma } from '@prisma/client';
 import { db } from '@/lib/db';
 import { ITEMS } from '@/lib/game-data';
 import { validateTelegramRequest } from '@/lib/auth';
@@ -84,7 +85,7 @@ export async function POST(req: NextRequest) {
       await advanceChainOnClaim(tx, player.id, quest.questId, player.class.path);
 
       // Give gold/XP rewards
-      const updateData: Record<string, unknown> = {
+      const updateData: Prisma.PlayerUpdateInput = {
         xp: newXp,
         gold: { increment: reward.gold || 0 },
       };

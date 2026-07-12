@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { Prisma } from '@prisma/client';
 import { db } from '@/lib/db';
 import { validateTelegramRequest } from '@/lib/auth';
 import { computeEquipmentBonuses } from '@/lib/combat/equipment-stats';
@@ -35,7 +36,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: `${item.name} можно использовать только в бою` }, { status: 400 });
     }
 
-    const updateData: Record<string, unknown> = {};
+    const updateData: Prisma.PlayerUpdateInput = {};
     const activePet = player.activePetId ? findPet(player.activePetId) : null;
     const bonuses = computeEquipmentBonuses(player.inventory, activePet);
     let applied = false;

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { Prisma } from '@prisma/client';
 import { db } from '@/lib/db';
 import { validateTelegramRequest } from '@/lib/auth';
 import { ENEMIES } from '@/lib/game-data';
@@ -47,7 +48,7 @@ export async function POST(req: NextRequest) {
     }, BOUNTY_DC);
 
     let itemWon: string | null = null;
-    const updateData: Record<string, unknown> = { bountyEnemyId: enemyId, bountyDate: today, bountyAttempted: true };
+    const updateData: Prisma.PlayerUpdateInput = { bountyEnemyId: enemyId, bountyDate: today, bountyAttempted: true };
 
     if (check.success) {
       const premiumMult = PREMIUM_GOLD_XP_MULT; // премиум гарантирован проверкой выше по маршруту

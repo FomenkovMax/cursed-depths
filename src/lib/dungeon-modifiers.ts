@@ -94,3 +94,43 @@ export function dungeonModifierEffect(id: string | null): Pick<DungeonModifier, 
   const mod = findDungeonModifier(id);
   return mod ?? NEUTRAL_EFFECT;
 }
+
+export type ModifierEffect = Pick<DungeonModifier, 'enemyDamageMult' | 'enemyHpMult' | 'goldMult' | 'xpMult'>;
+
+/** Heat-уровень (0..MAX_HEAT_LEVEL) — риск-модификатор, который игрок ВЫБИРАЕТ сам перед входом
+ * в данж (в отличие от DUNGEON_MODIFIERS выше, который всегда роллится случайно и независимо от
+ * игрока). Оба слоя действуют одновременно поверх друг друга — см. multiplyEffects ниже. */
+export const MAX_HEAT_LEVEL = 5;
+
+const HEAT_ICONS = ['🕯️', '🔥', '🔥', '💢', '🌋', '👁️'];
+const HEAT_NAMES = ['Без риска', 'Тлеющий жар', 'Полыхающий гнев', 'Пожар Скверны', 'Пепельная буря', 'Гнев Карсуса'];
+
+function clampHeatLevel(level: number): number {
+  return Math.max(0, Math.min(MAX_HEAT_LEVEL, Math.round(level)));
+}
+
+export function heatLevelEffect(level: number): ModifierEffect {
+  const clamped = clampHeatLevel(level);
+  return {
+    enemyDamageMult: 1 + clamped * 0.15,
+    enemyHpMult: 1 + clamped * 0.15,
+    goldMult: 1 + clamped * 0.2,
+    xpMult: 1 + clamped * 0.2,
+  };
+}
+
+export function heatLevelLabel(level: number): { nameRu: string; icon: string } {
+  const clamped = clampHeatLevel(level);
+  return { nameRu: HEAT_NAMES[clamped], icon: HEAT_ICONS[clamped] };
+}
+
+/** Перемножает два независимых слоя множителей (случайный модификатор × выбранный heat-уровень)
+ * поосно — оба применяются одновременно к одному и тому же забегу. */
+export function multiplyEffects(a: ModifierEffect, b: ModifierEffect): ModifierEffect {
+  return {
+    enemyDamageMult: a.enemyDamageMult * b.enemyDamageMult,
+    enemyHpMult: a.enemyHpMult * b.enemyHpMult,
+    goldMult: a.goldMult * b.goldMult,
+    xpMult: a.xpMult * b.xpMult,
+  };
+}

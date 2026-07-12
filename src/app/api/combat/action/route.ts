@@ -68,7 +68,7 @@ import { findDungeon } from '@/lib/dungeons';
 import { findTrial, type TrialRoomOption } from '@/lib/trials';
 import { rollGearInstance, rollCurrencyDrop } from '@/lib/item-affixes';
 import { rollTemperScrollDrop } from '@/lib/item-enhancement';
-import { dungeonModifierEffect } from '@/lib/dungeon-modifiers';
+import { dungeonModifierEffect, heatLevelEffect, multiplyEffects } from '@/lib/dungeon-modifiers';
 import { abyssScaling, abyssEnemyIdForDepth, isEliteDepth } from '@/lib/abyss';
 import { FORTRESS_ID, CONTROL_GOLD_BONUS } from '@/lib/fortress';
 import { bossIntroLine, deathMessage } from '@/lib/exploration-flavor';
@@ -143,9 +143,13 @@ export async function POST(req: NextRequest) {
     let trophyPityCounter: number | null = null;
     let battlePassXpGained = 0;
     const droppedItems: string[] = [];
-    // Модификатор забега по данжу (lib/dungeon-modifiers.ts) — множители 1 по всем осям, если
-    // игрок не в данже или выпал "чистый" забег без модификатора.
-    const dungeonEffect = player.dungeonId ? dungeonModifierEffect(player.dungeonModifierId) : dungeonModifierEffect(null);
+    // Модификатор забега по данжу (lib/dungeon-modifiers.ts) — два независимых слоя,
+    // перемножаемых друг на друга: случайный dungeonModifierId (роллится при входе) и
+    // dungeonHeatLevel — риск, который игрок ВЫБРАЛ сам перед входом (см. dungeon/start).
+    // Множители 1 по всем осям, если игрок не в данже.
+    const dungeonEffect = player.dungeonId
+      ? multiplyEffects(dungeonModifierEffect(player.dungeonModifierId), heatLevelEffect(player.dungeonHeatLevel))
+      : dungeonModifierEffect(null);
     // Масштабирование Бездонного Разлома (lib/abyss.ts) — растёт с глубиной, взаимоисключающе
     // с dungeonEffect (игрок не может быть одновременно в данже и в Разломе).
     const abyssEffect = player.abyssDepth > 0 ? abyssScaling(player.abyssDepth) : { hpMult: 1, damageMult: 1, goldMult: 1, xpMult: 1 };
@@ -969,6 +973,7 @@ export async function POST(req: NextRequest) {
         updateData.dungeonId = null;
         updateData.dungeonRoom = 0;
         updateData.dungeonModifierId = null;
+        updateData.dungeonHeatLevel = 0;
       }
 
       if (player.abyssDepth > 0) {

@@ -1,7 +1,9 @@
+import { useState } from 'react';
 import { TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Slider } from '@/components/ui/slider';
 import { ItemIconTile } from '@/components/game/ItemIconTile';
 import { LOCATIONS } from '@/lib/game-data';
 import { PlayerData, STAT_SHORT_RU } from '@/lib/game-types';
@@ -11,6 +13,7 @@ import { stageUnlockLevel } from '@/lib/combat-engine';
 import { parsePassiveEffect } from '@/lib/passive-engine';
 import { dungeonForLocation } from '@/lib/dungeons';
 import { trialForLocation } from '@/lib/trials';
+import { MAX_HEAT_LEVEL, heatLevelEffect, heatLevelLabel } from '@/lib/dungeon-modifiers';
 import { ABYSS_LOCATION_ID, ABYSS_MIN_LEVEL } from '@/lib/abyss';
 import { MarketPanel } from './MarketPanel';
 import { WalletPanel, type WalletCurrency } from './WalletPanel';
@@ -48,7 +51,7 @@ interface OverviewTabProps {
   onAllocateStat: (stat: string) => void;
   onBuyItem: (itemId: string) => void;
   onSellItem: (inventoryId: string) => void;
-  onStartDungeon: (dungeonId: string) => void;
+  onStartDungeon: (dungeonId: string, heatLevel: number) => void;
   onStartAbyss: () => void;
   onStartTrial: (trialId: string) => void;
   activePetId: string | null;
@@ -91,6 +94,7 @@ export function OverviewTab({
   onNavigateTab,
   onOpenRespec,
 }: OverviewTabProps) {
+  const [dungeonHeat, setDungeonHeat] = useState(0);
   const playerInventory = player?.inventory || [];
   const activePet = activePetId ? findPet(activePetId) : null;
   const gearBonuses = computeEquipmentBonuses(playerInventory, activePet);
@@ -221,9 +225,31 @@ export function OverviewTab({
               <Badge variant="outline" className="text-[10px] h-4 px-1">Ур. {dungeon.minLevel}+</Badge>
               <Badge variant="outline" className="text-[10px] h-4 px-1 text-gold">🎁 +{dungeon.completionReward.xp} XP, +{dungeon.completionReward.gold} 💰</Badge>
             </div>
+
+            {/* Heat-слайдер — риск игрок выбирает САМ перед входом (в отличие от случайного
+                модификатора забега, который всё равно роллится сверху) — см. lib/dungeon-modifiers.ts */}
+            <div className="mb-3 p-2 rounded-lg bg-secondary/20 border border-border/60">
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-[10px] text-muted-foreground">
+                  {heatLevelLabel(dungeonHeat).icon} Риск: {heatLevelLabel(dungeonHeat).nameRu}
+                </span>
+                <span className="text-[10px] text-muted-foreground">
+                  враги ×{heatLevelEffect(dungeonHeat).enemyDamageMult.toFixed(2)} · награда ×{heatLevelEffect(dungeonHeat).goldMult.toFixed(2)}
+                </span>
+              </div>
+              <Slider
+                value={[dungeonHeat]}
+                min={0}
+                max={MAX_HEAT_LEVEL}
+                step={1}
+                disabled={loading || player.inCombat}
+                onValueChange={([v]) => setDungeonHeat(v)}
+              />
+            </div>
+
             <Button
               className="w-full h-10 bg-gold/80 hover:bg-gold text-background"
-              onClick={() => onStartDungeon(dungeon.id)}
+              onClick={() => onStartDungeon(dungeon.id, dungeonHeat)}
               disabled={loading || player.inCombat || player.hp <= 0 || player.level < dungeon.minLevel}
             >
               {dungeon.icon} Войти в данж

@@ -343,6 +343,29 @@ export interface WorldBossAttackResultView {
   attacksLeftToday: number;
 }
 
+export interface GuildRaidContributorView {
+  playerId: string;
+  name: string;
+  damage: number;
+}
+
+export interface GuildRaidBossStateView {
+  inGuild: boolean;
+  premiumActive: boolean;
+  boss: { name: string; lore: string; cycleId: string; hp: number; maxHp: number; defeated: boolean } | null;
+  topContributors: GuildRaidContributorView[];
+  attacksLeftToday: number;
+}
+
+export interface GuildRaidAttackResultView {
+  damageDealt: number;
+  bossHp: number;
+  bossMaxHp: number;
+  killed: boolean;
+  reward: { gold: number; xp: number } | null;
+  attacksLeftToday: number;
+}
+
 export interface PvpLeagueView {
   id: string;
   nameRu: string;

@@ -60,6 +60,8 @@ model Player {
   worldBossAttackDate   String? // "YYYY-MM-DD" последней атаки — тот же паттерн, что lastDailyReward
   fortressAssaultsToday Int @default(0) // штурмы Крепости (lib/fortress.ts) — тот же паттерн
   fortressAssaultDate   String?
+  raidBossAttacksToday  Int @default(0) // атаки гильд-рейд-босса (lib/guild-raid-boss.ts) — тот же паттерн
+  raidBossAttackDate    String?
   crownShards     Int       @default(0) // премиум-валюта "Осколки Короны" (lib/premium-shop.ts) —
                             // покупается за Telegram Stars, тратится на PREMIUM_CATALOG
   premiumUntil    DateTime? // до какого момента активен премиум-статус — null/в прошлом = нет
@@ -103,6 +105,7 @@ model Player {
   fortressAssaults FortressContribution[]
   starPurchases   StarPurchase[]
   pets            PlayerPet[]
+  guildRaidHits   GuildRaidContribution[]
 
   @@index([telegramId])
   @@index([locationId])
@@ -200,6 +203,7 @@ model Guild {
 
   members   GuildMember[]
   fortressAssaults FortressContribution[]
+  raidBoss  GuildRaidBoss?
 }
 
 model GuildMember {
@@ -327,6 +331,45 @@ model FortressContribution {
   createdAt  DateTime @default(now())
 
   @@index([cycleId, guildId])
+  @@index([playerId])
+}
+
+// Гильд-рейд-босс — еженедельная КООП-цель ОДНОЙ гильдии (в отличие от WorldBoss, общего для
+// ВСЕХ игроков разом, и Fortress, соревнования гильдия-против-гильдии). Один синглтон на
+// гильдию (guildId уникален), недельный цикл — тот же currentWeekId, что у Fortress (lib/
+// fortress.ts). HP масштабируется от размера гильдии (lib/guild-raid-boss.ts maxHpForGuild) —
+// гильдия из 30 бьётся с боссом пропорционально крепче, чем гильдия из 3. В отличие от
+// WorldBoss босс НЕ респавнится сразу после убийства — недельный кулдаун, ждём следующего
+// resolveGuildRaidBossIfNeeded на новой ISO-неделе. Атаковать (получать урон в счёт награды)
+// может только премиум-игрок — полноценный лок доступа, а не просто бонус к попыткам, как у
+// WorldBoss; при этом состояние босса видно ВСЕМ членам гильдии (кооп-контент, прятать прогресс
+// от небустнутых тиммейтов было бы социально неудобно).
+model GuildRaidBoss {
+  id        String   @id @default(cuid())
+  guildId   String   @unique
+  guild     Guild    @relation(fields: [guildId], references: [id], onDelete: Cascade)
+  cycleId   String   // "YYYY-Www"
+  hp        Int
+  maxHp     Int
+  spawnedAt DateTime @default(now())
+
+  contributions GuildRaidContribution[]
+}
+
+// Один удар одного игрока по рейд-боссу его гильдии в текущем цикле — сумма по playerId даёт
+// долю награды при убийстве (та же схема, что WorldBossContribution). Строки за ПРОШЛЫЙ цикл
+// удаляются при роллове недели (lib/guild-raid-boss.ts) — эфемерный прогресс, не история.
+model GuildRaidContribution {
+  id        String        @id @default(cuid())
+  bossId    String
+  boss      GuildRaidBoss @relation(fields: [bossId], references: [id], onDelete: Cascade)
+  cycleId   String
+  playerId  String
+  player    Player        @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  damage    Int
+  createdAt DateTime      @default(now())
+
+  @@index([bossId, cycleId])
   @@index([playerId])
 }
 

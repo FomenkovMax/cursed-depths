@@ -2,11 +2,12 @@ import { TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { PremiumShopStateView, PlayerData, FortuneSpinResultView, PetsStateView, ExpeditionStateView } from '@/lib/game-types';
+import { PremiumShopStateView, PlayerData, FortuneSpinResultView, PetsStateView, ExpeditionStateView, BountyStateView, BountyHuntResultView } from '@/lib/game-types';
 import { FortuneWheelVisual } from '@/components/game/FortuneWheel';
 import { RaceChangePanel } from '@/components/game/RaceChangePanel';
 import { PetsPanel } from '@/components/game/PetsPanel';
 import { ExpeditionPanel } from '@/components/game/ExpeditionPanel';
+import { BountyBoardPanel } from '@/components/game/BountyBoardPanel';
 
 interface PremiumShopTabProps {
   state: PremiumShopStateView | null;
@@ -31,6 +32,10 @@ interface PremiumShopTabProps {
   claimingExpedition: boolean;
   onStartExpedition: (tierId: string) => void;
   onClaimExpedition: () => void;
+  bountyState: BountyStateView | null;
+  bountyLoading: boolean;
+  hunting: boolean;
+  onHunt: () => Promise<BountyHuntResultView | null>;
 }
 
 function formatPremiumUntil(iso: string | null): string {
@@ -45,6 +50,7 @@ export function PremiumShopTab({
   changingRace, onChangeRace,
   petsState, petsLoading, buyingPetId, activatingPetId, onBuyPet, onActivatePet,
   expeditionState, expeditionLoading, startingExpeditionId, claimingExpedition, onStartExpedition, onClaimExpedition,
+  bountyState, bountyLoading, hunting, onHunt,
 }: PremiumShopTabProps) {
   const races = state?.raceChange.races ?? [];
 
@@ -204,6 +210,22 @@ export function PremiumShopTab({
             claiming={claimingExpedition}
             onStart={onStartExpedition}
             onClaim={onClaimExpedition}
+          />
+        </CardContent>
+      </Card>
+
+      {/* Доска контрактов — премиум-эксклюзивная ежедневная охота (lib/bounty-board.ts): одна
+          попытка в день, d20+Инстинкт против Сложности, гарантированный трофей при успехе. */}
+      <Card className="border-border">
+        <CardHeader className="pb-2 pt-3 px-4">
+          <CardTitle className="text-sm">📜 Доска контрактов</CardTitle>
+        </CardHeader>
+        <CardContent className="px-4 pb-3">
+          <BountyBoardPanel
+            state={bountyState}
+            loading={bountyLoading}
+            hunting={hunting}
+            onHunt={onHunt}
           />
         </CardContent>
       </Card>

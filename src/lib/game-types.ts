@@ -494,6 +494,29 @@ export interface ExpeditionClaimResultView {
   leveledUp: boolean;
 }
 
+export interface BountyTargetView {
+  enemyId: string;
+  nameRu: string;
+  icon: string;
+}
+
+export interface BountyStateView {
+  premiumActive: boolean;
+  target: BountyTargetView | null;
+  attempted: boolean;
+  dc: number;
+  stat: string;
+  bonusGold: number;
+}
+
+export interface BountyHuntResultView {
+  success: boolean;
+  check: { statLabel: string; roll: number; modifier: number; total: number; dc: number; success: boolean };
+  target: { nameRu: string; icon: string };
+  itemWon: string | null;
+  message: string;
+}
+
 export interface FortuneSpinResultView {
   id: string;
   nameRu: string;

@@ -80,6 +80,11 @@ model Player {
                              // продолжать драться/исследовать параллельно) — это чисто офлайн-
                              // таймер, премиум-эксклюзивный (см. api/expedition/start).
   expeditionEndsAt DateTime? // когда можно будет забрать награду — null, если экспедиции нет
+  bountyEnemyId   String?   // id босса-цели из ENEMIES на сегодня (lib/bounty-board.ts) — null,
+                             // пока не назначен/не премиум
+  bountyDate      String?   // "YYYY-MM-DD" дня, на который назначена цель — тот же lazy-reset
+                             // паттерн, что и у lastDailyReward/worldBossAttackDate
+  bountyAttempted Boolean   @default(false) // попытка охоты на сегодняшнюю цель уже потрачена
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 

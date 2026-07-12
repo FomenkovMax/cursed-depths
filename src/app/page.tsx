@@ -33,6 +33,8 @@ import {
   FortuneSpinResultView,
   PetsStateView,
   ExpeditionStateView,
+  BountyStateView,
+  BountyHuntResultView,
 } from '@/lib/game-types';
 import { LoadingScreen } from '@/components/game/LoadingScreen';
 import { CharacterCreationScreen } from '@/components/game/CharacterCreationScreen';
@@ -102,6 +104,9 @@ export default function CursedDepths() {
   const [expeditionLoading, setExpeditionLoading] = useState(false);
   const [startingExpeditionId, setStartingExpeditionId] = useState<string | null>(null);
   const [claimingExpedition, setClaimingExpedition] = useState(false);
+  const [bountyState, setBountyState] = useState<BountyStateView | null>(null);
+  const [bountyLoading, setBountyLoading] = useState(false);
+  const [hunting, setHunting] = useState(false);
   const [stashItems, setStashItems] = useState<StashItemView[]>([]);
   const [stashCapacity, setStashCapacity] = useState(60);
   const [stashLoading, setStashLoading] = useState(false);
@@ -634,6 +639,41 @@ export default function CursedDepths() {
       setMessage({ text: 'Ошибка получения награды экспедиции', type: 'error' });
     } finally {
       setClaimingExpedition(false);
+    }
+  };
+
+  // ===== ДОСКА КОНТРАКТОВ (lib/bounty-board.ts) — премиум-эксклюзивная ежедневная охота,
+  // одна попытка в день, тот же паттерн загрузки состояния, что и у остального премиум-контента. =====
+  const refreshBountyState = useCallback(() => {
+    setBountyLoading(true);
+    apiCall('/api/bounty/state')
+      .then(data => { if (typeof data.premiumActive === 'boolean') setBountyState(data); })
+      .catch(() => setMessage({ text: 'Не удалось загрузить доску контрактов', type: 'error' }))
+      .finally(() => setBountyLoading(false));
+  }, [apiCall]);
+
+  useEffect(() => {
+    if (tab !== 'premium' || !telegramIdRef.current) return;
+    refreshBountyState();
+  }, [tab, refreshBountyState]);
+
+  const handleHunt = async (): Promise<BountyHuntResultView | null> => {
+    if (!player) return null;
+    setHunting(true);
+    try {
+      const data = await apiCall('/api/bounty/hunt', 'POST', {});
+      if (data.error) {
+        setMessage({ text: data.error, type: 'error' });
+        return null;
+      }
+      setPlayer(data.player);
+      refreshBountyState();
+      return data as BountyHuntResultView;
+    } catch {
+      setMessage({ text: 'Ошибка охоты', type: 'error' });
+      return null;
+    } finally {
+      setHunting(false);
     }
   };
 
@@ -1780,6 +1820,10 @@ export default function CursedDepths() {
             claimingExpedition={claimingExpedition}
             onStartExpedition={handleStartExpedition}
             onClaimExpedition={handleClaimExpedition}
+            bountyState={bountyState}
+            bountyLoading={bountyLoading}
+            hunting={hunting}
+            onHunt={handleHunt}
           />
 
           <CodexTab entries={codexEntries} loading={codexLoading} />

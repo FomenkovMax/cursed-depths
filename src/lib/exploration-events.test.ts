@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { rollStatCheck, type CheckStats } from './exploration-events';
+import { rollStatCheck, resolveEventChoice, EXPLORATION_EVENTS, type CheckStats } from './exploration-events';
 
 const STATS: CheckStats = { strength: 10, dexterity: 14, vitality: 8, intellect: 12, willpower: 6, instinct: 20 };
 
@@ -42,5 +42,60 @@ describe('rollStatCheck', () => {
   it('labels the checked stat in Russian for display', () => {
     vi.spyOn(Math, 'random').mockReturnValue(0);
     expect(rollStatCheck('willpower', STATS, 10).statLabel).toBe('Воля');
+  });
+});
+
+describe('EXPLORATION_EVENTS pool integrity', () => {
+  it('every choice of every event resolves to a non-null EventResolution — catches an event added without a matching resolveEventChoice case', () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0.5);
+    for (const event of EXPLORATION_EVENTS) {
+      for (const choice of event.choices) {
+        const resolution = resolveEventChoice(event.id, choice.id, 5, STATS);
+        expect(resolution, `${event.id}:${choice.id} should resolve`).not.toBeNull();
+      }
+    }
+  });
+});
+
+describe('resolveEventChoice — new branching check events (audit 3, C3)', () => {
+  it('crumbling_bridge:cross uses a Vitality check — the only stat with no prior check coverage', () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0.99); // near-max roll, succeeds
+    const resolution = resolveEventChoice('crumbling_bridge', 'cross', 5, STATS)!;
+    expect(resolution.checkResult?.statLabel).toBe('Стойкость');
+    expect(resolution.checkResult?.success).toBe(true);
+    expect(resolution.goldDelta).toBeGreaterThan(0);
+  });
+
+  it('crumbling_bridge:cross on failure costs HP, not gold', () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0); // roll = 1, guaranteed failure at DC 13
+    const resolution = resolveEventChoice('crumbling_bridge', 'cross', 5, STATS)!;
+    expect(resolution.checkResult?.success).toBe(false);
+    expect(resolution.hpDeltaPercent).toBeLessThan(0);
+    expect(resolution.goldDelta).toBe(0);
+  });
+
+  it('every new event has a safe fallback choice with no checkResult', () => {
+    const safeChoices: [string, string][] = [
+      ['crumbling_bridge', 'around'],
+      ['whispering_well', 'ignore'],
+      ['bound_prisoner', 'leave'],
+      ['frozen_shrine', 'ignore'],
+      ['collapsed_tunnel', 'leave'],
+    ];
+    for (const [eventId, choiceId] of safeChoices) {
+      const resolution = resolveEventChoice(eventId, choiceId, 5, STATS)!;
+      expect(resolution.checkResult).toBeUndefined();
+      expect(resolution.startCombat).toBe(false);
+    }
+  });
+
+  it('market_thief:shrug always costs gold with no dice roll involved', () => {
+    const resolution = resolveEventChoice('market_thief', 'shrug', 5, STATS)!;
+    expect(resolution.goldDelta).toBeLessThan(0);
+    expect(resolution.checkResult).toBeUndefined();
+  });
+
+  it('an unknown event/choice pair returns null', () => {
+    expect(resolveEventChoice('not_a_real_event', 'nope', 5, STATS)).toBeNull();
   });
 });

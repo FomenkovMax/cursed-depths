@@ -135,6 +135,64 @@ export const EXPLORATION_EVENTS: ExplorationEvent[] = [
     ],
   },
 
+  // ===== Расширение доли ветвящихся check-событий (аудит 3, BG3-референс: "ветвящиеся текстовые
+  // последствия проверки") — те же 6 характеристик игрока, что и выше, включая Стойкость, для
+  // которой раньше не было ни одного check-события в этом списке. =====
+  {
+    id: 'crumbling_bridge',
+    icon: '🌉',
+    textRu: 'Мост через пропасть шатается и сыплется под ногами при каждом шаге — здесь нужна не ловкость, а простая выносливость.',
+    choices: [
+      { id: 'cross', label: 'Перейти напрямик', hint: 'проверка Стойкости (СЛ 13)' },
+      { id: 'around', label: 'Обойти долгой тропой', hint: 'безопасно' },
+    ],
+  },
+  {
+    id: 'whispering_well',
+    icon: '⛲',
+    textRu: 'У полуразрушенного колодца слышен тихий шёпот — не всякое ухо различит в нём слова.',
+    choices: [
+      { id: 'listen', label: 'Прислушаться', hint: 'проверка Инстинкта (СЛ 12)' },
+      { id: 'ignore', label: 'Пройти мимо', hint: 'безопасно' },
+    ],
+  },
+  {
+    id: 'bound_prisoner',
+    icon: '⛓️',
+    textRu: 'Скованный цепями человек молит освободить его — но клеймо на его лбу вам незнакомо.',
+    choices: [
+      { id: 'free', label: 'Освободить', hint: 'проверка Воли (СЛ 14)' },
+      { id: 'leave', label: 'Обойти стороной', hint: 'безопасно' },
+    ],
+  },
+  {
+    id: 'frozen_shrine',
+    icon: '❄️',
+    textRu: 'Иней покрывает забытое святилище Кессары — знаки под ним складываются в фразу, если прочесть верно.',
+    choices: [
+      { id: 'decipher', label: 'Разгадать надпись', hint: 'проверка Разума (СЛ 13)' },
+      { id: 'ignore', label: 'Не трогать', hint: 'безопасно' },
+    ],
+  },
+  {
+    id: 'collapsed_tunnel',
+    icon: '⛏️',
+    textRu: 'Ход завален камнями — за ними явно что-то есть, но путь придётся расчищать силой.',
+    choices: [
+      { id: 'clear', label: 'Разобрать завал', hint: 'проверка Силы (СЛ 12)' },
+      { id: 'leave', label: 'Уйти', hint: 'безопасно' },
+    ],
+  },
+  {
+    id: 'market_thief',
+    icon: '🏃',
+    textRu: 'Мимо проносится воришка со срезанным кошельком — вашим собственным.',
+    choices: [
+      { id: 'chase', label: 'Догнать', hint: 'проверка Ловкости (СЛ 13)' },
+      { id: 'shrug', label: 'Смириться с потерей', hint: 'теряете немного золота' },
+    ],
+  },
+
   // ===== Лор-загадки — проверка не характеристики, а того, что игрок УЗНАЛ из Лор-кодекса
   // (lib/codex.ts) и описаний рас/классов. Неверный ответ не наказывает — читать кодекс не
   // обязательно, чтобы играть, — но верный вознаграждает ощутимо и связывает мифологию
@@ -315,6 +373,74 @@ export function resolveEventChoice(eventId: string, choiceId: string, playerLeve
     }
     case 'sleeping_guardian:retreat':
       return noEffect('Вы тихо отступаете, оставляя зверя спать дальше.');
+
+    case 'crumbling_bridge:cross': {
+      const check = rollStatCheck('vitality', stats, 13);
+      if (check.success) {
+        const gold = rollDice('3d6') * playerLevel;
+        return { message: `${checkPrefix(check)}Мост держится ровно до последнего шага — на той стороне вы находите ${gold} золота.`, goldDelta: gold, hpDeltaPercent: 0, mpDeltaPercent: 0, xpDelta: 6 * playerLevel, itemRarity: null, startCombat: false, checkResult: check };
+      }
+      return { message: `${checkPrefix(check)}Доска проламывается — вы срываетесь и едва цепляетесь за край.`, goldDelta: 0, hpDeltaPercent: -0.1, mpDeltaPercent: 0, xpDelta: 0, itemRarity: null, startCombat: false, checkResult: check };
+    }
+    case 'crumbling_bridge:around':
+      return noEffect('Вы выбираете долгую, но надёжную тропу в обход.');
+
+    case 'whispering_well:listen': {
+      const check = rollStatCheck('instinct', stats, 12);
+      if (check.success) {
+        const gold = rollDice('2d8') * playerLevel;
+        return { message: `${checkPrefix(check)}В шёпоте вы различаете направление к тайнику — ${gold} золота.`, goldDelta: gold, hpDeltaPercent: 0, mpDeltaPercent: 0, xpDelta: 0, itemRarity: null, startCombat: false, checkResult: check };
+      }
+      return { message: `${checkPrefix(check)}Шёпот сплетается в бессмыслицу, от которой звенит в ушах.`, goldDelta: 0, hpDeltaPercent: 0, mpDeltaPercent: -0.1, xpDelta: 0, itemRarity: null, startCombat: false, checkResult: check };
+    }
+    case 'whispering_well:ignore':
+      return noEffect('Вы предпочитаете не вслушиваться в голоса из колодца.');
+
+    case 'bound_prisoner:free': {
+      const check = rollStatCheck('willpower', stats, 14);
+      if (check.success) {
+        const gold = rollDice('3d6') * playerLevel;
+        return { message: `${checkPrefix(check)}Освобождённый оказывается благодарен по-настоящему — он оставляет вам ${gold} золота на прощание.`, goldDelta: gold, hpDeltaPercent: 0, mpDeltaPercent: 0, xpDelta: 10 * playerLevel, itemRarity: Math.random() < 0.3 ? 'common' : null, startCombat: false, checkResult: check };
+      }
+      return { message: `${checkPrefix(check)}Клеймо вспыхивает — это была не жертва, а приманка Скверны.`, goldDelta: 0, hpDeltaPercent: -0.1, mpDeltaPercent: 0, xpDelta: 0, itemRarity: null, startCombat: false, checkResult: check };
+    }
+    case 'bound_prisoner:leave':
+      return noEffect('Что-то в этом клейме заставляет вас пройти мимо.');
+
+    case 'frozen_shrine:decipher': {
+      const check = rollStatCheck('intellect', stats, 13);
+      if (check.success) {
+        const gold = rollDice('3d8') * playerLevel;
+        return { message: `${checkPrefix(check)}Фраза складывается верно — иней осыпается, открывая подношения. ${gold} золота.`, goldDelta: gold, hpDeltaPercent: 0, mpDeltaPercent: 0, xpDelta: 10 * playerLevel, itemRarity: Math.random() < 0.3 ? 'uncommon' : null, startCombat: false, checkResult: check };
+      }
+      return { message: `${checkPrefix(check)}Неверное слово — святилище обдаёт вас ледяным дыханием.`, goldDelta: 0, hpDeltaPercent: -0.08, mpDeltaPercent: -0.05, xpDelta: 0, itemRarity: null, startCombat: false, checkResult: check };
+    }
+    case 'frozen_shrine:ignore':
+      return noEffect('Вы решаете не тревожить замёрзшее святилище.');
+
+    case 'collapsed_tunnel:clear': {
+      const check = rollStatCheck('strength', stats, 12);
+      if (check.success) {
+        const gold = rollDice('3d6') * playerLevel;
+        return { message: `${checkPrefix(check)}Камни поддаются один за другим — за завалом ${gold} золота.`, goldDelta: gold, hpDeltaPercent: 0, mpDeltaPercent: 0, xpDelta: 8 * playerLevel, itemRarity: Math.random() < 0.25 ? 'common' : null, startCombat: false, checkResult: check };
+      }
+      return { message: `${checkPrefix(check)}Завал сдвигается не туда — камни осыпаются вам на ноги.`, goldDelta: 0, hpDeltaPercent: -0.09, mpDeltaPercent: 0, xpDelta: 0, itemRarity: null, startCombat: false, checkResult: check };
+    }
+    case 'collapsed_tunnel:leave':
+      return noEffect('Вы решаете, что завал того не стоит, и уходите.');
+
+    case 'market_thief:chase': {
+      const check = rollStatCheck('dexterity', stats, 13);
+      if (check.success) {
+        const gold = rollDice('2d6') * playerLevel;
+        return { message: `${checkPrefix(check)}Вы настигаете воришку в переулке — кошелёк возвращён, и с ним ещё ${gold} золота.`, goldDelta: gold, hpDeltaPercent: 0, mpDeltaPercent: 0, xpDelta: 5 * playerLevel, itemRarity: null, startCombat: false, checkResult: check };
+      }
+      return { message: `${checkPrefix(check)}Воришка ныряет в толпу — погоня оборачивается разбитой в кровь ладонью о стену.`, goldDelta: 0, hpDeltaPercent: -0.04, mpDeltaPercent: 0, xpDelta: 0, itemRarity: null, startCombat: false, checkResult: check };
+    }
+    case 'market_thief:shrug': {
+      const lost = rollDice('1d4') * playerLevel;
+      return { message: `Вы пожимаете плечами — ${lost} золота того не стоят.`, goldDelta: -lost, hpDeltaPercent: 0, mpDeltaPercent: 0, xpDelta: 0, itemRarity: null, startCombat: false };
+    }
 
     case 'rift_riddle:karsus': return riddleResolution(true, 'Карсус', playerLevel);
     case 'rift_riddle:velarion': return riddleResolution(false, 'Карсус', playerLevel);

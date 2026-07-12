@@ -26,17 +26,8 @@ import {
   PvpLeagueView,
   PvpFightResultView,
   PvpSeasonRewardView,
-  PremiumShopStateView,
-  FortuneSpinResultView,
-  PetsStateView,
-  ExpeditionStateView,
-  BountyStateView,
-  BountyHuntResultView,
   TrophyRoomStateView,
-  TitlesStateView,
   AuctionStateView,
-  BattlePassStateView,
-  WaypointsStateView,
 } from '@/lib/game-types';
 import { LoadingScreen } from '@/components/game/LoadingScreen';
 import { CharacterCreationScreen } from '@/components/game/CharacterCreationScreen';
@@ -49,6 +40,7 @@ import { useRespec } from '@/hooks/useRespec';
 import { useGuildUpgrades } from '@/hooks/useGuildUpgrades';
 import { useSocialFeatures } from '@/hooks/useSocialFeatures';
 import { useCharacterSlots } from '@/hooks/useCharacterSlots';
+import { usePremiumFeatures } from '@/hooks/usePremiumFeatures';
 import { AchievementsTab } from '@/components/game/AchievementsTab';
 import { TrophyRoomTab } from '@/components/game/TrophyRoomTab';
 import { CodexTab } from '@/components/game/CodexTab';
@@ -105,31 +97,6 @@ export default function CursedDepths() {
   const [pvpDaysUntilSeasonEnd, setPvpDaysUntilSeasonEnd] = useState<number | null>(null);
   const [pvpPreviousSeasonTop3, setPvpPreviousSeasonTop3] = useState<PvpSeasonRewardView[]>([]);
   const [pvpLoading, setPvpLoading] = useState(false);
-  const [premiumState, setPremiumState] = useState<PremiumShopStateView | null>(null);
-  const [premiumLoading, setPremiumLoading] = useState(false);
-  const [buyingPackId, setBuyingPackId] = useState<string | null>(null);
-  const [spinningWheel, setSpinningWheel] = useState(false);
-  const [changingRace, setChangingRace] = useState(false);
-  const [petsState, setPetsState] = useState<PetsStateView | null>(null);
-  const [petsLoading, setPetsLoading] = useState(false);
-  const [buyingPetId, setBuyingPetId] = useState<string | null>(null);
-  const [activatingPetId, setActivatingPetId] = useState<string | null>(null);
-  const [titlesState, setTitlesState] = useState<TitlesStateView | null>(null);
-  const [titlesLoading, setTitlesLoading] = useState(false);
-  const [equippingTitleId, setEquippingTitleId] = useState<string | null>(null);
-  const [battlePassState, setBattlePassState] = useState<BattlePassStateView | null>(null);
-  const [battlePassLoading, setBattlePassLoading] = useState(false);
-  const [claimingTier, setClaimingTier] = useState<number | null>(null);
-  const [waypointsState, setWaypointsState] = useState<WaypointsStateView | null>(null);
-  const [waypointsLoading, setWaypointsLoading] = useState(false);
-  const [fastTravellingTo, setFastTravellingTo] = useState<string | null>(null);
-  const [expeditionState, setExpeditionState] = useState<ExpeditionStateView | null>(null);
-  const [expeditionLoading, setExpeditionLoading] = useState(false);
-  const [startingExpeditionId, setStartingExpeditionId] = useState<string | null>(null);
-  const [claimingExpedition, setClaimingExpedition] = useState(false);
-  const [bountyState, setBountyState] = useState<BountyStateView | null>(null);
-  const [bountyLoading, setBountyLoading] = useState(false);
-  const [hunting, setHunting] = useState(false);
   const [stashItems, setStashItems] = useState<StashItemView[]>([]);
   const [stashCapacity, setStashCapacity] = useState(60);
   const [stashLoading, setStashLoading] = useState(false);
@@ -486,379 +453,9 @@ export default function CursedDepths() {
   // ===== GUILD / WORLD BOSS / FORTRESS / GUILD RAID BOSS — вынесены в useSocialFeatures()
   // (см. вызов хука ниже, сразу после refreshPlayer) per CLAUDE.md, аудит 1.4/A1.
 
-  // ===== PREMIUM SHOP (Осколки Короны за Telegram Stars — lib/premium/premium-shop.ts) =====
-  const refreshPremiumState = useCallback(() => {
-    setPremiumLoading(true);
-    apiCall('/api/shop/premium/state')
-      .then(data => { if (data.shardPacks) setPremiumState(data); })
-      .catch(() => setMessage({ text: 'Не удалось загрузить магазин', type: 'error' }))
-      .finally(() => setPremiumLoading(false));
-  }, [apiCall]);
-
-  useEffect(() => {
-    if (tab !== 'premium' || !telegramIdRef.current) return;
-    refreshPremiumState();
-  }, [tab, refreshPremiumState]);
-
-  // Баланс Осколков Короны в GameHeader должен быть виден сразу после входа, а не только
-  // после первого открытия вкладки "Премиум" — отдельный триггер на screen==='game'.
-  useEffect(() => {
-    if (screen !== 'game' || !telegramIdRef.current) return;
-    refreshPremiumState();
-  }, [screen, refreshPremiumState]);
-
-  // ===== ПИТОМЦЫ-КОМПАНЬОНЫ (lib/economy/pets.ts) — тот же паттерн загрузки, что и премиум-магазин:
-  // сразу при входе (для activePetId в GameHeader/OverviewTab) и при каждом открытии вкладки. =====
-  const refreshPetsState = useCallback(() => {
-    setPetsLoading(true);
-    apiCall('/api/pets/state')
-      .then(data => { if (data.catalog) setPetsState(data); })
-      .catch(() => setMessage({ text: 'Не удалось загрузить питомцев', type: 'error' }))
-      .finally(() => setPetsLoading(false));
-  }, [apiCall]);
-
-  useEffect(() => {
-    if (tab !== 'premium' || !telegramIdRef.current) return;
-    refreshPetsState();
-  }, [tab, refreshPetsState]);
-
-  useEffect(() => {
-    if (screen !== 'game' || !telegramIdRef.current) return;
-    refreshPetsState();
-  }, [screen, refreshPetsState]);
-
-  const handleBuyPet = async (petId: string) => {
-    if (!player) return;
-    setBuyingPetId(petId);
-    try {
-      const data = await apiCall('/api/pets/buy', 'POST', { petId });
-      if (data.error) {
-        setMessage({ text: data.error, type: 'error' });
-      } else {
-        setPlayer(data.player);
-        setMessage({ text: data.message, type: 'success' });
-        refreshPetsState();
-      }
-    } catch {
-      setMessage({ text: 'Ошибка покупки питомца', type: 'error' });
-    } finally {
-      setBuyingPetId(null);
-    }
-  };
-
-  const handleActivatePet = async (petId: string | null) => {
-    if (!player) return;
-    setActivatingPetId(petId ?? 'none');
-    try {
-      const data = await apiCall('/api/pets/activate', 'POST', { petId });
-      if (data.error) {
-        setMessage({ text: data.error, type: 'error' });
-      } else {
-        setPlayer(data.player);
-        refreshPetsState();
-      }
-    } catch {
-      setMessage({ text: 'Ошибка активации питомца', type: 'error' });
-    } finally {
-      setActivatingPetId(null);
-    }
-  };
-
-  // ===== ТИТУЛЫ (lib/social/titles.ts) — тот же паттерн загрузки, что питомцы: сразу при входе (для
-  // GameHeader) и при каждом открытии премиум-вкладки. Премиум-эксклюзив целиком — без него
-  // /api/titles/state отдаёт пустой каталог. =====
-  const refreshTitlesState = useCallback(() => {
-    setTitlesLoading(true);
-    apiCall('/api/titles/state')
-      .then(data => { if (data.premiumActive !== undefined) setTitlesState(data); })
-      .catch(() => setMessage({ text: 'Не удалось загрузить титулы', type: 'error' }))
-      .finally(() => setTitlesLoading(false));
-  }, [apiCall]);
-
-  useEffect(() => {
-    if (tab !== 'premium' || !telegramIdRef.current) return;
-    refreshTitlesState();
-  }, [tab, refreshTitlesState]);
-
-  useEffect(() => {
-    if (screen !== 'game' || !telegramIdRef.current) return;
-    refreshTitlesState();
-  }, [screen, refreshTitlesState]);
-
-  const handleEquipTitle = async (titleId: string | null) => {
-    if (!player) return;
-    setEquippingTitleId(titleId ?? 'none');
-    try {
-      const data = await apiCall('/api/titles/equip', 'POST', { titleId });
-      if (data.error) {
-        setMessage({ text: data.error, type: 'error' });
-      } else {
-        setPlayer(data.player);
-        refreshTitlesState();
-      }
-    } catch {
-      setMessage({ text: 'Ошибка экипировки титула', type: 'error' });
-    } finally {
-      setEquippingTitleId(null);
-    }
-  };
-
-  // ===== БОЕВОЙ ПРОПУСК (lib/premium/battle-pass.ts) — тот же паттерн загрузки, что титулы: только
-  // на премиум-вкладке, полный премиум-лок. =====
-  const refreshBattlePassState = useCallback(() => {
-    setBattlePassLoading(true);
-    apiCall('/api/battlepass/state')
-      .then(data => { if (data.premiumActive !== undefined) setBattlePassState(data); })
-      .catch(() => setMessage({ text: 'Не удалось загрузить Боевой пропуск', type: 'error' }))
-      .finally(() => setBattlePassLoading(false));
-  }, [apiCall]);
-
-  useEffect(() => {
-    if (tab !== 'premium' || !telegramIdRef.current) return;
-    refreshBattlePassState();
-  }, [tab, refreshBattlePassState]);
-
-  // Кошелёк (OverviewTab) показывает очки Боевого пропуска сразу на первом экране — та же
-  // подгрузка при входе, что уже есть у premiumState/petsState, не только при заходе на вкладку.
-  useEffect(() => {
-    if (screen !== 'game' || !telegramIdRef.current) return;
-    refreshBattlePassState();
-  }, [screen, refreshBattlePassState]);
-
-  const handleClaimTier = async (tier: number) => {
-    if (!player) return;
-    setClaimingTier(tier);
-    try {
-      const data = await apiCall('/api/battlepass/claim', 'POST', { tier });
-      if (data.error) {
-        setMessage({ text: data.error, type: 'error' });
-      } else {
-        setMessage({ text: data.message, type: 'success' });
-        await refreshPlayer();
-        refreshBattlePassState();
-      }
-    } catch {
-      setMessage({ text: 'Ошибка получения награды', type: 'error' });
-    } finally {
-      setClaimingTier(null);
-    }
-  };
-
-  // ===== БЫСТРОЕ ПЕРЕМЕЩЕНИЕ (lib/economy/fast-travel.ts) — премиум-эксклюзивный телепорт между уже
-  // посещёнными локациями, живёт на вкладке "Карта". =====
-  const refreshWaypointsState = useCallback(() => {
-    setWaypointsLoading(true);
-    apiCall('/api/travel/waypoints')
-      .then(data => { if (data.premiumActive !== undefined) setWaypointsState(data); })
-      .catch(() => setMessage({ text: 'Не удалось загрузить точки телепорта', type: 'error' }))
-      .finally(() => setWaypointsLoading(false));
-  }, [apiCall]);
-
-  useEffect(() => {
-    if (tab !== 'map' || !telegramIdRef.current) return;
-    refreshWaypointsState();
-  }, [tab, refreshWaypointsState]);
-
-  const handleFastTravel = async (locationId: string) => {
-    if (!player) return;
-    setFastTravellingTo(locationId);
-    try {
-      const data = await apiCall('/api/travel/fast', 'POST', { locationId });
-      if (data.error) {
-        setMessage({ text: data.error, type: 'error' });
-      } else {
-        setMessage({ text: data.message, type: 'success' });
-        setPlayer(data.player);
-        refreshWaypointsState();
-      }
-    } catch {
-      setMessage({ text: 'Ошибка быстрого перемещения', type: 'error' });
-    } finally {
-      setFastTravellingTo(null);
-    }
-  };
-
-  // ===== ЭКСПЕДИЦИИ (lib/premium/expeditions.ts) — премиум-эксклюзивный офлайн-таймер, не блокирует
-  // остальную игру. Тот же паттерн загрузки состояния, что и у премиум-магазина/питомцев. =====
-  const refreshExpeditionState = useCallback(() => {
-    setExpeditionLoading(true);
-    apiCall('/api/expedition/state')
-      .then(data => { if (data.tiers) setExpeditionState(data); })
-      .catch(() => setMessage({ text: 'Не удалось загрузить экспедиции', type: 'error' }))
-      .finally(() => setExpeditionLoading(false));
-  }, [apiCall]);
-
-  useEffect(() => {
-    if ((tab !== 'premium' && tab !== 'overview') || !telegramIdRef.current) return;
-    refreshExpeditionState();
-  }, [tab, refreshExpeditionState]);
-
-  const handleStartExpedition = async (tierId: string) => {
-    if (!player) return;
-    setStartingExpeditionId(tierId);
-    try {
-      const data = await apiCall('/api/expedition/start', 'POST', { tierId });
-      if (data.error) {
-        setMessage({ text: data.error, type: 'error' });
-      } else {
-        setPlayer(data.player);
-        setMessage({ text: data.message, type: 'success' });
-        refreshExpeditionState();
-      }
-    } catch {
-      setMessage({ text: 'Ошибка отправки экспедиции', type: 'error' });
-    } finally {
-      setStartingExpeditionId(null);
-    }
-  };
-
-  const handleClaimExpedition = async () => {
-    if (!player) return;
-    setClaimingExpedition(true);
-    try {
-      const data = await apiCall('/api/expedition/claim', 'POST', {});
-      if (data.error) {
-        setMessage({ text: data.error, type: 'error' });
-      } else {
-        setPlayer(data.player);
-        setMessage({ text: data.message, type: 'success' });
-        refreshExpeditionState();
-      }
-    } catch {
-      setMessage({ text: 'Ошибка получения награды экспедиции', type: 'error' });
-    } finally {
-      setClaimingExpedition(false);
-    }
-  };
-
-  // ===== ДОСКА КОНТРАКТОВ (lib/economy/bounty-board.ts) — премиум-эксклюзивная ежедневная охота,
-  // одна попытка в день, тот же паттерн загрузки состояния, что и у остального премиум-контента. =====
-  const refreshBountyState = useCallback(() => {
-    setBountyLoading(true);
-    apiCall('/api/bounty/state')
-      .then(data => { if (typeof data.premiumActive === 'boolean') setBountyState(data); })
-      .catch(() => setMessage({ text: 'Не удалось загрузить доску контрактов', type: 'error' }))
-      .finally(() => setBountyLoading(false));
-  }, [apiCall]);
-
-  useEffect(() => {
-    if ((tab !== 'premium' && tab !== 'overview') || !telegramIdRef.current) return;
-    refreshBountyState();
-  }, [tab, refreshBountyState]);
-
-  const handleHunt = async (): Promise<BountyHuntResultView | null> => {
-    if (!player) return null;
-    setHunting(true);
-    try {
-      const data = await apiCall('/api/bounty/hunt', 'POST', {});
-      if (data.error) {
-        setMessage({ text: data.error, type: 'error' });
-        return null;
-      }
-      setPlayer(data.player);
-      refreshBountyState();
-      return data as BountyHuntResultView;
-    } catch {
-      setMessage({ text: 'Ошибка охоты', type: 'error' });
-      return null;
-    } finally {
-      setHunting(false);
-    }
-  };
-
-  const handleBuyShardPack = async (packId: string) => {
-    if (!player) return;
-    setBuyingPackId(packId);
-    try {
-      const data = await apiCall('/api/shop/premium/invoice', 'POST', { packId });
-      if (data.error || !data.invoiceUrl) {
-        setMessage({ text: data.error || 'Не удалось создать счёт', type: 'error' });
-        setBuyingPackId(null);
-        return;
-      }
-      const win = typeof window !== 'undefined' ? (window as unknown as TelegramGlobal) : null;
-      const tg = win?.Telegram?.WebApp;
-      if (tg?.openInvoice) {
-        tg.openInvoice(data.invoiceUrl, (status) => {
-          setBuyingPackId(null);
-          if (status === 'paid') {
-            setMessage({ text: 'Оплата прошла! Осколки уже начислены.', type: 'success' });
-            refreshPremiumState();
-          } else if (status === 'failed') {
-            setMessage({ text: 'Оплата не прошла.', type: 'error' });
-          }
-        });
-      } else {
-        // Вне Telegram WebView (напр. обычный браузер при разработке) — открываем ссылку напрямую.
-        window.open(data.invoiceUrl, '_blank');
-        setBuyingPackId(null);
-      }
-    } catch {
-      setMessage({ text: 'Ошибка создания счёта', type: 'error' });
-      setBuyingPackId(null);
-    }
-  };
-
-  const handleRedeemSku = async (skuId: string) => {
-    if (!player) return;
-    setPremiumLoading(true);
-    try {
-      const data = await apiCall('/api/shop/premium/redeem', 'POST', { skuId });
-      if (data.error) {
-        setMessage({ text: data.error, type: 'error' });
-      } else {
-        setPlayer(data.player);
-        setMessage({ text: data.message, type: 'success' });
-        refreshPremiumState();
-      }
-    } catch {
-      setMessage({ text: 'Ошибка покупки', type: 'error' });
-    } finally {
-      setPremiumLoading(false);
-    }
-  };
-
-  // Возвращает выпавший приз вызывающему (FortuneWheelVisual) — сама анимация довода колеса до
-  // нужного сектора и показ результата после её завершения происходит уже внутри компонента,
-  // здесь только сетевой запрос и обновление состояния игрока/валюты.
-  const handleSpinFortuneWheel = async (): Promise<FortuneSpinResultView | null> => {
-    if (!player) return null;
-    setSpinningWheel(true);
-    try {
-      const data = await apiCall('/api/fortune/spin', 'POST', {});
-      if (data.error) {
-        setMessage({ text: data.error, type: 'error' });
-        return null;
-      }
-      setPlayer(data.player);
-      refreshPremiumState();
-      return data.reward as FortuneSpinResultView;
-    } catch {
-      setMessage({ text: 'Ошибка вращения колеса', type: 'error' });
-      return null;
-    } finally {
-      setSpinningWheel(false);
-    }
-  };
-
-  const handleChangeRace = async (raceSlug: string, classSlug: string) => {
-    if (!player) return;
-    setChangingRace(true);
-    try {
-      const data = await apiCall('/api/player/change-race', 'POST', { raceSlug, classSlug });
-      if (data.error) {
-        setMessage({ text: data.error, type: 'error' });
-      } else {
-        setPlayer(data.player);
-        setMessage({ text: data.message, type: 'success' });
-        refreshPremiumState();
-      }
-    } catch {
-      setMessage({ text: 'Ошибка смены расы', type: 'error' });
-    } finally {
-      setChangingRace(false);
-    }
-  };
+  // ===== PREMIUM SHOP / ПИТОМЦЫ / ТИТУЛЫ / БОЕВОЙ ПРОПУСК / БЫСТРОЕ ПЕРЕМЕЩЕНИЕ / ЭКСПЕДИЦИИ /
+  // ДОСКА КОНТРАКТОВ — вынесены в usePremiumFeatures() (см. вызов хука ниже, сразу после
+  // refreshPlayer) per CLAUDE.md, аудит 1.4/A1.
 
   // Приглашение по Telegram deep-link: бот присылает кнопку web_app с URL вида
   // "?joinParty=<id>" (см. src/app/api/telegram/webhook/route.ts) — при первом входе в игру
@@ -919,6 +516,9 @@ export default function CursedDepths() {
   });
   const guildUpgrades = useGuildUpgrades({ apiCall, onPlayerUpdate: setPlayer, onGuildUpdate: social.setGuild, onMessage: setMessage });
   const characterSlots = useCharacterSlots({ apiCall, telegramIdRef, tab, onMessage: setMessage });
+  const premium = usePremiumFeatures({
+    apiCall, telegramIdRef, screen, tab, player, onPlayerUpdate: setPlayer, onMessage: setMessage, refreshPlayer,
+  });
 
   // ===== PARTY (короткий поллинг вместо realtime-инфраструктуры — нет ни WebSocket, ни
   // Vercel-совместимого push-сервиса, поэтому "реальное время" реализовано как fetch раз в
@@ -1449,7 +1049,7 @@ export default function CursedDepths() {
       } else {
         setMessage({ text: data.message, type: 'success' });
         await refreshPlayer();
-        refreshPremiumState();
+        premium.refreshPremiumState();
       }
     } catch {
       setMessage({ text: 'Ошибка зачарования', type: 'error' });
@@ -1766,9 +1366,9 @@ export default function CursedDepths() {
         player={player}
         locationIcon={location?.icon}
         locationName={location?.nameRu}
-        crownShards={premiumState?.crownShards ?? 0}
-        activePetId={petsState?.activePetId ?? null}
-        activeTitleId={titlesState?.activeTitleId ?? null}
+        crownShards={premium.premiumState?.crownShards ?? 0}
+        activePetId={premium.petsState?.activePetId ?? null}
+        activeTitleId={premium.titlesState?.activeTitleId ?? null}
         onOpenPremium={() => setTab('premium')}
       />
 
@@ -1821,7 +1421,7 @@ export default function CursedDepths() {
       <RespecModal
         open={respec.open}
         player={player}
-        crownShards={premiumState?.crownShards ?? 0}
+        crownShards={premium.premiumState?.crownShards ?? 0}
         submitting={respec.submitting}
         onClose={() => respec.setOpen(false)}
         onSubmit={respec.submit}
@@ -1849,14 +1449,14 @@ export default function CursedDepths() {
             onStartDungeon={handleStartDungeon}
             onStartAbyss={handleStartAbyss}
             onStartTrial={handleStartTrial}
-            activePetId={petsState?.activePetId ?? null}
-            crownShards={premiumState?.crownShards ?? 0}
-            battlePassXp={battlePassState?.premiumActive ? battlePassState.xp : null}
+            activePetId={premium.petsState?.activePetId ?? null}
+            crownShards={premium.premiumState?.crownShards ?? 0}
+            battlePassXp={premium.battlePassState?.premiumActive ? premium.battlePassState.xp : null}
             worldBoss={social.worldBoss}
             fortress={social.fortress}
             guildRaidBoss={social.guildRaidBoss}
-            expeditionState={expeditionState}
-            bountyState={bountyState}
+            expeditionState={premium.expeditionState}
+            bountyState={premium.bountyState}
             onNavigateTab={setTab}
             onOpenRespec={() => respec.setOpen(true)}
           />
@@ -1878,10 +1478,10 @@ export default function CursedDepths() {
             location={location}
             loading={loading}
             onTravel={handleTravel}
-            waypointsState={waypointsState}
-            waypointsLoading={waypointsLoading}
-            fastTravellingTo={fastTravellingTo}
-            onFastTravel={handleFastTravel}
+            waypointsState={premium.waypointsState}
+            waypointsLoading={premium.waypointsLoading}
+            fastTravellingTo={premium.fastTravellingTo}
+            onFastTravel={premium.handleFastTravel}
           />
 
           <InventoryTab
@@ -1907,7 +1507,7 @@ export default function CursedDepths() {
             onCraft={handleCraft}
             onApplyCurrency={handleApplyCurrency}
             onTemper={handleTemper}
-            crownShards={premiumState?.crownShards ?? 0}
+            crownShards={premium.premiumState?.crownShards ?? 0}
             onEnchantAffix={handleEnchantAffix}
             enchanting={enchanting}
           />
@@ -1972,40 +1572,40 @@ export default function CursedDepths() {
           />
 
           <PremiumShopTab
-            state={premiumState}
-            loading={premiumLoading}
-            buyingPackId={buyingPackId}
-            onBuyPack={handleBuyShardPack}
-            onRedeemSku={handleRedeemSku}
+            state={premium.premiumState}
+            loading={premium.premiumLoading}
+            buyingPackId={premium.buyingPackId}
+            onBuyPack={premium.handleBuyShardPack}
+            onRedeemSku={premium.handleRedeemSku}
             player={player}
-            spinningWheel={spinningWheel}
-            onSpinWheel={handleSpinFortuneWheel}
-            changingRace={changingRace}
-            onChangeRace={handleChangeRace}
-            petsState={petsState}
-            petsLoading={petsLoading}
-            buyingPetId={buyingPetId}
-            activatingPetId={activatingPetId}
-            onBuyPet={handleBuyPet}
-            onActivatePet={handleActivatePet}
-            expeditionState={expeditionState}
-            expeditionLoading={expeditionLoading}
-            startingExpeditionId={startingExpeditionId}
-            claimingExpedition={claimingExpedition}
-            onStartExpedition={handleStartExpedition}
-            onClaimExpedition={handleClaimExpedition}
-            bountyState={bountyState}
-            bountyLoading={bountyLoading}
-            hunting={hunting}
-            onHunt={handleHunt}
-            titlesState={titlesState}
-            titlesLoading={titlesLoading}
-            equippingTitleId={equippingTitleId}
-            onEquipTitle={handleEquipTitle}
-            battlePassState={battlePassState}
-            battlePassLoading={battlePassLoading}
-            claimingTier={claimingTier}
-            onClaimTier={handleClaimTier}
+            spinningWheel={premium.spinningWheel}
+            onSpinWheel={premium.handleSpinFortuneWheel}
+            changingRace={premium.changingRace}
+            onChangeRace={premium.handleChangeRace}
+            petsState={premium.petsState}
+            petsLoading={premium.petsLoading}
+            buyingPetId={premium.buyingPetId}
+            activatingPetId={premium.activatingPetId}
+            onBuyPet={premium.handleBuyPet}
+            onActivatePet={premium.handleActivatePet}
+            expeditionState={premium.expeditionState}
+            expeditionLoading={premium.expeditionLoading}
+            startingExpeditionId={premium.startingExpeditionId}
+            claimingExpedition={premium.claimingExpedition}
+            onStartExpedition={premium.handleStartExpedition}
+            onClaimExpedition={premium.handleClaimExpedition}
+            bountyState={premium.bountyState}
+            bountyLoading={premium.bountyLoading}
+            hunting={premium.hunting}
+            onHunt={premium.handleHunt}
+            titlesState={premium.titlesState}
+            titlesLoading={premium.titlesLoading}
+            equippingTitleId={premium.equippingTitleId}
+            onEquipTitle={premium.handleEquipTitle}
+            battlePassState={premium.battlePassState}
+            battlePassLoading={premium.battlePassLoading}
+            claimingTier={premium.claimingTier}
+            onClaimTier={premium.handleClaimTier}
           />
 
           <CodexTab entries={codexEntries} loading={codexLoading} />

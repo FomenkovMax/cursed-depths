@@ -2,13 +2,14 @@ import { TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { PremiumShopStateView, PlayerData, FortuneSpinResultView, PetsStateView, ExpeditionStateView, BountyStateView, BountyHuntResultView, TitlesStateView } from '@/lib/game-types';
+import { PremiumShopStateView, PlayerData, FortuneSpinResultView, PetsStateView, ExpeditionStateView, BountyStateView, BountyHuntResultView, TitlesStateView, BattlePassStateView } from '@/lib/game-types';
 import { FortuneWheelVisual } from '@/components/game/FortuneWheel';
 import { RaceChangePanel } from '@/components/game/RaceChangePanel';
 import { PetsPanel } from '@/components/game/PetsPanel';
 import { ExpeditionPanel } from '@/components/game/ExpeditionPanel';
 import { BountyBoardPanel } from '@/components/game/BountyBoardPanel';
 import { TitlesPanel } from '@/components/game/TitlesPanel';
+import { BattlePassPanel } from '@/components/game/BattlePassPanel';
 
 interface PremiumShopTabProps {
   state: PremiumShopStateView | null;
@@ -41,6 +42,10 @@ interface PremiumShopTabProps {
   titlesLoading: boolean;
   equippingTitleId: string | null;
   onEquipTitle: (titleId: string | null) => void;
+  battlePassState: BattlePassStateView | null;
+  battlePassLoading: boolean;
+  claimingTier: number | null;
+  onClaimTier: (tier: number) => void;
 }
 
 function formatPremiumUntil(iso: string | null): string {
@@ -57,6 +62,7 @@ export function PremiumShopTab({
   expeditionState, expeditionLoading, startingExpeditionId, claimingExpedition, onStartExpedition, onClaimExpedition,
   bountyState, bountyLoading, hunting, onHunt,
   titlesState, titlesLoading, equippingTitleId, onEquipTitle,
+  battlePassState, battlePassLoading, claimingTier, onClaimTier,
 }: PremiumShopTabProps) {
   const races = state?.raceChange.races ?? [];
 
@@ -249,6 +255,22 @@ export function PremiumShopTab({
             loading={titlesLoading}
             equippingTitleId={equippingTitleId}
             onEquipTitle={onEquipTitle}
+          />
+        </CardContent>
+      </Card>
+
+      {/* Боевой пропуск — премиум-эксклюзивная сезонная прогрессия (lib/battle-pass.ts): очки за
+          победы в бою (только пока премиум активен), тиры с наградами, месячный цикл. */}
+      <Card className="border-border">
+        <CardHeader className="pb-2 pt-3 px-4">
+          <CardTitle className="text-sm">🎫 Боевой пропуск</CardTitle>
+        </CardHeader>
+        <CardContent className="px-4 pb-3">
+          <BattlePassPanel
+            state={battlePassState}
+            loading={battlePassLoading}
+            claimingTier={claimingTier}
+            onClaimTier={onClaimTier}
           />
         </CardContent>
       </Card>

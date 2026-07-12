@@ -74,6 +74,8 @@ import { FORTRESS_ID, CONTROL_GOLD_BONUS } from '@/lib/fortress';
 import { bossIntroLine, deathMessage } from '@/lib/exploration-flavor';
 import { isPremiumActive, PREMIUM_GOLD_XP_MULT, isDeathDebuffActive, DEATH_DEBUFF_XP_MULT, DEATH_DEBUFF_HOURS } from '@/lib/premium-shop';
 import { findPet } from '@/lib/pets';
+import { battlePassXpForKill, effectiveBattlePassXp } from '@/lib/battle-pass';
+import { currentSeasonId } from '@/lib/seasons';
 
 export async function POST(req: NextRequest) {
   const auth = validateTelegramRequest(req);
@@ -136,6 +138,7 @@ export async function POST(req: NextRequest) {
     let xpGained = 0;
     let goldGained = 0;
     let bossTrophyGained: string | null = null;
+    let battlePassXpGained = 0;
     const droppedItems: string[] = [];
     // Модификатор забега по данжу (lib/dungeon-modifiers.ts) — множители 1 по всем осям, если
     // игрок не в данже или выпал "чистый" забег без модификатора.
@@ -551,6 +554,12 @@ export async function POST(req: NextRequest) {
         });
       }
 
+      // Боевой пропуск (lib/battle-pass.ts) — очки только пока премиум активен, полный лок,
+      // как у Комнаты трофеев (не просто "лучше награда").
+      if (premiumMult > 1) {
+        battlePassXpGained = battlePassXpForKill(enemyTemplate.xp);
+      }
+
       const victoryHealPercent = onVictoryHealPercent(playerPassives);
       if (victoryHealPercent > 0) {
         const healAmount = Math.round(effectiveMaxHp * victoryHealPercent);
@@ -867,6 +876,10 @@ export async function POST(req: NextRequest) {
       xp: newXp,
       gold: { increment: goldGained },
       ...(playerWon ? { totalKills: { increment: 1 } } : {}),
+      ...(battlePassXpGained > 0 ? {
+        battlePassXp: effectiveBattlePassXp(player.battlePassSeasonId, player.battlePassXp, currentSeasonId()) + battlePassXpGained,
+        battlePassSeasonId: currentSeasonId(),
+      } : {}),
     };
 
     if (leveledUp) {

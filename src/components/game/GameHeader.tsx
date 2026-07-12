@@ -2,6 +2,7 @@ import { PlayerData } from '@/lib/game-types';
 import { computeEquipmentBonuses } from '@/lib/equipment-stats';
 import { stageUnlockLevel } from '@/lib/combat-engine';
 import { findPet } from '@/lib/pets';
+import { findTitle } from '@/lib/titles';
 
 interface GameHeaderProps {
   player: PlayerData | null;
@@ -9,6 +10,7 @@ interface GameHeaderProps {
   locationName: string | undefined;
   crownShards: number;
   activePetId: string | null;
+  activeTitleId: string | null;
   onOpenPremium: () => void;
 }
 
@@ -29,8 +31,9 @@ function getEvolvedStageName(player: PlayerData): string | null {
   return best?.stageName ?? null;
 }
 
-export function GameHeader({ player, locationIcon, locationName, crownShards, activePetId, onOpenPremium }: GameHeaderProps) {
+export function GameHeader({ player, locationIcon, locationName, crownShards, activePetId, activeTitleId, onOpenPremium }: GameHeaderProps) {
   const activePet = activePetId ? findPet(activePetId) : null;
+  const activeTitle = findTitle(activeTitleId);
   const gearBonuses = computeEquipmentBonuses(player?.inventory || [], activePet);
   const effectiveMaxHp = (player?.maxHp || 0) + gearBonuses.hp;
   const effectiveMaxMp = (player?.maxMp || 0) + gearBonuses.mp;
@@ -45,6 +48,11 @@ export function GameHeader({ player, locationIcon, locationName, crownShards, ac
         <div className="flex items-center gap-2">
           <span className="text-xl">{player?.race?.icon || '👤'}</span>
           <div>
+            {activeTitle && (
+              <div className={`text-[10px] font-medium leading-tight ${activeTitle.colorClass}`}>
+                {activeTitle.icon} {activeTitle.nameRu}
+              </div>
+            )}
             <div className="font-bold text-sm text-foreground leading-tight">{player?.name}</div>
             <div className="text-[10px] text-muted-foreground">
               Ур. {player?.level} {player?.race?.name} {player?.class?.name}

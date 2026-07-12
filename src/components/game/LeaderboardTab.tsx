@@ -2,6 +2,7 @@ import { TabsContent } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { PlayerData } from '@/lib/game-types';
+import { findTitle } from '@/lib/titles';
 
 export interface LeaderboardEntry {
   id: string;
@@ -11,6 +12,7 @@ export interface LeaderboardEntry {
   level: number;
   xp: number;
   gold: number;
+  activeTitleId: string | null;
 }
 
 export interface SeasonWinnerEntry {
@@ -80,12 +82,16 @@ export function LeaderboardTab({ player, leaderboard, loading, currentSeason, pr
         <div className="space-y-1.5">
           {leaderboard.map((entry, i) => {
             const isMe = !!player && entry.id === player.id;
+            const title = findTitle(entry.activeTitleId);
             return (
               <Card key={entry.id} className={`border-border ${isMe ? 'border-gold/60 bg-gold/5' : ''}`}>
                 <CardContent className="p-2.5 flex items-center gap-2.5">
                   <span className="text-lg w-7 text-center">{RANK_MEDALS[i] ?? `#${i + 1}`}</span>
                   <span className="text-xl">{entry.race?.icon || '👤'}</span>
                   <div className="flex-1 min-w-0">
+                    {title && (
+                      <div className={`text-[9px] font-medium truncate ${title.colorClass}`}>{title.icon} {title.nameRu}</div>
+                    )}
                     <div className="text-xs font-medium truncate">
                       {entry.name}
                       {isMe && <Badge className="ml-1 text-[9px] h-4 px-1 bg-gold/20 text-gold">вы</Badge>}

@@ -75,6 +75,7 @@ export async function GET() {
         level: true,
         xp: true,
         gold: true,
+        activeTitleId: true,
       },
     });
 

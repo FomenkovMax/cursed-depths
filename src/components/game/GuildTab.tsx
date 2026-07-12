@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { GuildData, WorldBossStateView, WorldBossAttackResultView, FortressStateView, FortressAssaultResultView, GuildRaidBossStateView, GuildRaidAttackResultView } from '@/lib/game-types';
+import { findTitle } from '@/lib/titles';
 
 interface GuildTabProps {
   playerId: string | null;
@@ -241,21 +242,27 @@ export function GuildTab({
               </CardTitle>
             </CardHeader>
             <CardContent className="px-4 pb-3 space-y-1.5">
-              {guild.members.map(m => (
-                <div key={m.id} className="flex items-center gap-2.5 py-1">
-                  <span className="text-xl">{m.player.class.icon}</span>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-xs font-medium truncate">
-                      {m.player.name}
-                      {m.playerId === guild.leaderId && <Badge className="ml-1 text-[9px] h-4 px-1 bg-gold/20 text-gold">лидер</Badge>}
-                      {m.playerId === playerId && <Badge className="ml-1 text-[9px] h-4 px-1 bg-primary/20 text-primary">вы</Badge>}
-                    </div>
-                    <div className="text-[10px] text-muted-foreground truncate">
-                      Ур. {m.player.level} • {m.player.class.name}
+              {guild.members.map(m => {
+                const title = findTitle(m.player.activeTitleId);
+                return (
+                  <div key={m.id} className="flex items-center gap-2.5 py-1">
+                    <span className="text-xl">{m.player.class.icon}</span>
+                    <div className="flex-1 min-w-0">
+                      {title && (
+                        <div className={`text-[9px] font-medium truncate ${title.colorClass}`}>{title.icon} {title.nameRu}</div>
+                      )}
+                      <div className="text-xs font-medium truncate">
+                        {m.player.name}
+                        {m.playerId === guild.leaderId && <Badge className="ml-1 text-[9px] h-4 px-1 bg-gold/20 text-gold">лидер</Badge>}
+                        {m.playerId === playerId && <Badge className="ml-1 text-[9px] h-4 px-1 bg-primary/20 text-primary">вы</Badge>}
+                      </div>
+                      <div className="text-[10px] text-muted-foreground truncate">
+                        Ур. {m.player.level} • {m.player.class.name}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </CardContent>
           </Card>
 

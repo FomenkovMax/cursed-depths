@@ -38,6 +38,7 @@ import {
   GuildRaidBossStateView,
   GuildRaidAttackResultView,
   TrophyRoomStateView,
+  TitlesStateView,
 } from '@/lib/game-types';
 import { LoadingScreen } from '@/components/game/LoadingScreen';
 import { CharacterCreationScreen } from '@/components/game/CharacterCreationScreen';
@@ -108,6 +109,9 @@ export default function CursedDepths() {
   const [petsLoading, setPetsLoading] = useState(false);
   const [buyingPetId, setBuyingPetId] = useState<string | null>(null);
   const [activatingPetId, setActivatingPetId] = useState<string | null>(null);
+  const [titlesState, setTitlesState] = useState<TitlesStateView | null>(null);
+  const [titlesLoading, setTitlesLoading] = useState(false);
+  const [equippingTitleId, setEquippingTitleId] = useState<string | null>(null);
   const [expeditionState, setExpeditionState] = useState<ExpeditionStateView | null>(null);
   const [expeditionLoading, setExpeditionLoading] = useState(false);
   const [startingExpeditionId, setStartingExpeditionId] = useState<string | null>(null);
@@ -639,6 +643,45 @@ export default function CursedDepths() {
       setMessage({ text: 'Ошибка активации питомца', type: 'error' });
     } finally {
       setActivatingPetId(null);
+    }
+  };
+
+  // ===== ТИТУЛЫ (lib/titles.ts) — тот же паттерн загрузки, что питомцы: сразу при входе (для
+  // GameHeader) и при каждом открытии премиум-вкладки. Премиум-эксклюзив целиком — без него
+  // /api/titles/state отдаёт пустой каталог. =====
+  const refreshTitlesState = useCallback(() => {
+    setTitlesLoading(true);
+    apiCall('/api/titles/state')
+      .then(data => { if (data.premiumActive !== undefined) setTitlesState(data); })
+      .catch(() => setMessage({ text: 'Не удалось загрузить титулы', type: 'error' }))
+      .finally(() => setTitlesLoading(false));
+  }, [apiCall]);
+
+  useEffect(() => {
+    if (tab !== 'premium' || !telegramIdRef.current) return;
+    refreshTitlesState();
+  }, [tab, refreshTitlesState]);
+
+  useEffect(() => {
+    if (screen !== 'game' || !telegramIdRef.current) return;
+    refreshTitlesState();
+  }, [screen, refreshTitlesState]);
+
+  const handleEquipTitle = async (titleId: string | null) => {
+    if (!player) return;
+    setEquippingTitleId(titleId ?? 'none');
+    try {
+      const data = await apiCall('/api/titles/equip', 'POST', { titleId });
+      if (data.error) {
+        setMessage({ text: data.error, type: 'error' });
+      } else {
+        setPlayer(data.player);
+        refreshTitlesState();
+      }
+    } catch {
+      setMessage({ text: 'Ошибка экипировки титула', type: 'error' });
+    } finally {
+      setEquippingTitleId(null);
     }
   };
 
@@ -1713,6 +1756,7 @@ export default function CursedDepths() {
         locationName={location?.nameRu}
         crownShards={premiumState?.crownShards ?? 0}
         activePetId={petsState?.activePetId ?? null}
+        activeTitleId={titlesState?.activeTitleId ?? null}
         onOpenPremium={() => setTab('premium')}
       />
 
@@ -1882,6 +1926,10 @@ export default function CursedDepths() {
             bountyLoading={bountyLoading}
             hunting={hunting}
             onHunt={handleHunt}
+            titlesState={titlesState}
+            titlesLoading={titlesLoading}
+            equippingTitleId={equippingTitleId}
+            onEquipTitle={handleEquipTitle}
           />
 
           <CodexTab entries={codexEntries} loading={codexLoading} />

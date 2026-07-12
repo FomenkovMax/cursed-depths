@@ -76,6 +76,7 @@ import { isPremiumActive, PREMIUM_GOLD_XP_MULT, isDeathDebuffActive, DEATH_DEBUF
 import { findPet } from '@/lib/pets';
 import { battlePassXpForKill, effectiveBattlePassXp } from '@/lib/battle-pass';
 import { currentSeasonId } from '@/lib/seasons';
+import { TOME_DROP_CHANCE, pickUncollectedTome } from '@/lib/recipe-tomes';
 
 export async function POST(req: NextRequest) {
   const auth = validateTelegramRequest(req);
@@ -91,7 +92,7 @@ export async function POST(req: NextRequest) {
 
     const player = await db.player.findUnique({
       where: { telegramId },
-      include: { inventory: true, class: { include: { abilities: true } }, guildMember: true, bossTrophies: { select: { enemyId: true } } },
+      include: { inventory: true, class: { include: { abilities: true } }, guildMember: true, bossTrophies: { select: { enemyId: true } }, recipes: { select: { recipeId: true } } },
     });
 
     if (!player) return NextResponse.json({ error: 'Персонаж не найден' }, { status: 404 });
@@ -558,6 +559,20 @@ export async function POST(req: NextRequest) {
       // как у Комнаты трофеев (не просто "лучше награда").
       if (premiumMult > 1) {
         battlePassXpGained = battlePassXpForKill(enemyTemplate.xp);
+      }
+
+      // Тома рецептов (lib/recipe-tomes.ts) — премиум-эксклюзивный ДОПОЛНИТЕЛЬНЫЙ источник тех
+      // же 6 чертежей тира 3, что уже штучно капают всем игрокам из lootTable боссов; F2P-шанс
+      // не меняется, премиум просто получает независимый шанс с ЛЮБОЙ победы.
+      if (premiumMult > 1) {
+        const learnedRecipeIds = new Set(player.recipes.map(r => r.recipeId));
+        if (Math.random() < TOME_DROP_CHANCE) {
+          const tome = pickUncollectedTome(learnedRecipeIds);
+          if (tome) {
+            droppedItems.push(tome.id);
+            combatLog.push({ text: `📜 Редкая находка: ${tome.nameRu}!`, turn: currentTurn + 1 });
+          }
+        }
       }
 
       const victoryHealPercent = onVictoryHealPercent(playerPassives);

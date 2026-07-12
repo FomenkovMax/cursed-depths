@@ -436,6 +436,14 @@ export const ITEMS: Item[] = [
   { id: 'frost_axe', nameRu: 'Ледяной топор', nameEn: 'Frost Axe', type: 'weapon', rarity: 'epic', stats: { attack: 12, strength: 2 }, descriptionRu: 'Топор вечного холода. Замораживает врагов.', descriptionEn: 'Axe of eternal cold. Freezes enemies.', icon: '🪓', value: 600 },
   { id: 'void_staff', nameRu: 'Посох Пустоты', nameEn: 'Void Staff', type: 'weapon', rarity: 'epic', stats: { attack: 8, intellect: 4, mp: 15 }, descriptionRu: 'Посох, черпающий силу из Пустоты.', descriptionEn: 'Staff drawing power from the Void.', icon: '🪄', value: 700 },
   { id: 'dragonslayer', nameRu: 'Драконоборец', nameEn: 'Dragonslayer', type: 'weapon', rarity: 'legendary', stats: { attack: 16, strength: 3, vitality: 2 }, descriptionRu: 'Легендарный меч, созданный для убийства драконов.', descriptionEn: 'Legendary sword forged to slay dragons.', icon: '⚔️', value: 1500 },
+  // Именные легендарки с УНИКАЛЬНЫМ эффектом, не просто "+X% урона" (аудит 3, BG3-референс:
+  // "1-2 предмета на тир, не весь лут-стол"). Оба эффекта реализованы через уже существующую
+  // боевую инфраструктуру, а не новый парсер текста: parseDeathWard уже используется для
+  // активных способностей класса (см. combat/action.ts) и просто дополнительно сканирует
+  // экипированные предметы тем же паттерном; экономический бонус — прямая проверка itemId,
+  // без парсинга вообще, тот же приём, что и premiumMult.
+  { id: 'ashen_loyalty_fang', nameRu: 'Клык Пепельной Верности', nameEn: 'Fang of Ashen Loyalty', type: 'weapon', rarity: 'legendary', stats: { attack: 14, vitality: 2 }, descriptionRu: 'Клык зверя, что остался у тела хозяина даже после Падения. При получении смертельного удара выживает с 1 ХП (раз за бой) — та же клятва верности, которую когда-то предали другие.', descriptionEn: 'The fang of a beast that stayed by its master\'s body even after the Fall. Survives a lethal blow with 1 HP, once per fight.', icon: '🦷', value: 2400 },
+  { id: 'ring_unquenchable_thirst', nameRu: 'Перстень Неутолимой Жажды', nameEn: 'Ring of Unquenchable Thirst', type: 'accessory', gearSlot: 'ring', rarity: 'legendary', stats: { hp: 15 }, descriptionRu: 'Перстень, что никогда не насыщается — с каждой победой даёт на 20% больше золота и опыта, и всё равно просит ещё.', descriptionEn: 'A ring that is never satisfied — grants 20% more gold and experience from every victory, and still wants more.', icon: '💍', value: 2300 },
   { id: 'cursed_king_blade', nameRu: 'Клинок Проклятого Короля', nameEn: "Cursed King's Blade", type: 'weapon', rarity: 'mythic', stats: { attack: 25, strength: 5, dexterity: 3 }, descriptionRu: 'Мифический клинок, пропитанный проклятием Короля.', descriptionEn: "Mythic blade soaked in the King's curse.", icon: '👑', value: 5000 },
   { id: 'broken_oath_hammer', nameRu: 'Молот Сломанной Клятвы', nameEn: 'Hammer of the Broken Oath', type: 'weapon', rarity: 'legendary', stats: { attack: 18, strength: 3, vitality: 2 }, descriptionRu: 'Молот гнома-титана, преданного своим богом. Каждый удар — эхо разбитой клятвы.', descriptionEn: 'The hammer of a dwarf-titan betrayed by his own god. Every blow echoes a broken vow.', icon: '🔨', value: 1800 },
   { id: 'ignira_fang', nameRu: 'Клык Игниры', nameEn: 'Fang of Ignira', type: 'weapon', rarity: 'epic', stats: { attack: 14, strength: 2, instinct: 1 }, descriptionRu: 'Клык, вырванный из пасти древнего огненного зверя.', descriptionEn: 'A fang torn from the maw of an ancient fire beast.', icon: '🦷', value: 750 },
@@ -671,7 +679,7 @@ export const ENEMIES: EnemyTemplate[] = [
   { id: 'rift_collapse_horror', nameRu: 'Ужас обвала', nameEn: 'Rift Collapse Horror', hp: 50, ac: 15, attack: 11, damage: '1d10+5', xp: 56, gold: 26, lootTable: [{ itemId: 'greater_health', chance: 0.21 }, { itemId: 'dwarven_plate', chance: 0.036 }], locationId: 'foundation_rift', isBoss: false, icon: '🕳️' },
   {
     id: 'broken_oath', nameRu: 'Сломанная Клятва', nameEn: 'The Broken Oath', hp: 140, ac: 17, attack: 13, damage: '2d10+6', xp: 450, gold: 200,
-    lootTable: [{ itemId: 'broken_oath_hammer', chance: 0.012 }, { itemId: 'oath_shield_shard', chance: 0.135 }, { itemId: 'greater_health', chance: 0.21 }, { itemId: 'blueprint_crown_armor', chance: 0.0096 }, { itemId: 'grip_of_the_forgotten', chance: 0.012 }, { itemId: 'greaves_of_the_last_stand', chance: 0.012 }, { itemId: 'blueprint_gauntlets_broken_oath', chance: 0.008 }],
+    lootTable: [{ itemId: 'broken_oath_hammer', chance: 0.012 }, { itemId: 'oath_shield_shard', chance: 0.135 }, { itemId: 'greater_health', chance: 0.21 }, { itemId: 'blueprint_crown_armor', chance: 0.0096 }, { itemId: 'grip_of_the_forgotten', chance: 0.012 }, { itemId: 'greaves_of_the_last_stand', chance: 0.012 }, { itemId: 'blueprint_gauntlets_broken_oath', chance: 0.008 }, { itemId: 'ashen_loyalty_fang', chance: 0.01 }],
     locationId: 'foundation_rift', isBoss: true, icon: '💔',
     mechanics: {
       shieldMax: 60, shieldRegenTurns: 4,
@@ -795,7 +803,7 @@ export const ENEMIES: EnemyTemplate[] = [
   { id: 'whispering_fear', nameRu: 'Шепчущий Страх', nameEn: 'Whispering Fear', hp: 90, ac: 17, attack: 18, damage: '2d8+7', xp: 95, gold: 42, lootTable: [{ itemId: 'shadow_essence', chance: 0.21 }], locationId: 'silent_halls', isBoss: false, icon: '👁️' },
   {
     id: 'mirror_of_kessara', nameRu: 'Зеркало Кессары', nameEn: "Kessara's Mirror", hp: 240, ac: 19, attack: 20, damage: '3d10+8', xp: 950, gold: 470,
-    lootTable: [{ itemId: 'kessara_mirror_shard', chance: 0.012 }, { itemId: 'void_crystal', chance: 0.066 }, { itemId: 'elixir_power', chance: 0.135 }],
+    lootTable: [{ itemId: 'kessara_mirror_shard', chance: 0.012 }, { itemId: 'void_crystal', chance: 0.066 }, { itemId: 'elixir_power', chance: 0.135 }, { itemId: 'ring_unquenchable_thirst', chance: 0.01 }],
     locationId: 'silent_halls', isBoss: true, icon: '🪞',
     mechanics: {
       // "идеальная копия" игрока с удвоенными статами, но каждые 3 хода теряет бафф — окно для добивания

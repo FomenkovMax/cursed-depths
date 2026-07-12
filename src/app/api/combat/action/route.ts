@@ -170,6 +170,10 @@ export async function POST(req: NextRequest) {
     // могут быть активны одновременно (isDeathDebuffActive сама проверяет премиум), но пишем
     // как самостоятельный множитель, а не ветку внутри premiumMult, чтобы логика была явной.
     const xpMultTotal = premiumMult * (isDeathDebuffActive(player.deathDebuffUntil, player.premiumUntil) ? DEATH_DEBUFF_XP_MULT : 1);
+    // Именной легендарный перстень "Неутолимая Жажда" (аудит 3, C2) — уникальный эффект вместо
+    // плоского стата: +20% золота и опыта с любого боя, пока экипирован. Прямая проверка itemId,
+    // без парсинга текста — тот же приём, что у premiumMult/fortressGoldMult выше.
+    const uniqueItemGoldXpMult = player.inventory.some(i => i.equipped && i.itemId === 'ring_unquenchable_thirst') ? 1.2 : 1;
 
     // Track deferred DB operations for transaction
     let itemToConsume: { id: string; delete: boolean } | null = null;
@@ -541,8 +545,8 @@ export async function POST(req: NextRequest) {
     if (enemyHp <= 0 && !combatOver) {
       combatOver = true;
       playerWon = true;
-      xpGained = Math.round(enemyTemplate.xp * dungeonEffect.xpMult * abyssEffect.xpMult * xpMultTotal);
-      goldGained = Math.round((enemyTemplate.gold + rollDice('1d4') * Math.ceil(player.level / 2)) * dungeonEffect.goldMult * abyssEffect.goldMult * fortressGoldMult * premiumMult);
+      xpGained = Math.round(enemyTemplate.xp * dungeonEffect.xpMult * abyssEffect.xpMult * xpMultTotal * uniqueItemGoldXpMult);
+      goldGained = Math.round((enemyTemplate.gold + rollDice('1d4') * Math.ceil(player.level / 2)) * dungeonEffect.goldMult * abyssEffect.goldMult * fortressGoldMult * premiumMult * uniqueItemGoldXpMult);
       droppedItems.push(...rollLoot(enemyTemplate.lootTable));
       const currencyDrop = rollCurrencyDrop(enemyTemplate.isBoss);
       if (currencyDrop) droppedItems.push(currencyDrop);
@@ -755,10 +759,18 @@ export async function POST(req: NextRequest) {
     // оба делят один и тот же bossState.deathSaveUsed: одно "последнее слово" за бой на персонажа).
     if (playerHp <= 0) {
       const reviveHealPercent = deathSaveHealPercent(playerPassives);
-      const activeWard: DeathWardEffect | undefined = player.class.abilities
+      const classWard: DeathWardEffect | undefined = player.class.abilities
         .filter(a => a.type === 'active' && player.level >= stageUnlockLevel(a.stage))
         .map(a => parseDeathWard(a.description))
         .find((w): w is DeathWardEffect => w !== null) ?? undefined;
+      // Клык Пепельной Верности (аудит 3, C2) — тот же оберег от смерти, что и у "Несокрушимого",
+      // но как экипируемый предмет: parseDeathWard узнаёт эффект по тому же тексту, sharing
+      // тот же bossState.deathSaveUsed, поэтому класс+предмет не складываются в две жизни разом.
+      const equippedFang = player.inventory.some(i => i.equipped && i.itemId === 'ashen_loyalty_fang');
+      const itemWard: DeathWardEffect | undefined = equippedFang
+        ? (parseDeathWard(ITEMS.find(i => i.id === 'ashen_loyalty_fang')?.descriptionRu ?? '') ?? undefined)
+        : undefined;
+      const activeWard = classWard ?? itemWard;
 
       if (!bossState.deathSaveUsed && activeWard) {
         bossState.deathSaveUsed = true;

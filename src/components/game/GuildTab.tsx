@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { GuildData, WorldBossStateView, WorldBossAttackResultView, FortressStateView, FortressAssaultResultView } from '@/lib/game-types';
+import { GuildData, WorldBossStateView, WorldBossAttackResultView, FortressStateView, FortressAssaultResultView, GuildRaidBossStateView, GuildRaidAttackResultView } from '@/lib/game-types';
 
 interface GuildTabProps {
   playerId: string | null;
@@ -20,12 +20,16 @@ interface GuildTabProps {
   fortress: FortressStateView | null;
   fortressLoading: boolean;
   onAssaultFortress: () => Promise<FortressAssaultResultView | null>;
+  guildRaidBoss: GuildRaidBossStateView | null;
+  guildRaidBossLoading: boolean;
+  onAttackGuildRaidBoss: () => Promise<GuildRaidAttackResultView | null>;
 }
 
 export function GuildTab({
   playerId, guild, loading, botUsername, onCreateGuild, onLeaveGuild,
   worldBoss, worldBossLoading, onAttackWorldBoss,
   fortress, fortressLoading, onAssaultFortress,
+  guildRaidBoss, guildRaidBossLoading, onAttackGuildRaidBoss,
 }: GuildTabProps) {
   const [copied, setCopied] = useState(false);
   const [name, setName] = useState('');
@@ -34,6 +38,8 @@ export function GuildTab({
   const [attacking, setAttacking] = useState(false);
   const [lastAssault, setLastAssault] = useState<FortressAssaultResultView | null>(null);
   const [assaulting, setAssaulting] = useState(false);
+  const [lastRaidAttack, setLastRaidAttack] = useState<GuildRaidAttackResultView | null>(null);
+  const [raidAttacking, setRaidAttacking] = useState(false);
 
   const inviteLink = guild && botUsername ? `https://t.me/${botUsername}?start=guild_${guild.id}` : null;
   const isLeader = !!guild && guild.leaderId === playerId;
@@ -61,6 +67,13 @@ export function GuildTab({
     const result = await onAssaultFortress();
     if (result) setLastAssault(result);
     setAssaulting(false);
+  };
+
+  const handleRaidAttack = async () => {
+    setRaidAttacking(true);
+    const result = await onAttackGuildRaidBoss();
+    if (result) setLastRaidAttack(result);
+    setRaidAttacking(false);
   };
 
   return (
@@ -177,6 +190,49 @@ export function GuildTab({
         </Card>
       ) : (
         <>
+          {/* Гильд-рейд-босс — еженедельная КООП-цель ТОЛЬКО этой гильдии (lib/guild-raid-boss.ts),
+              в отличие от мирового босса выше (общий для всех) и Крепости (гильдия против гильдии).
+              Видна всем членам гильдии, но атаковать может только премиум — полноценный лок доступа,
+              не просто бонус к попыткам. */}
+          {guildRaidBoss?.boss && (
+            <Card className="border-purple-500/50 bg-purple-500/5">
+              <CardHeader className="pb-2 pt-3 px-4">
+                <CardTitle className="text-sm">🕳️ {guildRaidBoss.boss.name} <span className="text-[10px] text-muted-foreground font-normal">(неделя {guildRaidBoss.boss.cycleId})</span></CardTitle>
+                <p className="text-[10px] text-muted-foreground leading-relaxed italic pt-0.5">{guildRaidBoss.boss.lore}</p>
+              </CardHeader>
+              <CardContent className="px-4 pb-3 space-y-2">
+                <div className="flex items-center gap-2">
+                  <Progress value={(guildRaidBoss.boss.hp / guildRaidBoss.boss.maxHp) * 100} className="h-2.5 flex-1" />
+                  <span className="text-[10px] text-muted-foreground shrink-0">{guildRaidBoss.boss.hp}/{guildRaidBoss.boss.maxHp}</span>
+                </div>
+                {guildRaidBoss.topContributors.length > 0 && (
+                  <div className="text-[10px] text-muted-foreground">
+                    Лидеры урона: {guildRaidBoss.topContributors.slice(0, 3).map(c => `${c.name} (${c.damage})`).join(', ')}
+                  </div>
+                )}
+                {lastRaidAttack && (
+                  <div className={`text-xs rounded p-2 ${lastRaidAttack.killed ? 'bg-gold/10 text-gold' : 'bg-secondary/30 text-muted-foreground'}`}>
+                    Урон: {lastRaidAttack.damageDealt}
+                    {lastRaidAttack.killed && lastRaidAttack.reward && ` — Босс повержен! Награда: +${lastRaidAttack.reward.gold} 💰 +${lastRaidAttack.reward.xp} XP`}
+                  </div>
+                )}
+                {guildRaidBoss.boss.defeated ? (
+                  <p className="text-[10px] text-muted-foreground text-center py-1">Повержен на этой неделе — новый появится на следующей</p>
+                ) : guildRaidBoss.premiumActive ? (
+                  <Button
+                    className="w-full h-9"
+                    disabled={loading || guildRaidBossLoading || raidAttacking || guildRaidBoss.attacksLeftToday <= 0}
+                    onClick={handleRaidAttack}
+                  >
+                    {guildRaidBoss.attacksLeftToday > 0 ? `⚔️ Атаковать (осталось ${guildRaidBoss.attacksLeftToday}/день)` : 'Атаки на сегодня закончились'}
+                  </Button>
+                ) : (
+                  <p className="text-[10px] text-muted-foreground text-center py-1">Атаковать может только премиум — но урон и прогресс гильдии видны всем</p>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
           <Card className="border-border">
             <CardHeader className="pb-2 pt-3 px-4">
               <CardTitle className="text-sm flex items-center justify-between">

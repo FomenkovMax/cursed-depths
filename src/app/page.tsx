@@ -35,6 +35,8 @@ import {
   ExpeditionStateView,
   BountyStateView,
   BountyHuntResultView,
+  GuildRaidBossStateView,
+  GuildRaidAttackResultView,
 } from '@/lib/game-types';
 import { LoadingScreen } from '@/components/game/LoadingScreen';
 import { CharacterCreationScreen } from '@/components/game/CharacterCreationScreen';
@@ -91,6 +93,8 @@ export default function CursedDepths() {
   const [worldBossLoading, setWorldBossLoading] = useState(false);
   const [fortress, setFortress] = useState<FortressStateView | null>(null);
   const [fortressLoading, setFortressLoading] = useState(false);
+  const [guildRaidBoss, setGuildRaidBoss] = useState<GuildRaidBossStateView | null>(null);
+  const [guildRaidBossLoading, setGuildRaidBossLoading] = useState(false);
   const [premiumState, setPremiumState] = useState<PremiumShopStateView | null>(null);
   const [premiumLoading, setPremiumLoading] = useState(false);
   const [buyingPackId, setBuyingPackId] = useState<string | null>(null);
@@ -508,6 +512,41 @@ export default function CursedDepths() {
       return null;
     } finally {
       setFortressLoading(false);
+    }
+  };
+
+  // ===== GUILD RAID BOSS (еженедельная КООП-цель гильдии, премиум-эксклюзив — lib/guild-raid-boss.ts) =====
+  const refreshGuildRaidBoss = useCallback(() => {
+    setGuildRaidBossLoading(true);
+    apiCall('/api/guildraid/state')
+      .then(data => { if (data.inGuild !== undefined) setGuildRaidBoss(data); })
+      .catch(() => setMessage({ text: 'Не удалось загрузить гильд-рейд-босса', type: 'error' }))
+      .finally(() => setGuildRaidBossLoading(false));
+  }, [apiCall]);
+
+  useEffect(() => {
+    if (tab !== 'guild' || !telegramIdRef.current) return;
+    refreshGuildRaidBoss();
+  }, [tab, refreshGuildRaidBoss]);
+
+  const handleAttackGuildRaidBoss = async (): Promise<GuildRaidAttackResultView | null> => {
+    if (!player) return null;
+    setGuildRaidBossLoading(true);
+    try {
+      const data = await apiCall('/api/guildraid/attack', 'POST', {});
+      if (data.error) {
+        setMessage({ text: data.error, type: 'error' });
+        return null;
+      }
+      if (data.killed) setMessage({ text: 'Гильд-рейд-босс повержен!', type: 'success' });
+      await refreshPlayer();
+      refreshGuildRaidBoss();
+      return data as GuildRaidAttackResultView;
+    } catch {
+      setMessage({ text: 'Ошибка атаки гильд-рейд-босса', type: 'error' });
+      return null;
+    } finally {
+      setGuildRaidBossLoading(false);
     }
   };
 
@@ -1795,6 +1834,9 @@ export default function CursedDepths() {
             fortress={fortress}
             fortressLoading={fortressLoading}
             onAssaultFortress={handleAssaultFortress}
+            guildRaidBoss={guildRaidBoss}
+            guildRaidBossLoading={guildRaidBossLoading}
+            onAttackGuildRaidBoss={handleAttackGuildRaidBoss}
           />
 
           <PremiumShopTab

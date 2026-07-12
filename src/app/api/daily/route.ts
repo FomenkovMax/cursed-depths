@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { Prisma } from '@prisma/client';
 import { db } from '@/lib/db';
 import { rollDice } from '@/lib/dice';
 import { validateTelegramRequest } from '@/lib/auth';
@@ -53,7 +54,7 @@ export async function POST(req: NextRequest) {
     // бы тот же снимок и тоже прошёл бы проверку — награда выдалась бы дважды за день. Поэтому
     // отметка "награда за today забрана" — само условие (lastDailyReward !== today), проверяемое
     // атомарно в момент записи через updateMany, и идёт ПЕРВОЙ операцией в транзакции.
-    const updateData: Record<string, unknown> = {
+    const updateData: Prisma.PlayerUpdateInput = {
       gold: { increment: goldReward },
       xp: newXp,
       lastDailyReward: today,

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { Prisma } from '@prisma/client';
 import { db } from '@/lib/db';
 import { validateTelegramRequest } from '@/lib/auth';
 import { ITEMS } from '@/lib/game-data';
@@ -36,7 +37,7 @@ export async function POST(req: NextRequest) {
     let shardsDelta = usesFreeSpin ? 0 : -PAID_SPIN_COST_SHARDS;
     if (result.reward.kind === 'shards') shardsDelta += result.reward.amount;
 
-    const updateData: Record<string, unknown> = {
+    const updateData: Prisma.PlayerUpdateInput = {
       fortuneSpinsToday: spinsToday + 1,
       fortuneSpinDate: today,
     };

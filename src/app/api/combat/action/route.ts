@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { Prisma } from '@prisma/client';
 import { db } from '@/lib/db';
 import { ENEMIES, ITEMS } from '@/lib/game-data';
 import { rollDice, rollLoot } from '@/lib/dice';
@@ -933,7 +934,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Update player
-    const updateData: Record<string, unknown> = {
+    const updateData: Prisma.PlayerUpdateInput = {
       hp: playerHp,
       mp: playerMp,
       combatLog: JSON.stringify(combatLog),

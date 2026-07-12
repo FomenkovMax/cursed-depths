@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { Prisma } from '@prisma/client';
 import { db } from '@/lib/db';
 import { validateTelegramRequest } from '@/lib/auth';
 
@@ -53,7 +54,7 @@ export async function POST(req: NextRequest) {
     // (player/create/route.ts: maxHp = 50 + vitality*5, maxMp = 100 + willpower*2) — вложение
     // очка в эти статы должно давать тот же прирост пулов, иначе "выживаемость" через
     // распределение очков перестаёт работать, хотя сам стат продолжает считаться в бою.
-    const updateData: Record<string, unknown> = {
+    const updateData: Prisma.PlayerUpdateInput = {
       [stat as StatField]: { increment: 1 },
       statPoints: { decrement: 1 },
     };

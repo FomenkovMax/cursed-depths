@@ -545,24 +545,6 @@ model PlayerQuest {
   @@index([completed])
 }
 
-model Enemy {
-  id          String  @id @default(cuid())
-  nameRu      String
-  nameEn      String
-  hp          Int
-  ac          Int
-  attack      Int
-  damage      String  // e.g. "1d6+2"
-  xp          Int
-  gold        Int
-  lootTable   String? // JSON array of {itemId, chance}
-  locationId  String
-  isBoss      Boolean @default(false)
-  icon        String? // emoji
-
-  @@index([locationId])
-}
-
 // Расы, классы и способности — источник истины: docs/cursed_depths_master.pdf
 // и docs/cursed_depths_abilities.pdf (v2 — баланс). 6 рас, 26 классов (по 4 на
 // расу, кроме Людей — у них 6: по 3 на каждый Путь), ~180 способностей по 3

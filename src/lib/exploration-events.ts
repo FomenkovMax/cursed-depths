@@ -41,7 +41,7 @@ const STAT_LABELS: Record<keyof CheckStats, string> = {
 /** d20 + модификатор характеристики против Сложности (СЛ) — та же формула, что и в D&D/BG3:
  * модификатор растёт вдвое медленнее самой характеристики, чтобы даже низкий стат оставлял
  * шанс на успех, а высокий не гарантировал его полностью. */
-function rollStatCheck(stat: keyof CheckStats, stats: CheckStats, dc: number): CheckRollResult {
+export function rollStatCheck(stat: keyof CheckStats, stats: CheckStats, dc: number): CheckRollResult {
   const statValue = stats[stat];
   const modifier = Math.floor(statValue / 2);
   const roll = 1 + Math.floor(Math.random() * 20);

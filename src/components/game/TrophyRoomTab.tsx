@@ -1,7 +1,5 @@
-import { useState } from 'react';
 import { TabsContent } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { TrophyRoomStateView, TrophyEntryView } from '@/lib/game-types';
 
@@ -10,88 +8,72 @@ interface TrophyRoomTabProps {
   loading: boolean;
 }
 
-/** Плитка трофея — тот же язык, что AchievementTile: заблокированные приглушены с замком,
- * добытые — золотая рамка. */
-function TrophyTile({ t, onClick }: { t: TrophyEntryView; onClick: () => void }) {
+/** Карточка одного босса — повержен показывает иконку/имя/счётчик побед и лор (раскрывается
+ * только после первой победы), не повержен остаётся силуэтом с подсказкой по локации. Иконки —
+ * временная эмодзи-заглушка, полноценные арты появятся отдельным дизайн-проходом. */
+function TrophyCard({ t }: { t: TrophyEntryView }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`relative aspect-square rounded-lg border flex items-center justify-center transition-colors hover:bg-secondary/40 ${
-        t.defeated ? 'border-gold/70 bg-gold/10' : 'border-border bg-secondary/20 opacity-60'
-      }`}
-    >
-      <span className="text-2xl">{t.defeated ? t.icon : '🔒'}</span>
-    </button>
+    <Card className={t.defeated ? 'border-gold/50 bg-gold/5' : 'border-border bg-secondary/10'}>
+      <CardContent className="p-3 space-y-1.5">
+        <div className="flex items-center gap-2.5">
+          <span className={`text-2xl ${t.defeated ? '' : 'grayscale opacity-40'}`}>{t.defeated ? t.icon : '❔'}</span>
+          <div className="flex-1 min-w-0">
+            <div className={`text-sm font-medium truncate ${t.defeated ? 'text-gold' : 'text-muted-foreground'}`}>
+              {t.defeated ? t.nameRu : '???'}
+            </div>
+            <div className="text-[10px] text-muted-foreground truncate">{t.locationNameRu}</div>
+          </div>
+          {t.defeated && (
+            <Badge variant="outline" className="text-[10px] h-5 border-gold/40 text-gold shrink-0">
+              ×{t.killCount}
+            </Badge>
+          )}
+        </div>
+        {t.defeated ? (
+          <p className="text-[10px] text-muted-foreground leading-relaxed italic pt-0.5">{t.loreRu}</p>
+        ) : (
+          <p className="text-[10px] text-muted-foreground/70 leading-relaxed">Ещё не повержен — ищите в этой локации.</p>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 
 export function TrophyRoomTab({ state, loading }: TrophyRoomTabProps) {
-  const [selected, setSelected] = useState<TrophyEntryView | null>(null);
-  const trophies = state?.trophies ?? [];
-
   return (
     <TabsContent value="trophies" className="flex-1 overflow-y-auto p-4 space-y-3 m-0">
       <div className="text-center mb-2">
         <h3 className="font-bold text-sm">🎖️ Комната трофеев</h3>
-        <p className="text-xs text-muted-foreground">
-          Собрано {state?.collectedCount ?? 0} из {state?.totalCount ?? 0}
-        </p>
+        {state?.premiumActive && (
+          <p className="text-xs text-muted-foreground">Собрано {state.collectedCount} из {state.totalCount}</p>
+        )}
       </div>
 
-      {!state?.premiumActive && (
-        <Card className="border-gold/50 bg-gold/5">
-          <CardContent className="p-3 text-center">
+      {!state?.premiumActive ? (
+        <Card className="border-border">
+          <CardContent className="p-6 text-center space-y-2">
+            <div className="text-3xl">🎖️</div>
+            <p className="text-sm text-muted-foreground">
+              Комната трофеев доступна только с активным премиум-статусом.
+            </p>
             <p className="text-[10px] text-muted-foreground">
-              Каждый первый килл босса запоминается навсегда — но золото и{' '}
-              <Badge className="mx-0.5 text-[9px] h-4 px-1 bg-gold/20 text-gold">👑 {state?.rewardGold ?? 500} + {state?.rewardShards ?? 20} Осколков</Badge>{' '}
-              за него достаются только с активным премиумом в момент килла.
+              Каждая победа над уникальным боссом (пока премиум активен) пополняет счётчик и раскрывает его лор — чисто коллекционная память о ваших победах.
             </p>
           </CardContent>
         </Card>
-      )}
-
-      {loading && trophies.length === 0 ? (
+      ) : loading && state.trophies.length === 0 ? (
         <Card className="border-border">
           <CardContent className="p-6 text-center">
             <p className="text-sm text-muted-foreground">Загрузка...</p>
           </CardContent>
         </Card>
       ) : (
-        <Card className="border-border">
-          <CardContent className="p-4">
-            <div className="grid grid-cols-5 gap-2">
-              {trophies.map(t => (
-                <TrophyTile key={t.enemyId} t={t} onClick={() => setSelected(t)} />
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+        <div className="space-y-2">
+          {state.trophies.map(t => (
+            <TrophyCard key={t.enemyId} t={t} />
+          ))}
+        </div>
       )}
-
-      <Dialog open={!!selected} onOpenChange={open => !open && setSelected(null)}>
-        <DialogContent className="max-w-xs">
-          {selected && (
-            <>
-              <DialogHeader>
-                <DialogTitle className="flex items-center gap-2 text-sm">
-                  <span className="text-2xl">{selected.defeated ? selected.icon : '🔒'}</span>
-                  <span className={selected.defeated ? 'text-gold' : ''}>{selected.defeated ? selected.nameRu : '???'}</span>
-                </DialogTitle>
-              </DialogHeader>
-              {selected.defeated ? (
-                <p className="text-xs text-muted-foreground leading-relaxed">
-                  Повержен в локации «{selected.locationNameRu}»{selected.defeatedAt ? ` — ${new Date(selected.defeatedAt).toLocaleDateString('ru-RU')}` : ''}.
-                </p>
-              ) : (
-                <p className="text-xs text-muted-foreground leading-relaxed">
-                  Этот босс ещё не повержен. Найдите его в локации «{selected.locationNameRu}».
-                </p>
-              )}
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
     </TabsContent>
   );
 }

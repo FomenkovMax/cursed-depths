@@ -109,7 +109,10 @@ export function CombatTab({
                       {enemy.isBoss && <Badge className="ml-1 text-[10px] h-4 bg-gold/20 text-gold">БОСС</Badge>}
                     </h3>
                     <div className="text-[10px] text-muted-foreground">
-                      AC {enemy.ac} • АТК +{enemy.attack} • Урон {enemy.damage}
+                      {/* "Класс Брони" переименован в "Защита" (аудит 2.3) — поле снижает урон
+                          напрямую (mitigateDamage), броска на попадание нет, а ярлык "AC" обещал
+                          игроку D&D-механику шанса промаха, которой в бою не существует. */}
+                      Защита {enemy.ac} • АТК +{enemy.attack} • Урон {enemy.damage}
                     </div>
                   </div>
                 </div>

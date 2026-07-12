@@ -120,6 +120,7 @@ model Player {
   pets            PlayerPet[]
   guildRaidHits   GuildRaidContribution[]
   battlePassClaims PlayerBattlePassClaim[]
+  visitedLocations VisitedLocation[]
   bossTrophies    PlayerBossTrophy[]
 
   @@index([telegramId])
@@ -654,4 +655,21 @@ model PlayerBattlePassClaim {
 
   @@unique([playerId, seasonId, tier])
   @@index([playerId, seasonId])
+}
+
+// Отметки посещённых локаций — основа премиум-эксклюзивного быстрого перемещения (lib/fast-
+// travel.ts, POST /api/travel/fast): телепорт напрямую в любую УЖЕ посещённую локацию, минуя
+// граф connections, который ограничивает обычное бесплатное перемещение (POST /api/travel)
+// только соседними локациями. Отмечается лениво при каждом успешном перемещении + стартовая
+// локация при создании персонажа (api/player/create) — сами визиты не история, а просто факт
+// "здесь уже бывал", поэтому upsert без дублей.
+model VisitedLocation {
+  id         String   @id @default(cuid())
+  playerId   String
+  player     Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  locationId String
+  visitedAt  DateTime @default(now())
+
+  @@unique([playerId, locationId])
+  @@index([playerId])
 }

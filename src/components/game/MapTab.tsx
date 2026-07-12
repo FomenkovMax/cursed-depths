@@ -1,24 +1,63 @@
 import { TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { LOCATIONS } from '@/lib/game-data';
-import { PlayerData } from '@/lib/game-types';
+import { PlayerData, WaypointsStateView } from '@/lib/game-types';
 
 interface MapTabProps {
   player: PlayerData | null;
   location: typeof LOCATIONS[0] | null;
   loading: boolean;
   onTravel: (locationId: string) => void;
+  waypointsState: WaypointsStateView | null;
+  waypointsLoading: boolean;
+  fastTravellingTo: string | null;
+  onFastTravel: (locationId: string) => void;
 }
 
-export function MapTab({ player, location, loading, onTravel }: MapTabProps) {
+export function MapTab({ player, location, loading, onTravel, waypointsState, waypointsLoading, fastTravellingTo, onFastTravel }: MapTabProps) {
   return (
     <TabsContent value="map" className="flex-1 overflow-y-auto p-4 space-y-3 m-0">
       <div className="text-center mb-2">
         <h3 className="font-bold text-sm">Карта Проклятых Глубин</h3>
         <p className="text-xs text-muted-foreground">Выберите локацию для путешествия</p>
       </div>
+
+      {/* Быстрое перемещение — премиум-эксклюзив (lib/fast-travel.ts): телепорт напрямую в любую
+          УЖЕ посещённую локацию, минуя граф связей ниже (тот остаётся бесплатным и мгновенным,
+          но только между соседями). */}
+      <Card className="border-border">
+        <CardHeader className="pb-2 pt-3 px-4">
+          <CardTitle className="text-sm">⚡ Быстрое перемещение</CardTitle>
+        </CardHeader>
+        <CardContent className="px-4 pb-3">
+          {!waypointsState?.premiumActive ? (
+            <p className="text-[10px] text-muted-foreground text-center py-2">
+              Быстрое перемещение доступно только с активным премиум-статусом.
+            </p>
+          ) : waypointsState.waypoints.length === 0 ? (
+            <p className="text-[10px] text-muted-foreground text-center py-2">
+              Вы ещё не посещали других локаций — путешествуйте обычным путём, чтобы открыть точки телепорта.
+            </p>
+          ) : (
+            <div className="flex flex-wrap gap-1.5">
+              {waypointsState.waypoints.map(w => (
+                <Button
+                  key={w.id}
+                  size="sm"
+                  variant="outline"
+                  className="h-8 text-xs border-border"
+                  disabled={waypointsLoading || loading || fastTravellingTo !== null || !!player?.inCombat}
+                  onClick={() => onFastTravel(w.id)}
+                >
+                  {fastTravellingTo === w.id ? '...' : `${w.icon} ${w.nameRu}`}
+                </Button>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {LOCATIONS.map(loc => {
         const isCurrentLocation = player?.locationId === loc.id;

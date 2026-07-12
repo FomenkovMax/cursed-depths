@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { validateTelegramRequest } from '@/lib/auth';
 import { issueDailyQuests, issueChainQuests } from '@/lib/quests';
+import { markLocationVisited } from '@/lib/fast-travel';
 
 export async function POST(req: NextRequest) {
   try {
@@ -78,6 +79,9 @@ export async function POST(req: NextRequest) {
       await issueDailyQuests(tx, created.id, created.level);
       // Первый шаг каждой квестовой цепочки — постоянный прогресс поверх ежедневных заданий
       await issueChainQuests(tx, created.id);
+
+      // Стартовая локация сразу считается "посещённой" для будущего быстрого перемещения
+      await markLocationVisited(tx, created.id, created.locationId);
 
       // Re-fetch player with inventory, quests, race and class included
       return tx.player.findUnique({

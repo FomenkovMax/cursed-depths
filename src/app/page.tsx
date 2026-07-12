@@ -41,6 +41,7 @@ import {
   TitlesStateView,
   AuctionStateView,
   BattlePassStateView,
+  WaypointsStateView,
 } from '@/lib/game-types';
 import { LoadingScreen } from '@/components/game/LoadingScreen';
 import { CharacterCreationScreen } from '@/components/game/CharacterCreationScreen';
@@ -120,6 +121,9 @@ export default function CursedDepths() {
   const [battlePassState, setBattlePassState] = useState<BattlePassStateView | null>(null);
   const [battlePassLoading, setBattlePassLoading] = useState(false);
   const [claimingTier, setClaimingTier] = useState<number | null>(null);
+  const [waypointsState, setWaypointsState] = useState<WaypointsStateView | null>(null);
+  const [waypointsLoading, setWaypointsLoading] = useState(false);
+  const [fastTravellingTo, setFastTravellingTo] = useState<string | null>(null);
   const [expeditionState, setExpeditionState] = useState<ExpeditionStateView | null>(null);
   const [expeditionLoading, setExpeditionLoading] = useState(false);
   const [startingExpeditionId, setStartingExpeditionId] = useState<string | null>(null);
@@ -739,6 +743,40 @@ export default function CursedDepths() {
       setMessage({ text: 'Ошибка получения награды', type: 'error' });
     } finally {
       setClaimingTier(null);
+    }
+  };
+
+  // ===== БЫСТРОЕ ПЕРЕМЕЩЕНИЕ (lib/fast-travel.ts) — премиум-эксклюзивный телепорт между уже
+  // посещёнными локациями, живёт на вкладке "Карта". =====
+  const refreshWaypointsState = useCallback(() => {
+    setWaypointsLoading(true);
+    apiCall('/api/travel/waypoints')
+      .then(data => { if (data.premiumActive !== undefined) setWaypointsState(data); })
+      .catch(() => setMessage({ text: 'Не удалось загрузить точки телепорта', type: 'error' }))
+      .finally(() => setWaypointsLoading(false));
+  }, [apiCall]);
+
+  useEffect(() => {
+    if (tab !== 'map' || !telegramIdRef.current) return;
+    refreshWaypointsState();
+  }, [tab, refreshWaypointsState]);
+
+  const handleFastTravel = async (locationId: string) => {
+    if (!player) return;
+    setFastTravellingTo(locationId);
+    try {
+      const data = await apiCall('/api/travel/fast', 'POST', { locationId });
+      if (data.error) {
+        setMessage({ text: data.error, type: 'error' });
+      } else {
+        setMessage({ text: data.message, type: 'success' });
+        setPlayer(data.player);
+        refreshWaypointsState();
+      }
+    } catch {
+      setMessage({ text: 'Ошибка быстрого перемещения', type: 'error' });
+    } finally {
+      setFastTravellingTo(null);
     }
   };
 
@@ -1936,7 +1974,16 @@ export default function CursedDepths() {
             onGoToOverview={() => setTab('overview')}
           />
 
-          <MapTab player={player} location={location} loading={loading} onTravel={handleTravel} />
+          <MapTab
+            player={player}
+            location={location}
+            loading={loading}
+            onTravel={handleTravel}
+            waypointsState={waypointsState}
+            waypointsLoading={waypointsLoading}
+            fastTravellingTo={fastTravellingTo}
+            onFastTravel={handleFastTravel}
+          />
 
           <InventoryTab
             player={player}

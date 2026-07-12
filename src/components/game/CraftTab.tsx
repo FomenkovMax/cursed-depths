@@ -209,6 +209,13 @@ export function CraftTab({ player, loading, canCraftRecipe, learnedRecipeIds, on
         </CardContent>
       </Card>
 
+      {/* Тома рецептов (lib/recipe-tomes.ts) — премиум-эксклюзивный ДОПОЛНИТЕЛЬНЫЙ шанс найти
+          чертежи тира III (📜 ниже) с любой победы в бою, независимо от обычного шанса дропа с
+          боссов — статичная подсказка, сама механика не требует отдельного экрана. */}
+      <p className="text-[10px] text-muted-foreground text-center px-2">
+        📜 Чертежи тира III (отмечены ниже) капают редко с боссов у всех игроков — премиум даёт дополнительный независимый шанс найти их с любой победы в бою.
+      </p>
+
       {/* Recipes */}
       <ScrollArea className="max-h-[55vh]">
         <div className="space-y-2 pr-2">

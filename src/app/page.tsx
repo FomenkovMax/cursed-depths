@@ -727,6 +727,13 @@ export default function CursedDepths() {
     refreshBattlePassState();
   }, [tab, refreshBattlePassState]);
 
+  // Кошелёк (OverviewTab) показывает очки Боевого пропуска сразу на первом экране — та же
+  // подгрузка при входе, что уже есть у premiumState/petsState, не только при заходе на вкладку.
+  useEffect(() => {
+    if (screen !== 'game' || !telegramIdRef.current) return;
+    refreshBattlePassState();
+  }, [screen, refreshBattlePassState]);
+
   const handleClaimTier = async (tier: number) => {
     if (!player) return;
     setClaimingTier(tier);
@@ -1960,6 +1967,8 @@ export default function CursedDepths() {
             onStartAbyss={handleStartAbyss}
             onStartTrial={handleStartTrial}
             activePetId={petsState?.activePetId ?? null}
+            crownShards={premiumState?.crownShards ?? 0}
+            battlePassXp={battlePassState?.premiumActive ? battlePassState.xp : null}
           />
 
           <CombatTab

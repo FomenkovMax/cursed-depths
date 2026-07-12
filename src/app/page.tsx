@@ -16,6 +16,7 @@ import {
   PartyData,
   PartyCombatStateResponse,
   ExplorationEvent,
+  CheckRollResultView,
   TrialJunctionView,
   AchievementEntry,
   CodexEntryView,
@@ -81,6 +82,7 @@ export default function CursedDepths() {
   const [combatLog, setCombatLog] = useState<CombatLogEntry[]>([]);
   const [shaking, setShaking] = useState(false);
   const [levelUpAnimation, setLevelUpAnimation] = useState(false);
+  const [diceRoll, setDiceRoll] = useState<CheckRollResultView | null>(null);
   const [floatingDamage, setFloatingDamage] = useState<{ id: number; text: string; color: string }[]>([]);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [leaderboardLoading, setLeaderboardLoading] = useState(false);
@@ -1163,6 +1165,10 @@ export default function CursedDepths() {
     try {
       const data = await apiCall('/api/explore/event', 'POST', { eventId: explorationEvent.id, choiceId });
       setExplorationEvent(null);
+      if (data.checkResult) {
+        setDiceRoll(data.checkResult);
+        setTimeout(() => setDiceRoll(null), 1600);
+      }
       if (data.error) {
         setMessage({ text: data.error, type: 'error' });
       } else if (data.type === 'combat') {
@@ -1951,6 +1957,26 @@ export default function CursedDepths() {
           <div className="animate-level-up text-center">
             <div className="text-6xl mb-2">⬆️</div>
             <div className="text-3xl font-bold text-gold">УРОВЕНЬ UP!</div>
+          </div>
+        </div>
+      )}
+
+      {/* Проверка характеристики (rollStatCheck) — крупная цифра + цветовой код успех/провал,
+          BG3-подача броска (аудит 3, BG3 "переносимо в Telegram") поверх уже посчитанного
+          d20+модификатор vs СЛ, который раньше был виден только мелким текстом в тосте. */}
+      {diceRoll && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center pointer-events-none">
+          <div className="animate-level-up text-center">
+            <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1">{diceRoll.statLabel}</div>
+            <div className={`text-5xl font-bold ${diceRoll.success ? 'text-uncommon' : 'text-destructive'}`}>
+              {diceRoll.total}
+            </div>
+            <div className="text-xs text-muted-foreground mt-1">
+              🎲{diceRoll.roll} {diceRoll.modifier >= 0 ? '+' : ''}{diceRoll.modifier} vs СЛ {diceRoll.dc}
+            </div>
+            <div className={`text-lg font-bold mt-1 ${diceRoll.success ? 'text-uncommon' : 'text-destructive'}`}>
+              {diceRoll.success ? 'Успех!' : 'Провал'}
+            </div>
           </div>
         </div>
       )}

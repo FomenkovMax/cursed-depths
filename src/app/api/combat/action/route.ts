@@ -78,6 +78,7 @@ import { battlePassXpForKill, effectiveBattlePassXp } from '@/lib/battle-pass';
 import { currentSeasonId } from '@/lib/seasons';
 import { TOME_DROP_CHANCE, pickUncollectedTome } from '@/lib/recipe-tomes';
 import { rarestBossDrop, pityCapFor } from '@/lib/boss-trophies';
+import { guildGoldMultBonus, guildXpMultBonus } from '@/lib/guild-upgrades';
 
 export async function POST(req: NextRequest) {
   const auth = validateTelegramRequest(req);
@@ -174,6 +175,20 @@ export async function POST(req: NextRequest) {
     // плоского стата: +20% золота и опыта с любого боя, пока экипирован. Прямая проверка itemId,
     // без парсинга текста — тот же приём, что у premiumMult/fortressGoldMult выше.
     const uniqueItemGoldXpMult = player.inventory.some(i => i.equipped && i.itemId === 'ring_unquenchable_thirst') ? 1.2 : 1;
+    // Гильдейское дерево построек (аудит 4.1, D2, lib/guild-upgrades.ts) — постоянные пассивные
+    // бонусы, разблокированные лидером за казну, накопленную пожертвованиями участников.
+    // Умножается поверх всех остальных множителей выше, тот же приём, что fortressGoldMult.
+    let guildGoldMult = 1;
+    let guildXpMult = 1;
+    if (player.guildMember) {
+      const unlockedGuildUpgrades = await db.guildUpgrade.findMany({
+        where: { guildId: player.guildMember.guildId },
+        select: { upgradeId: true },
+      });
+      const unlockedIds = new Set(unlockedGuildUpgrades.map(u => u.upgradeId));
+      guildGoldMult = 1 + guildGoldMultBonus(unlockedIds);
+      guildXpMult = 1 + guildXpMultBonus(unlockedIds);
+    }
 
     // Track deferred DB operations for transaction
     let itemToConsume: { id: string; delete: boolean } | null = null;
@@ -545,8 +560,8 @@ export async function POST(req: NextRequest) {
     if (enemyHp <= 0 && !combatOver) {
       combatOver = true;
       playerWon = true;
-      xpGained = Math.round(enemyTemplate.xp * dungeonEffect.xpMult * abyssEffect.xpMult * xpMultTotal * uniqueItemGoldXpMult);
-      goldGained = Math.round((enemyTemplate.gold + rollDice('1d4') * Math.ceil(player.level / 2)) * dungeonEffect.goldMult * abyssEffect.goldMult * fortressGoldMult * premiumMult * uniqueItemGoldXpMult);
+      xpGained = Math.round(enemyTemplate.xp * dungeonEffect.xpMult * abyssEffect.xpMult * xpMultTotal * uniqueItemGoldXpMult * guildXpMult);
+      goldGained = Math.round((enemyTemplate.gold + rollDice('1d4') * Math.ceil(player.level / 2)) * dungeonEffect.goldMult * abyssEffect.goldMult * fortressGoldMult * premiumMult * uniqueItemGoldXpMult * guildGoldMult);
       droppedItems.push(...rollLoot(enemyTemplate.lootTable));
       const currencyDrop = rollCurrencyDrop(enemyTemplate.isBoss);
       if (currencyDrop) droppedItems.push(currencyDrop);
@@ -813,8 +828,8 @@ export async function POST(req: NextRequest) {
             }
           } else {
             dungeonJustCompleted = true;
-            xpGained += Math.round(dungeon.completionReward.xp * dungeonEffect.xpMult * xpMultTotal);
-            goldGained += Math.round(dungeon.completionReward.gold * dungeonEffect.goldMult * fortressGoldMult * premiumMult);
+            xpGained += Math.round(dungeon.completionReward.xp * dungeonEffect.xpMult * xpMultTotal * guildXpMult);
+            goldGained += Math.round(dungeon.completionReward.gold * dungeonEffect.goldMult * fortressGoldMult * premiumMult * guildGoldMult);
             for (const rewardItemId of dungeon.completionReward.items ?? []) {
               const rewardItemData = ITEMS.find(i => i.id === rewardItemId);
               if (rewardItemData) {
@@ -860,8 +875,8 @@ export async function POST(req: NextRequest) {
             }
           } else {
             trialJustCompleted = true;
-            xpGained += Math.round(trial.completionReward.xp * xpMultTotal);
-            goldGained += Math.round(trial.completionReward.gold * fortressGoldMult * premiumMult);
+            xpGained += Math.round(trial.completionReward.xp * xpMultTotal * guildXpMult);
+            goldGained += Math.round(trial.completionReward.gold * fortressGoldMult * premiumMult * guildGoldMult);
             for (const rewardItemId of trial.completionReward.items ?? []) {
               const rewardItemData = ITEMS.find(i => i.id === rewardItemId);
               if (rewardItemData) {

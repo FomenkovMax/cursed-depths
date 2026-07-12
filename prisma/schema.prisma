@@ -221,10 +221,16 @@ model Guild {
   tag       String   // короткий тег 2-6 символов, показывается рядом с именем игрока
   leaderId  String   // Player.id
   createdAt DateTime @default(now())
+  // Казна гильдии (аудит 4.1, D2) — накапливается пожертвованиями золота от участников
+  // (POST /api/guild/donate), тратится лидером на разблокировку узлов дерева построек
+  // (POST /api/guild/upgrade, см. lib/guild-upgrades.ts). Отдельный голд-синк, не связан
+  // с личным золотом игрока после пожертвования.
+  treasury  Int      @default(0)
 
   members   GuildMember[]
   fortressAssaults FortressContribution[]
   raidBoss  GuildRaidBoss?
+  upgrades  GuildUpgrade[]
 }
 
 model GuildMember {
@@ -428,6 +434,23 @@ model GuildRaidContribution {
 
   @@index([bossId, cycleId])
   @@index([playerId])
+}
+
+// Разблокированный узел гильдейского дерева построек (аудит 4.1, D2) — постоянные пассивные
+// бонусы гильдии за совместную активность (в отличие от GuildRaidBoss/Fortress выше, которые
+// дают эфемерный/циклический прогресс). Дерево статично в lib/guild-upgrades.ts, здесь только
+// факт разблокировки — тот же паттерн, что PlayerAchievement/PlayerCodexEntry ниже, только на
+// уровне гильдии, а не игрока. Разблокировка необратима — построек, которые можно "снести"
+// обратно в золото, нет (не должно быть способа фармить туда-обратно ради обхода cost).
+model GuildUpgrade {
+  id         String   @id @default(cuid())
+  guildId    String
+  guild      Guild    @relation(fields: [guildId], references: [id], onDelete: Cascade)
+  upgradeId  String   // статичный id из lib/guild-upgrades.ts GUILD_UPGRADES
+  unlockedAt DateTime @default(now())
+
+  @@unique([guildId, upgradeId])
+  @@index([guildId])
 }
 
 // Разблокированные ачивки — определения статичны в lib/achievements.ts, здесь только факт

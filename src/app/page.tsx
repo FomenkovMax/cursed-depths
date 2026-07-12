@@ -53,6 +53,7 @@ import { RespecModal } from '@/components/game/RespecModal';
 import { ExplorationEventModal } from '@/components/game/ExplorationEventModal';
 import { TrialJunctionModal } from '@/components/game/TrialJunctionModal';
 import { useRespec } from '@/hooks/useRespec';
+import { useGuildUpgrades } from '@/hooks/useGuildUpgrades';
 import { AchievementsTab } from '@/components/game/AchievementsTab';
 import { TrophyRoomTab } from '@/components/game/TrophyRoomTab';
 import { CodexTab } from '@/components/game/CodexTab';
@@ -345,6 +346,7 @@ export default function CursedDepths() {
   }, []);
 
   const respec = useRespec({ apiCall, onPlayerUpdate: setPlayer, onMessage: setMessage });
+  const guildUpgrades = useGuildUpgrades({ apiCall, onPlayerUpdate: setPlayer, onGuildUpdate: setGuild, onMessage: setMessage });
 
   // ===== LEADERBOARD =====
   useEffect(() => {
@@ -2120,6 +2122,11 @@ export default function CursedDepths() {
             guildRaidBoss={guildRaidBoss}
             guildRaidBossLoading={guildRaidBossLoading}
             onAttackGuildRaidBoss={handleAttackGuildRaidBoss}
+            playerGold={player?.gold ?? 0}
+            donatingTreasury={guildUpgrades.donating}
+            onDonateTreasury={guildUpgrades.donate}
+            unlockingUpgradeId={guildUpgrades.unlockingId}
+            onUnlockUpgrade={guildUpgrades.unlock}
           />
 
           <PremiumShopTab

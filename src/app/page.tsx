@@ -502,7 +502,10 @@ export default function CursedDepths() {
   }, [apiCall]);
 
   useEffect(() => {
-    if (tab !== 'guild' || !telegramIdRef.current) return;
+    // Экран "Сегодня" на вкладке "Обзор" тоже показывает статус мирового босса — тот же
+    // приём, что уже есть у premiumState/battlePassState: подгружаем не только на "своей"
+    // вкладке, чтобы агрегатор не был пустым до первого визита в "Гильдию".
+    if ((tab !== 'guild' && tab !== 'overview') || !telegramIdRef.current) return;
     refreshWorldBoss();
   }, [tab, refreshWorldBoss]);
 
@@ -537,7 +540,7 @@ export default function CursedDepths() {
   }, [apiCall]);
 
   useEffect(() => {
-    if (tab !== 'guild' || !telegramIdRef.current) return;
+    if ((tab !== 'guild' && tab !== 'overview') || !telegramIdRef.current) return;
     refreshFortress();
   }, [tab, refreshFortress]);
 
@@ -570,7 +573,7 @@ export default function CursedDepths() {
   }, [apiCall]);
 
   useEffect(() => {
-    if (tab !== 'guild' || !telegramIdRef.current) return;
+    if ((tab !== 'guild' && tab !== 'overview') || !telegramIdRef.current) return;
     refreshGuildRaidBoss();
   }, [tab, refreshGuildRaidBoss]);
 
@@ -798,7 +801,7 @@ export default function CursedDepths() {
   }, [apiCall]);
 
   useEffect(() => {
-    if (tab !== 'premium' || !telegramIdRef.current) return;
+    if ((tab !== 'premium' && tab !== 'overview') || !telegramIdRef.current) return;
     refreshExpeditionState();
   }, [tab, refreshExpeditionState]);
 
@@ -851,7 +854,7 @@ export default function CursedDepths() {
   }, [apiCall]);
 
   useEffect(() => {
-    if (tab !== 'premium' || !telegramIdRef.current) return;
+    if ((tab !== 'premium' && tab !== 'overview') || !telegramIdRef.current) return;
     refreshBountyState();
   }, [tab, refreshBountyState]);
 
@@ -1969,6 +1972,12 @@ export default function CursedDepths() {
             activePetId={petsState?.activePetId ?? null}
             crownShards={premiumState?.crownShards ?? 0}
             battlePassXp={battlePassState?.premiumActive ? battlePassState.xp : null}
+            worldBoss={worldBoss}
+            fortress={fortress}
+            guildRaidBoss={guildRaidBoss}
+            expeditionState={expeditionState}
+            bountyState={bountyState}
+            onNavigateTab={setTab}
           />
 
           <CombatTab

@@ -14,6 +14,11 @@ import { trialForLocation } from '@/lib/trials';
 import { ABYSS_LOCATION_ID, ABYSS_MIN_LEVEL } from '@/lib/abyss';
 import { MarketPanel } from './MarketPanel';
 import { WalletPanel, type WalletCurrency } from './WalletPanel';
+import { TodayPanel } from './TodayPanel';
+import type {
+  WorldBossStateView, FortressStateView, GuildRaidBossStateView,
+  ExpeditionStateView, BountyStateView, GameTab,
+} from '@/lib/game-types';
 
 const WALLET_CURRENCY_IDS = ['ash_shard', 'aylet_tear', 'tornak_seal', 'kessara_whisper'];
 const WALLET_CURRENCY_META: Record<string, { icon: string; nameRu: string }> = {
@@ -49,6 +54,12 @@ interface OverviewTabProps {
   activePetId: string | null;
   crownShards: number;
   battlePassXp: number | null;
+  worldBoss: WorldBossStateView | null;
+  fortress: FortressStateView | null;
+  guildRaidBoss: GuildRaidBossStateView | null;
+  expeditionState: ExpeditionStateView | null;
+  bountyState: BountyStateView | null;
+  onNavigateTab: (tab: GameTab) => void;
 }
 
 export function OverviewTab({
@@ -71,6 +82,12 @@ export function OverviewTab({
   activePetId,
   crownShards,
   battlePassXp,
+  worldBoss,
+  fortress,
+  guildRaidBoss,
+  expeditionState,
+  bountyState,
+  onNavigateTab,
 }: OverviewTabProps) {
   const playerInventory = player?.inventory || [];
   const activePet = activePetId ? findPet(activePetId) : null;
@@ -146,6 +163,17 @@ export function OverviewTab({
           </div>
         </CardContent>
       </Card>
+
+      <TodayPanel
+        canClaimDaily={canClaimDaily}
+        onClaimDaily={onDaily}
+        worldBoss={worldBoss}
+        fortress={fortress}
+        guildRaidBoss={guildRaidBoss}
+        expeditionState={expeditionState}
+        bountyState={bountyState}
+        onNavigateTab={onNavigateTab}
+      />
 
       <WalletPanel gold={player?.gold ?? 0} crownShards={crownShards} currencies={walletCurrencies} battlePassXp={battlePassXp} />
 

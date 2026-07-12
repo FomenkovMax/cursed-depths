@@ -4,6 +4,8 @@ import { validateTelegramRequest } from '@/lib/auth';
 import { BATTLE_PASS_TIERS, effectiveBattlePassXp } from '@/lib/battle-pass';
 import { currentSeasonId } from '@/lib/seasons';
 import { isPremiumActive } from '@/lib/premium-shop';
+import { ITEMS } from '@/lib/game-data';
+import { addItemToInventory } from '@/lib/inventory-utils';
 
 export async function POST(req: NextRequest) {
   const auth = validateTelegramRequest(req);
@@ -40,6 +42,14 @@ export async function POST(req: NextRequest) {
             ...(tierDef.reward.crownShards ? { crownShards: { increment: tierDef.reward.crownShards } } : {}),
           },
         });
+        for (const entry of tierDef.reward.items ?? []) {
+          const itemData = ITEMS.find(i => i.id === entry.itemId);
+          if (!itemData) continue;
+          await addItemToInventory({
+            playerId: player.id, itemId: itemData.id, name: itemData.nameRu, type: itemData.type,
+            rarity: itemData.rarity, stats: JSON.stringify(itemData.stats), icon: itemData.icon, quantity: entry.quantity,
+          }, tx);
+        }
       });
     } catch {
       return NextResponse.json({ error: 'Награда за этот тир уже забрана' }, { status: 409 });

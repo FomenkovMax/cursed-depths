@@ -4,6 +4,7 @@ import { validateTelegramRequest } from '@/lib/auth';
 import { BATTLE_PASS_TIERS, effectiveBattlePassXp } from '@/lib/battle-pass';
 import { currentSeasonId } from '@/lib/seasons';
 import { isPremiumActive } from '@/lib/premium-shop';
+import { ITEMS } from '@/lib/game-data';
 
 export async function GET(req: NextRequest) {
   const auth = validateTelegramRequest(req);
@@ -28,7 +29,14 @@ export async function GET(req: NextRequest) {
     const tiers = BATTLE_PASS_TIERS.map(t => ({
       tier: t.tier,
       xpRequired: t.xpRequired,
-      reward: t.reward,
+      reward: {
+        gold: t.reward.gold,
+        crownShards: t.reward.crownShards,
+        items: t.reward.items?.map(entry => {
+          const item = ITEMS.find(i => i.id === entry.itemId);
+          return { itemId: entry.itemId, quantity: entry.quantity, nameRu: item?.nameRu ?? entry.itemId, icon: item?.icon ?? '📦' };
+        }),
+      },
       unlocked: xp >= t.xpRequired,
       claimed: claimedTiers.has(t.tier),
     }));

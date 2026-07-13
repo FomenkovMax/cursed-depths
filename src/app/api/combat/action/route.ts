@@ -18,7 +18,6 @@ import {
 } from '@/lib/combat/combat-engine';
 import {
   initBossState,
-  applyDamageToBoss,
   resolveBossTurn,
   bossAcMultiplier,
   adaptiveResistMultiplier,
@@ -82,6 +81,7 @@ import { currentSeasonId } from '@/lib/social/seasons';
 import { TOME_DROP_CHANCE, pickUncollectedTome } from '@/lib/economy/recipe-tomes';
 import { rarestBossDrop, pityCapFor } from '@/lib/social/boss-trophies';
 import { guildGoldMultBonus, guildXpMultBonus } from '@/lib/social/guild-upgrades';
+import { dealDamageToEnemy, resolveLootItems } from '@/lib/combat/combat-action-helpers';
 
 export async function POST(req: NextRequest) {
   const auth = validateTelegramRequest(req);
@@ -322,8 +322,8 @@ export async function POST(req: NextRequest) {
       const { mult: offenseMult, messages: offenseMsgs, lifestealPercent, ignoreDefensePercent } = applyPassiveOffenseBonuses();
       const attackAc = ignoreDefensePercent > 0 ? Math.max(1, Math.round(effectiveAc * (1 - ignoreDefensePercent))) : effectiveAc;
       const rawDamage = Math.round(mitigateDamage(basicAttackDamage(combatStats) + weaponBonus, attackAc) * curseMult * resist * passiveDamageMult * offenseMult);
-      const { hpDamage, messages } = applyDamageToBoss(enemyTemplate.mechanics, bossState, rawDamage);
-      enemyHp = Math.max(0, enemyHp - hpDamage);
+      const { enemyHp: enemyHpAfterAttack, hpDamage, messages } = dealDamageToEnemy(enemyTemplate.mechanics, bossState, enemyHp, rawDamage);
+      enemyHp = enemyHpAfterAttack;
       const absorbed = rawDamage > 0 && hpDamage === 0;
       combatLog.push({ text: absorbed ? 'Вы атакуете! Урон поглощён щитом.' : `Вы атакуете! Урон: ${hpDamage}`, turn: currentTurn });
       if (resist < 1) combatLog.push({ text: 'Враг адаптировался к этому типу урона!', turn: currentTurn });
@@ -352,8 +352,8 @@ export async function POST(req: NextRequest) {
           combatLog.push({ text: `Вы использовали ${item.name}. Восстановлено ${stats.healMp} MP.`, turn: currentTurn });
         } else if (stats.damage) {
           const itemDamage = Math.round(stats.damage * curseMult);
-          const { hpDamage, messages } = applyDamageToBoss(enemyTemplate.mechanics, bossState, itemDamage);
-          enemyHp = Math.max(0, enemyHp - hpDamage);
+          const { enemyHp: enemyHpAfterItem, hpDamage, messages } = dealDamageToEnemy(enemyTemplate.mechanics, bossState, enemyHp, itemDamage);
+          enemyHp = enemyHpAfterItem;
           const absorbed = itemDamage > 0 && hpDamage === 0;
           combatLog.push({ text: absorbed ? `Вы использовали ${item.name}. Урон поглощён щитом.` : `Вы использовали ${item.name}. Урон: ${hpDamage}`, turn: currentTurn });
           for (const m of messages) combatLog.push({ text: m, turn: currentTurn });
@@ -442,8 +442,8 @@ export async function POST(req: NextRequest) {
             const resist = adaptiveResistMultiplier(enemyTemplate.mechanics, bossState, 'ability');
             const { mult: offenseMult, messages: offenseMsgs, lifestealPercent } = applyPassiveOffenseBonuses(immediateSelfBuff?.guaranteedCrit ?? false);
             const abilityDamage = Math.round(resolution.damage * curseMult * resist * passiveDamageMult * offenseMult);
-            const { hpDamage, messages } = applyDamageToBoss(enemyTemplate.mechanics, bossState, abilityDamage);
-            enemyHp = Math.max(0, enemyHp - hpDamage);
+            const { enemyHp: enemyHpAfterAbility, hpDamage, messages } = dealDamageToEnemy(enemyTemplate.mechanics, bossState, enemyHp, abilityDamage);
+            enemyHp = enemyHpAfterAbility;
             damageAbsorbed = hpDamage === 0;
             resolution.damage = hpDamage;
             if (resist < 1) messages.push('Враг адаптировался к этому типу урона!');
@@ -629,12 +629,9 @@ export async function POST(req: NextRequest) {
       }
 
       // Collect loot items for deferred addition in transaction
-      for (const lootItemId of droppedItems) {
-        const itemData = ITEMS.find(i => i.id === lootItemId);
-        if (itemData) {
-          lootItems.push({ itemData, quantity: 1 });
-          combatLog.push({ text: `Найдено: ${itemData.nameRu}!`, turn: currentTurn + 1 });
-        }
+      for (const itemData of resolveLootItems(droppedItems)) {
+        lootItems.push({ itemData, quantity: 1 });
+        combatLog.push({ text: `Найдено: ${itemData.nameRu}!`, turn: currentTurn + 1 });
       }
     }
 
@@ -689,8 +686,8 @@ export async function POST(req: NextRequest) {
         } else {
           const reflected = Math.random() < reflectChancePercent(playerPassives);
           if (reflected) {
-            const { hpDamage: reflectedDmg, messages } = applyDamageToBoss(enemyTemplate.mechanics, bossState, incomingDamage);
-            enemyHp = Math.max(0, enemyHp - reflectedDmg);
+            const { enemyHp: enemyHpAfterReflect, hpDamage: reflectedDmg, messages } = dealDamageToEnemy(enemyTemplate.mechanics, bossState, enemyHp, incomingDamage);
+            enemyHp = enemyHpAfterReflect;
             combatLog.push({ text: `${enemyTemplate.nameRu} атакует! Вы отражаете удар — враг получает ${reflectedDmg} урона!`, turn: currentTurn + 1 });
             for (const m of messages) combatLog.push({ text: m, turn: currentTurn + 1 });
           } else {
@@ -705,8 +702,8 @@ export async function POST(req: NextRequest) {
             if (counterFlatPercent > 0) {
               const counterDmg = Math.round(incomingDamage * counterFlatPercent);
               if (counterDmg > 0) {
-                const { hpDamage: counterHpDmg, messages } = applyDamageToBoss(enemyTemplate.mechanics, bossState, counterDmg);
-                enemyHp = Math.max(0, enemyHp - counterHpDmg);
+                const { enemyHp: enemyHpAfterCounter, hpDamage: counterHpDmg, messages } = dealDamageToEnemy(enemyTemplate.mechanics, bossState, enemyHp, counterDmg);
+                enemyHp = enemyHpAfterCounter;
                 combatLog.push({ text: `Вы наносите ${counterHpDmg} урона в ответ!`, turn: currentTurn + 1 });
                 for (const m of messages) combatLog.push({ text: m, turn: currentTurn + 1 });
               }
@@ -744,8 +741,8 @@ export async function POST(req: NextRequest) {
               if (blockCounterPercent > 0) {
                 const counterDmg = Math.round(incomingDamage * blockCounterPercent);
                 if (counterDmg > 0) {
-                  const { hpDamage: counterHpDmg, messages } = applyDamageToBoss(enemyTemplate.mechanics, bossState, counterDmg);
-                  enemyHp = Math.max(0, enemyHp - counterHpDmg);
+                  const { enemyHp: enemyHpAfterBlockCounter, hpDamage: counterHpDmg, messages } = dealDamageToEnemy(enemyTemplate.mechanics, bossState, enemyHp, counterDmg);
+                  enemyHp = enemyHpAfterBlockCounter;
                   combatLog.push({ text: `Шипы наносят ${counterHpDmg} урона в ответ на блокированный удар!`, turn: currentTurn + 1 });
                   for (const m of messages) combatLog.push({ text: m, turn: currentTurn + 1 });
                 }
@@ -834,13 +831,10 @@ export async function POST(req: NextRequest) {
             dungeonJustCompleted = true;
             xpGained += Math.round(dungeon.completionReward.xp * dungeonEffect.xpMult * xpMultTotal * guildXpMult);
             goldGained += Math.round(dungeon.completionReward.gold * dungeonEffect.goldMult * fortressGoldMult * premiumMult * guildGoldMult);
-            for (const rewardItemId of dungeon.completionReward.items ?? []) {
-              const rewardItemData = ITEMS.find(i => i.id === rewardItemId);
-              if (rewardItemData) {
-                lootItems.push({ itemData: rewardItemData, quantity: 1 });
-                droppedItems.push(rewardItemId);
-                combatLog.push({ text: `Найдено: ${rewardItemData.nameRu}!`, turn: currentTurn + 3 });
-              }
+            for (const rewardItemData of resolveLootItems(dungeon.completionReward.items ?? [])) {
+              lootItems.push({ itemData: rewardItemData, quantity: 1 });
+              droppedItems.push(rewardItemData.id);
+              combatLog.push({ text: `Найдено: ${rewardItemData.nameRu}!`, turn: currentTurn + 3 });
             }
             combatLog.push({ text: dungeon.completionLoreRu, turn: currentTurn + 3 });
             combatLog.push({ text: `Данж «${dungeon.nameRu}» пройден! Бонус: +${dungeon.completionReward.xp} XP, +${dungeon.completionReward.gold} золота`, turn: currentTurn + 3 });
@@ -881,13 +875,10 @@ export async function POST(req: NextRequest) {
             trialJustCompleted = true;
             xpGained += Math.round(trial.completionReward.xp * xpMultTotal * guildXpMult);
             goldGained += Math.round(trial.completionReward.gold * fortressGoldMult * premiumMult * guildGoldMult);
-            for (const rewardItemId of trial.completionReward.items ?? []) {
-              const rewardItemData = ITEMS.find(i => i.id === rewardItemId);
-              if (rewardItemData) {
-                lootItems.push({ itemData: rewardItemData, quantity: 1 });
-                droppedItems.push(rewardItemId);
-                combatLog.push({ text: `Найдено: ${rewardItemData.nameRu}!`, turn: currentTurn + 3 });
-              }
+            for (const rewardItemData of resolveLootItems(trial.completionReward.items ?? [])) {
+              lootItems.push({ itemData: rewardItemData, quantity: 1 });
+              droppedItems.push(rewardItemData.id);
+              combatLog.push({ text: `Найдено: ${rewardItemData.nameRu}!`, turn: currentTurn + 3 });
             }
             combatLog.push({ text: trial.completionLoreRu, turn: currentTurn + 3 });
             combatLog.push({ text: `Испытание «${trial.nameRu}» пройдено! Бонус: +${trial.completionReward.xp} XP, +${trial.completionReward.gold} золота`, turn: currentTurn + 3 });

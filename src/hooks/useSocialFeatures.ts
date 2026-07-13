@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
+  ApiCallFn,
   GameMessage,
   GameScreen,
   GameTab,
@@ -14,7 +15,7 @@ import {
 } from '@/lib/game-types';
 
 interface UseSocialFeaturesArgs {
-  apiCall: (url: string, method?: string, body?: unknown) => Promise<Record<string, unknown> & { error?: string }>;
+  apiCall: ApiCallFn;
   telegramIdRef: React.RefObject<string>;
   screen: GameScreen;
   tab: GameTab;

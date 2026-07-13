@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
-import { AccountVaultStateView, GameMessage, GameTab, PlayerData } from '@/lib/game-types';
+import { AccountVaultStateView, ApiCallFn, GameMessage, GameTab, PlayerData } from '@/lib/game-types';
 
 interface UseAccountVaultArgs {
-  apiCall: (url: string, method?: string, body?: unknown) => Promise<Record<string, unknown> & { error?: string; message?: string }>;
+  apiCall: ApiCallFn;
   telegramIdRef: React.RefObject<string>;
   tab: GameTab;
   onPlayerUpdate: (player: PlayerData) => void;

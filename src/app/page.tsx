@@ -7,6 +7,7 @@ import { parseDeathWard } from '@/lib/combat/conditional-ability-engine';
 import { Tabs } from '@/components/ui/tabs';
 import { NavBar } from '@/components/game/NavBar';
 import {
+  ApiCallFn,
   PlayerData,
   GameScreen,
   GameTab,
@@ -103,7 +104,7 @@ export default function CursedDepths() {
   const [partyCombatState, setPartyCombatState] = useState<PartyCombatStateResponse | null>(null);
   // Изученные рецепты тира 3 (game-data.ts CRAFTING_RECIPES) — отдельный стейт, а не поле
   // player: только GET /api/player включает player.recipes в ответ, остальные роуты
-  // (explore/combat/travel) — нет, и setPlayer(data.player) после них затёр бы это поле,
+  // (explore/combat/travel) — нет, и setPlayer(data.player as PlayerData) после них затёр бы это поле,
   // если бы оно жило внутри PlayerData.
   const [learnedRecipeIds, setLearnedRecipeIds] = useState<Set<string>>(new Set());
 
@@ -129,7 +130,7 @@ export default function CursedDepths() {
 
   // ===== API HELPER ===== (поднят выше loadPlayer — combat нужен apiCall, а loadPlayer нужен
   // combat.setCombatLog для восстановления боевого лога при возврате в игру посреди боя)
-  const apiCall = useCallback(async (url: string, method = 'GET', body?: unknown) => {
+  const apiCall: ApiCallFn = useCallback(async (url, method = 'GET', body) => {
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
       'x-telegram-id': telegramIdRef.current,
@@ -182,7 +183,7 @@ export default function CursedDepths() {
       }
 
       if (data.exists && data.player) {
-        setPlayer(data.player);
+        setPlayer(data.player as PlayerData);
         if (data.player.recipes) {
           setLearnedRecipeIds(new Set(data.player.recipes.map((r: { recipeId: string }) => r.recipeId)));
         }
@@ -325,9 +326,11 @@ export default function CursedDepths() {
     setAchievementsLoading(true);
     apiCall('/api/achievements')
       .then(data => {
-        if (data.achievements) setAchievements(data.achievements);
-        if (data.newlyUnlocked?.length > 0) {
-          const names = data.newlyUnlocked.map((a: { icon: string; nameRu: string }) => `${a.icon} ${a.nameRu}`).join(', ');
+        const achievements = data.achievements as AchievementEntry[] | undefined;
+        const newlyUnlocked = data.newlyUnlocked as { icon: string; nameRu: string }[] | undefined;
+        if (achievements) setAchievements(achievements);
+        if (newlyUnlocked && newlyUnlocked.length > 0) {
+          const names = newlyUnlocked.map(a => `${a.icon} ${a.nameRu}`).join(', ');
           setMessage({ text: `Новое достижение: ${names}!`, type: 'success' });
         }
       })
@@ -340,7 +343,7 @@ export default function CursedDepths() {
     if (tab !== 'trophies' || !telegramIdRef.current) return;
     setTrophyRoomLoading(true);
     apiCall('/api/trophies/state')
-      .then(data => { if (data.trophies) setTrophyRoom(data); })
+      .then(data => { if (data.trophies) setTrophyRoom(data as unknown as TrophyRoomStateView); })
       .catch(() => setMessage({ text: 'Не удалось загрузить комнату трофеев', type: 'error' }))
       .finally(() => setTrophyRoomLoading(false));
   }, [tab, apiCall]);
@@ -351,9 +354,11 @@ export default function CursedDepths() {
     setCodexLoading(true);
     apiCall('/api/codex')
       .then(data => {
-        if (data.entries) setCodexEntries(data.entries);
-        if (data.newlyUnlocked?.length > 0) {
-          const names = data.newlyUnlocked.map((e: { icon: string; titleRu: string }) => `${e.icon} ${e.titleRu}`).join(', ');
+        const entries = data.entries as CodexEntryView[] | undefined;
+        const newlyUnlocked = data.newlyUnlocked as { icon: string; titleRu: string }[] | undefined;
+        if (entries) setCodexEntries(entries);
+        if (newlyUnlocked && newlyUnlocked.length > 0) {
+          const names = newlyUnlocked.map(e => `${e.icon} ${e.titleRu}`).join(', ');
           setMessage({ text: `Новая запись в кодексе: ${names}!`, type: 'success' });
         }
       })
@@ -365,7 +370,7 @@ export default function CursedDepths() {
   const refreshMarket = useCallback(() => {
     setMarketLoading(true);
     apiCall('/api/market/listings')
-      .then(data => { if (data.listings) setMarketListings(data.listings); })
+      .then(data => { if (data.listings) setMarketListings(data.listings as MarketListingView[]); })
       .catch(() => setMessage({ text: 'Не удалось загрузить аукцион', type: 'error' }))
       .finally(() => setMarketLoading(false));
   }, [apiCall]);
@@ -380,7 +385,7 @@ export default function CursedDepths() {
   const refreshAuction = useCallback(() => {
     setAuctionLoading(true);
     apiCall('/api/auction/listings')
-      .then(data => { if (data.premiumActive !== undefined) setAuctionState(data); })
+      .then(data => { if (data.premiumActive !== undefined) setAuctionState(data as unknown as AuctionStateView); })
       .catch(() => setMessage({ text: 'Не удалось загрузить аукционный дом', type: 'error' }))
       .finally(() => setAuctionLoading(false));
   }, [apiCall]);
@@ -395,17 +400,17 @@ export default function CursedDepths() {
     setPvpLoading(true);
     apiCall('/api/pvp/opponents')
       .then(data => {
-        if (data.opponents) setPvpOpponents(data.opponents);
+        if (data.opponents) setPvpOpponents(data.opponents as PvpOpponentView[]);
         if (typeof data.myRating === 'number') setPvpMyRating(data.myRating);
         if (typeof data.myLeagueBonusScore === 'number') setPvpMyLeagueBonusScore(data.myLeagueBonusScore);
         if (typeof data.myLeagueScore === 'number') setPvpMyLeagueScore(data.myLeagueScore);
-        if (data.myLeague) setPvpMyLeague(data.myLeague);
+        if (data.myLeague) setPvpMyLeague(data.myLeague as PvpLeagueView);
         if (typeof data.myWins === 'number') setPvpMyWins(data.myWins);
         if (typeof data.myLosses === 'number') setPvpMyLosses(data.myLosses);
-        if (data.seasonId) setPvpSeasonId(data.seasonId);
+        if (data.seasonId) setPvpSeasonId(data.seasonId as string);
         if (typeof data.daysUntilSeasonEnd === 'number') setPvpDaysUntilSeasonEnd(data.daysUntilSeasonEnd);
-        if (data.previousSeasonTop3) setPvpPreviousSeasonTop3(data.previousSeasonTop3);
-        if (data.seasonStandings) setPvpSeasonStandings(data.seasonStandings);
+        if (data.previousSeasonTop3) setPvpPreviousSeasonTop3(data.previousSeasonTop3 as PvpSeasonRewardView[]);
+        if (data.seasonStandings) setPvpSeasonStandings(data.seasonStandings as SeasonStandingView[]);
       })
       .catch(() => setMessage({ text: 'Не удалось загрузить арену', type: 'error' }))
       .finally(() => setPvpLoading(false));
@@ -428,7 +433,7 @@ export default function CursedDepths() {
       setMessage({ text: data.won ? 'Победа на арене!' : 'Поражение на арене...', type: data.won ? 'success' : 'info' });
       await refreshPlayer();
       refreshPvpOpponents();
-      return data as PvpFightResultView;
+      return data as unknown as PvpFightResultView;
     } catch {
       setMessage({ text: 'Ошибка боя на арене', type: 'error' });
       return null;
@@ -442,7 +447,7 @@ export default function CursedDepths() {
     setStashLoading(true);
     apiCall('/api/stash')
       .then(data => {
-        if (data.items) setStashItems(data.items);
+        if (data.items) setStashItems(data.items as StashItemView[]);
         if (typeof data.capacity === 'number') setStashCapacity(data.capacity);
       })
       .catch(() => setMessage({ text: 'Не удалось загрузить хранилище', type: 'error' }))
@@ -476,7 +481,7 @@ export default function CursedDepths() {
       if (data.error) {
         setMessage({ text: data.error, type: 'error' });
       } else {
-        setParty(data.party);
+        setParty(data.party as unknown as PartyData);
         setTab('party');
         setMessage({ text: 'Вы вступили в пати!', type: 'success' });
       }
@@ -499,7 +504,7 @@ export default function CursedDepths() {
       }
       const data = await fetch('/api/player', { headers }).then(r => r.json());
       if (data.player) {
-        setPlayer(data.player);
+        setPlayer(data.player as PlayerData);
         if (data.player.recipes) {
           setLearnedRecipeIds(new Set(data.player.recipes.map((r: { recipeId: string }) => r.recipeId)));
         }
@@ -535,11 +540,11 @@ export default function CursedDepths() {
   // ~2 секунды, пока открыта вкладка "Пати") =====
   const refreshParty = useCallback(async () => {
     const data = await apiCall('/api/party/state');
-    if (data.party !== undefined) setParty(data.party);
+    if (data.party !== undefined) setParty(data.party as unknown as PartyData | null);
   }, [apiCall]);
 
   const refreshPartyCombat = useCallback(async () => {
-    const data: PartyCombatStateResponse = await apiCall('/api/party/combat/state');
+    const data = await apiCall('/api/party/combat/state') as unknown as PartyCombatStateResponse;
     if (data.combat !== undefined) setPartyCombatState(data);
     // Каждый ход в пати-бою реально меняет HP/MP кого-то из живых участников (см.
     // party-combat-resolver.ts) — без этого шапка (GameHeader) у ЛЮБОГО зрителя (не только у
@@ -588,7 +593,7 @@ export default function CursedDepths() {
       });
       console.log('[CreatePlayer] Response:', data);
       if (data.success && data.player) {
-        setPlayer(data.player);
+        setPlayer(data.player as PlayerData);
         setScreen('game');
         setMessage({ text: 'Персонаж создан! Добро пожаловать в Проклятые Глубины!', type: 'success' });
       } else {
@@ -612,8 +617,8 @@ export default function CursedDepths() {
       if (data.error) {
         setMessage({ text: data.error, type: 'error' });
       } else {
-        setPlayer(data.player);
-        setMessage({ text: data.message, type: 'success' });
+        setPlayer(data.player as PlayerData);
+        setMessage({ text: data.message as string, type: 'success' });
       }
     } catch {
       setMessage({ text: 'Ошибка путешествия', type: 'error' });
@@ -630,8 +635,8 @@ export default function CursedDepths() {
       if (data.error) {
         setMessage({ text: data.error, type: 'error' });
       } else {
-        setPlayer(data.player);
-        setMessage({ text: data.message, type: 'success' });
+        setPlayer(data.player as PlayerData);
+        setMessage({ text: data.message as string, type: 'success' });
       }
     } catch {
       setMessage({ text: 'Ошибка отдыха', type: 'error' });
@@ -648,8 +653,8 @@ export default function CursedDepths() {
       if (data.error) {
         setMessage({ text: data.error, type: 'error' });
       } else {
-        setPlayer(data.player);
-        setMessage({ text: data.message, type: 'success' });
+        setPlayer(data.player as PlayerData);
+        setMessage({ text: data.message as string, type: 'success' });
         if (data.leveledUp) {
           combat.triggerLevelUp();
         }
@@ -669,7 +674,7 @@ export default function CursedDepths() {
       if (data.error) {
         setMessage({ text: data.error, type: 'error' });
       } else {
-        setMessage({ text: data.message, type: 'success' });
+        setMessage({ text: data.message as string, type: 'success' });
         await refreshPlayer();
       }
     } catch {
@@ -687,7 +692,7 @@ export default function CursedDepths() {
       if (data.error) {
         setMessage({ text: data.error, type: 'error' });
       } else {
-        setMessage({ text: data.message, type: 'success' });
+        setMessage({ text: data.message as string, type: 'success' });
         await refreshPlayer();
       }
     } catch {
@@ -705,8 +710,8 @@ export default function CursedDepths() {
       if (data.error) {
         setMessage({ text: data.error, type: 'error' });
       } else {
-        setPlayer(data.player);
-        setMessage({ text: data.message, type: 'success' });
+        setPlayer(data.player as PlayerData);
+        setMessage({ text: data.message as string, type: 'success' });
       }
     } catch {
       setMessage({ text: 'Ошибка покупки', type: 'error' });
@@ -722,8 +727,8 @@ export default function CursedDepths() {
       if (data.error) {
         setMessage({ text: data.error, type: 'error' });
       } else {
-        setPlayer(data.player);
-        setMessage({ text: data.message, type: 'success' });
+        setPlayer(data.player as PlayerData);
+        setMessage({ text: data.message as string, type: 'success' });
       }
     } catch {
       setMessage({ text: 'Ошибка продажи', type: 'error' });
@@ -740,7 +745,7 @@ export default function CursedDepths() {
       if (data.error) {
         setMessage({ text: data.error, type: 'error' });
       } else {
-        setMessage({ text: data.message, type: 'success' });
+        setMessage({ text: data.message as string, type: 'success' });
         await refreshPlayer();
       }
     } catch {
@@ -758,9 +763,9 @@ export default function CursedDepths() {
       if (data.error) {
         setMessage({ text: data.error, type: 'error' });
       } else {
-        setMessage({ text: data.message, type: 'success' });
-        if (data.player) setPlayer(data.player);
-        if (data.recipeId) setLearnedRecipeIds(prev => new Set(prev).add(data.recipeId));
+        setMessage({ text: data.message as string, type: 'success' });
+        if (data.player) setPlayer(data.player as PlayerData);
+        if (data.recipeId) setLearnedRecipeIds(prev => new Set(prev).add(data.recipeId as string));
       }
     } catch {
       setMessage({ text: 'Ошибка изучения чертежа', type: 'error' });
@@ -777,7 +782,7 @@ export default function CursedDepths() {
       if (data.error) {
         setMessage({ text: data.error, type: 'error' });
       } else {
-        setMessage({ text: data.message, type: 'success' });
+        setMessage({ text: data.message as string, type: 'success' });
         await refreshPlayer();
         refreshStash();
       }
@@ -795,7 +800,7 @@ export default function CursedDepths() {
       if (data.error) {
         setMessage({ text: data.error, type: 'error' });
       } else {
-        setMessage({ text: data.message, type: 'success' });
+        setMessage({ text: data.message as string, type: 'success' });
         await refreshPlayer();
         refreshStash();
       }
@@ -814,7 +819,7 @@ export default function CursedDepths() {
       if (data.error) {
         setMessage({ text: data.error, type: 'error' });
       } else {
-        setMessage({ text: data.message, type: 'success' });
+        setMessage({ text: data.message as string, type: 'success' });
         await refreshPlayer();
       }
     } catch {
@@ -832,7 +837,7 @@ export default function CursedDepths() {
       if (data.error) {
         setMessage({ text: data.error, type: 'error' });
       } else {
-        setMessage({ text: data.message, type: data.success ? 'success' : 'info' });
+        setMessage({ text: data.message as string, type: data.success ? 'success' : 'info' });
         await refreshPlayer();
       }
     } catch {
@@ -851,7 +856,7 @@ export default function CursedDepths() {
       if (data.error) {
         setMessage({ text: data.error, type: 'error' });
       } else {
-        setMessage({ text: data.message, type: 'success' });
+        setMessage({ text: data.message as string, type: 'success' });
         await refreshPlayer();
         premium.refreshPremiumState();
       }
@@ -870,7 +875,7 @@ export default function CursedDepths() {
       if (data.error) {
         setMessage({ text: data.error, type: 'error' });
       } else {
-        setMessage({ text: data.message, type: 'success' });
+        setMessage({ text: data.message as string, type: 'success' });
         await refreshPlayer();
         refreshMarket();
       }
@@ -888,7 +893,7 @@ export default function CursedDepths() {
       if (data.error) {
         setMessage({ text: data.error, type: 'error' });
       } else {
-        setMessage({ text: data.message, type: 'success' });
+        setMessage({ text: data.message as string, type: 'success' });
         await refreshPlayer();
         refreshMarket();
       }
@@ -906,7 +911,7 @@ export default function CursedDepths() {
       if (data.error) {
         setMessage({ text: data.error, type: 'error' });
       } else {
-        setMessage({ text: data.message, type: 'success' });
+        setMessage({ text: data.message as string, type: 'success' });
         await refreshPlayer();
         refreshMarket();
       }
@@ -925,7 +930,7 @@ export default function CursedDepths() {
       if (data.error) {
         setMessage({ text: data.error, type: 'error' });
       } else {
-        setMessage({ text: data.message, type: 'success' });
+        setMessage({ text: data.message as string, type: 'success' });
         await refreshPlayer();
         refreshAuction();
       }
@@ -943,7 +948,7 @@ export default function CursedDepths() {
       if (data.error) {
         setMessage({ text: data.error, type: 'error' });
       } else {
-        setMessage({ text: data.message, type: 'success' });
+        setMessage({ text: data.message as string, type: 'success' });
         await refreshPlayer();
         refreshAuction();
       }
@@ -961,7 +966,7 @@ export default function CursedDepths() {
       if (data.error) {
         setMessage({ text: data.error, type: 'error' });
       } else {
-        setMessage({ text: data.message, type: 'success' });
+        setMessage({ text: data.message as string, type: 'success' });
         await refreshPlayer();
         refreshAuction();
       }
@@ -980,7 +985,7 @@ export default function CursedDepths() {
       if (data.error) {
         setMessage({ text: data.error, type: 'error' });
       } else {
-        setMessage({ text: data.message, type: 'success' });
+        setMessage({ text: data.message as string, type: 'success' });
         await refreshPlayer();
         // Клейм квеста считает level-up по тем же формулам, что combat/action и daily (см.
         // quests/claim/route.ts), но раньше UI никак это не показывал — тот же самый переход
@@ -1003,7 +1008,7 @@ export default function CursedDepths() {
       if (data.error) {
         setMessage({ text: data.error, type: 'error' });
       } else {
-        setParty(data.party);
+        setParty(data.party as unknown as PartyData);
       }
     } catch {
       setMessage({ text: 'Не удалось создать пати', type: 'error' });
@@ -1076,7 +1081,7 @@ export default function CursedDepths() {
       if (data.error) {
         setMessage({ text: data.error, type: 'error' });
       } else {
-        setPlayer(data.player);
+        setPlayer(data.player as PlayerData);
       }
     } catch {
       setMessage({ text: 'Ошибка распределения очков', type: 'error' });

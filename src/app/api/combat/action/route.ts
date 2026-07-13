@@ -70,6 +70,7 @@ import { findTrial, type TrialRoomOption } from '@/lib/combat/trials';
 import { rollGearInstance, rollCurrencyDrop } from '@/lib/economy/item-affixes';
 import { rollTemperScrollDrop } from '@/lib/economy/item-enhancement';
 import { LEAGUE_POINTS } from '@/lib/social/pvp-season';
+import { enforceActionCooldown, ActionCooldownError } from '@/lib/economy/rate-limit';
 import { dungeonModifierEffect, heatLevelEffect, multiplyEffects } from '@/lib/combat/dungeon-modifiers';
 import { abyssScaling, abyssEnemyIdForDepth, isEliteDepth } from '@/lib/combat/abyss';
 import { FORTRESS_ID, CONTROL_GOLD_BONUS } from '@/lib/social/fortress';
@@ -102,6 +103,7 @@ export async function POST(req: NextRequest) {
     if (!player) return NextResponse.json({ error: 'Персонаж не найден' }, { status: 404 });
     if (!player.inCombat) return NextResponse.json({ error: 'Вы не в бою' }, { status: 400 });
     if (!player.enemyId) return NextResponse.json({ error: 'Нет врага' }, { status: 400 });
+    await enforceActionCooldown(db, player.id);
 
     // Fetch enemy data with caching
     const cacheKey = `enemies:id:${player.enemyId}`;
@@ -1136,6 +1138,9 @@ export async function POST(req: NextRequest) {
       trialCompleted: trialJustCompleted,
     });
   } catch (error) {
+    if (error instanceof ActionCooldownError) {
+      return NextResponse.json({ error: 'Слишком быстро — подождите немного.' }, { status: 429 });
+    }
     console.error('[API] Route error:', error);
     if (error instanceof Error && error.message?.includes('connection')) {
       return NextResponse.json({ error: 'Ошибка подключения к базе данных. Попробуйте позже.' }, { status: 503 });

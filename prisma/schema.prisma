@@ -57,6 +57,13 @@ model Player {
                             // растёт при заходе на следующий день после lastDailyReward,
                             // обнуляется в 1 при пропуске (см. lib/economy/daily-streak.ts).
                             // Классический day1..7 retention-хук, которого раньше не было вовсе.
+  lastActionAt    DateTime? // время последнего "тяжёлого" действия (explore/combat action) —
+                            // серверный guard минимального интервала против скриптового фарма,
+                            // см. lib/economy/rate-limit.ts. НЕ полноценный rate limiter (для
+                            // него нужна внешняя стораджа вроде Upstash Redis — сознательно не
+                            // тянем, тот же принцип, что и "нет WebSocket/платных realtime" у
+                            // party-combat-engine.ts), а простой минимальный интервал между
+                            // запросами к одному игроку.
   consumableAttackBonus  Int @default(0) // временный бонус к атаке от Эликсира Мощи (elixir_power)
   consumableFightsLeft   Int @default(0) // на сколько ещё боёв действует consumableAttackBonus
   totalKills      Int       @default(0) // счётчики за всё время — база для ачивок (achievements.ts)

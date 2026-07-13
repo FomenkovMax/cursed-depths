@@ -161,6 +161,7 @@ model Player {
   battlePassClaims PlayerBattlePassClaim[]
   visitedLocations VisitedLocation[]
   bossTrophies    PlayerBossTrophy[]
+  weeklyChallengeResults WeeklyChallengeResult[]
 
   @@index([telegramId])
   @@index([accountId])
@@ -602,6 +603,28 @@ model PvpSeasonReward {
 
   @@unique([season, rank])
   @@index([season])
+}
+
+// Испытание недели (аудит #2, топ-10 #6) — единственный горизонтальный endgame-контент до этого
+// момента: весь остальной PvE вертикален (пройти один раз и вверх по уровню), Fortress/
+// GuildRaidBoss дают еженедельный ритм только гильдиям. Это solo, бесплатно, без гильдии —
+// детерминированно выбранный по неделе босс (см. lib/social/weekly-challenge.ts), одна попытка
+// на игрока за неделю, бой резолвится мгновенно за один запрос (тот же принцип упрощения, что у
+// PvP-арены lib/combat/pvp.ts, не полноценный движок combat-engine+boss-mechanics — честный
+// компромисс ради предсказуемого объёма работы).
+model WeeklyChallengeResult {
+  id                 String   @id @default(cuid())
+  weekId             String   // тот же ISO-week формат, что currentWeekId() у Fortress
+  playerId           String
+  player             Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  enemyId            String   // какой босс выпал на эту неделю
+  won                Boolean
+  turnsTaken         Int
+  hpPercentRemaining Int      // 0-100 — тай-брейк лидерборда среди победивших
+  createdAt          DateTime @default(now())
+
+  @@unique([weekId, playerId])
+  @@index([weekId])
 }
 
 model Inventory {

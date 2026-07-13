@@ -30,6 +30,7 @@ const TAB_META: Record<GameTab, TabMeta> = {
   leaderboard: { icon: '🏆', label: 'Топ' },
   premium: { icon: '👑', label: 'Премиум' },
   characters: { icon: '🎭', label: 'Персонажи' },
+  'weekly-challenge': { icon: '🕯️', label: 'Испытание' },
 };
 
 // Прямые пункты остаются на виду — это самые частые действия игрового цикла
@@ -40,7 +41,7 @@ const TAB_META: Record<GameTab, TabMeta> = {
 // быть на виду постоянно, тот же приём, что и у прочих F2P-магазинов.
 const DIRECT_TABS: GameTab[] = ['overview', 'combat', 'map', 'quests'];
 const HERO_GROUP: GameTab[] = ['inventory', 'craft', 'achievements', 'codex', 'trophies', 'characters'];
-const WORLD_GROUP: GameTab[] = ['guild', 'party', 'market', 'auction', 'pvp', 'leaderboard'];
+const WORLD_GROUP: GameTab[] = ['guild', 'party', 'market', 'auction', 'pvp', 'weekly-challenge', 'leaderboard'];
 
 interface NavBarProps {
   tab: GameTab;

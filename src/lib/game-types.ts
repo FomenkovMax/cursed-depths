@@ -262,7 +262,7 @@ export interface PartyCombatStateResponse {
 }
 
 export type GameScreen = 'loading' | 'creation' | 'game';
-export type GameTab = 'overview' | 'combat' | 'map' | 'inventory' | 'quests' | 'craft' | 'leaderboard' | 'party' | 'achievements' | 'guild' | 'codex' | 'market' | 'pvp' | 'premium' | 'trophies' | 'auction' | 'characters';
+export type GameTab = 'overview' | 'combat' | 'map' | 'inventory' | 'quests' | 'craft' | 'leaderboard' | 'party' | 'achievements' | 'guild' | 'codex' | 'market' | 'pvp' | 'premium' | 'trophies' | 'auction' | 'characters' | 'weekly-challenge';
 
 export type GameMessage = { text: string; type: 'info' | 'success' | 'error' } | null;
 
@@ -735,6 +735,32 @@ export interface BountyHuntResultView {
   target: { nameRu: string; icon: string };
   itemWon: string | null;
   message: string;
+}
+
+export interface WeeklyChallengeLeaderboardEntryView {
+  name: string;
+  turnsTaken: number;
+  hpPercentRemaining: number;
+}
+
+export interface WeeklyChallengeStateView {
+  weekId: string;
+  target: { enemyId: string; nameRu: string; icon: string; hp: number };
+  attempted: boolean;
+  myResult: { won: boolean; turnsTaken: number; hpPercentRemaining: number } | null;
+  leaderboard: WeeklyChallengeLeaderboardEntryView[];
+}
+
+export interface WeeklyChallengeAttemptResultView {
+  won: boolean;
+  log: string[];
+  turnsTaken: number;
+  hpPercentRemaining: number;
+  goldGained: number;
+  xpGained: number;
+  leveledUp: boolean;
+  itemWon: string | null;
+  target: { nameRu: string; icon: string };
 }
 
 export interface FortuneSpinResultView {

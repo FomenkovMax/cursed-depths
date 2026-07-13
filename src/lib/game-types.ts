@@ -73,6 +73,7 @@ export interface PlayerData {
   combatLog: string | null;
   bossState: string | null;
   lastDailyReward: string | null;
+  dailyStreak: number;
   consumableAttackBonus: number;
   consumableFightsLeft: number;
   totalKills: number;

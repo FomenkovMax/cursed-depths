@@ -7,6 +7,7 @@ import {
 
 interface TodayPanelProps {
   canClaimDaily: boolean;
+  dailyStreak: number;
   onClaimDaily: () => void;
   worldBoss: WorldBossStateView | null;
   fortress: FortressStateView | null;
@@ -47,13 +48,16 @@ const STATUS_BADGE: Record<ItemStatus, string> = {
  * одном. Ничего не выполняет само — только показывает статус и ведёт на нужную вкладку; сама
  * логика действия (клейм/атака/штурм) остаётся там же, где была. */
 export function TodayPanel({
-  canClaimDaily, onClaimDaily, worldBoss, fortress, guildRaidBoss, expeditionState, bountyState, onNavigateTab,
+  canClaimDaily, dailyStreak, onClaimDaily, worldBoss, fortress, guildRaidBoss, expeditionState, bountyState, onNavigateTab,
 }: TodayPanelProps) {
+  // dailyStreak уже включает сегодняшний день сразу после клейма — до клейма показываем текущий
+  // счётчик как "твой стрик под угрозой, если не зайдёшь" мотивацию, не завтрашнее значение.
+  const streakLabel = dailyStreak > 0 ? ` 🔥${dailyStreak}` : '';
   const items: TodayItem[] = [
     {
       id: 'daily',
       icon: '🎁',
-      label: 'Ежедневная награда',
+      label: `Ежедневная награда${streakLabel}`,
       status: canClaimDaily ? 'available' : 'done',
       statusText: canClaimDaily ? 'Готова' : 'Получена',
       onAction: canClaimDaily ? onClaimDaily : undefined,

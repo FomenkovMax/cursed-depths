@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import {
   WorldBossStateView, FortressStateView, GuildRaidBossStateView,
-  ExpeditionStateView, BountyStateView, GameTab,
+  ExpeditionStateView, BountyStateView, WeeklyChallengeStateView, GameTab,
 } from '@/lib/game-types';
 
 interface TodayPanelProps {
@@ -14,6 +14,7 @@ interface TodayPanelProps {
   guildRaidBoss: GuildRaidBossStateView | null;
   expeditionState: ExpeditionStateView | null;
   bountyState: BountyStateView | null;
+  weeklyChallenge: WeeklyChallengeStateView | null;
   onNavigateTab: (tab: GameTab) => void;
 }
 
@@ -48,7 +49,7 @@ const STATUS_BADGE: Record<ItemStatus, string> = {
  * одном. Ничего не выполняет само — только показывает статус и ведёт на нужную вкладку; сама
  * логика действия (клейм/атака/штурм) остаётся там же, где была. */
 export function TodayPanel({
-  canClaimDaily, dailyStreak, onClaimDaily, worldBoss, fortress, guildRaidBoss, expeditionState, bountyState, onNavigateTab,
+  canClaimDaily, dailyStreak, onClaimDaily, worldBoss, fortress, guildRaidBoss, expeditionState, bountyState, weeklyChallenge, onNavigateTab,
 }: TodayPanelProps) {
   // dailyStreak уже включает сегодняшний день сразу после клейма — до клейма показываем текущий
   // счётчик как "твой стрик под угрозой, если не зайдёшь" мотивацию, не завтрашнее значение.
@@ -118,6 +119,17 @@ export function TodayPanel({
       status: !expeditionState.premiumActive ? 'locked' : active ? (active.ready ? 'available' : 'progress') : 'available',
       statusText: !expeditionState.premiumActive ? 'Нужен премиум' : active ? (active.ready ? 'Готово забрать' : 'В пути') : 'Не отправлено',
       onAction: () => onNavigateTab('premium'),
+    });
+  }
+
+  if (weeklyChallenge) {
+    items.push({
+      id: 'weeklychallenge',
+      icon: '🕯️',
+      label: 'Испытание недели',
+      status: weeklyChallenge.attempted ? 'done' : 'available',
+      statusText: weeklyChallenge.attempted ? (weeklyChallenge.myResult?.won ? 'Повержен' : 'Провалено') : 'Доступно',
+      onAction: () => onNavigateTab('weekly-challenge'),
     });
   }
 

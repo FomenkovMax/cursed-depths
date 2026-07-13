@@ -38,6 +38,7 @@ import { useGuildUpgrades } from '@/hooks/useGuildUpgrades';
 import { useSocialFeatures } from '@/hooks/useSocialFeatures';
 import { useCharacterSlots } from '@/hooks/useCharacterSlots';
 import { useAccountVault } from '@/hooks/useAccountVault';
+import { useWeeklyChallenge } from '@/hooks/useWeeklyChallenge';
 import { usePremiumFeatures } from '@/hooks/usePremiumFeatures';
 import { useCombatState } from '@/hooks/useCombatState';
 import { AchievementsTab } from '@/components/game/AchievementsTab';
@@ -45,6 +46,7 @@ import { TrophyRoomTab } from '@/components/game/TrophyRoomTab';
 import { CodexTab } from '@/components/game/CodexTab';
 import { MarketTab } from '@/components/game/MarketTab';
 import { AuctionTab } from '@/components/game/AuctionTab';
+import { WeeklyChallengeTab } from '@/components/game/WeeklyChallengeTab';
 import { PvpTab } from '@/components/game/PvpTab';
 import { CombatTab } from '@/components/game/CombatTab';
 import { MapTab } from '@/components/game/MapTab';
@@ -523,6 +525,9 @@ export default function CursedDepths() {
   const accountVault = useAccountVault({
     apiCall, telegramIdRef, tab, onPlayerUpdate: setPlayer, onMessage: setMessage, refreshPlayer,
     onShardsChanged: premium.refreshPremiumState,
+  });
+  const weeklyChallenge = useWeeklyChallenge({
+    apiCall, telegramIdRef, tab, onMessage: setMessage, refreshPlayer,
   });
 
   // ===== PARTY (короткий поллинг вместо realtime-инфраструктуры — нет ни WebSocket, ни
@@ -1248,6 +1253,7 @@ export default function CursedDepths() {
             guildRaidBoss={social.guildRaidBoss}
             expeditionState={premium.expeditionState}
             bountyState={premium.bountyState}
+            weeklyChallenge={weeklyChallenge.state}
             onNavigateTab={setTab}
             onOpenRespec={() => respec.setOpen(true)}
           />
@@ -1448,6 +1454,14 @@ export default function CursedDepths() {
             seasonStandings={pvpSeasonStandings}
             loading={pvpLoading}
             onChallenge={handlePvpChallenge}
+          />
+
+          <WeeklyChallengeTab
+            state={weeklyChallenge.state}
+            loading={weeklyChallenge.loading}
+            attempting={weeklyChallenge.attempting}
+            lastResult={weeklyChallenge.lastResult}
+            onAttempt={weeklyChallenge.attempt}
           />
         </Tabs>
       </main>

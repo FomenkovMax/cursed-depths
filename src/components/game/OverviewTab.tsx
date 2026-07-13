@@ -20,7 +20,7 @@ import { WalletPanel, type WalletCurrency } from './WalletPanel';
 import { TodayPanel } from './TodayPanel';
 import type {
   WorldBossStateView, FortressStateView, GuildRaidBossStateView,
-  ExpeditionStateView, BountyStateView, GameTab,
+  ExpeditionStateView, BountyStateView, WeeklyChallengeStateView, GameTab,
 } from '@/lib/game-types';
 
 const WALLET_CURRENCY_IDS = ['ash_shard', 'aylet_tear', 'tornak_seal', 'kessara_whisper'];
@@ -65,6 +65,7 @@ interface OverviewTabProps {
   guildRaidBoss: GuildRaidBossStateView | null;
   expeditionState: ExpeditionStateView | null;
   bountyState: BountyStateView | null;
+  weeklyChallenge: WeeklyChallengeStateView | null;
   onNavigateTab: (tab: GameTab) => void;
   onOpenRespec: () => void;
 }
@@ -94,6 +95,7 @@ export function OverviewTab({
   guildRaidBoss,
   expeditionState,
   bountyState,
+  weeklyChallenge,
   onNavigateTab,
   onOpenRespec,
 }: OverviewTabProps) {
@@ -183,6 +185,7 @@ export function OverviewTab({
         guildRaidBoss={guildRaidBoss}
         expeditionState={expeditionState}
         bountyState={bountyState}
+        weeklyChallenge={weeklyChallenge}
         onNavigateTab={onNavigateTab}
       />
 

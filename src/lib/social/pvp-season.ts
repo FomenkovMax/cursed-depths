@@ -60,11 +60,13 @@ export function softResetRating(rating: number): number {
 
 /** Очки лиги за PvE-активность за ТЕКУЩИЙ сезон (Player.leagueBonusScore) — начисляются в
  * соответствующих роутах (combat/action.ts на dungeonCompleted/trialCompleted,
- * expedition/claim/route.ts). Не за PvP-победы — тем PvP-игрок уже награждён напрямую через рост
- * pvpRating, начислять очки лиги ещё и за это было бы двойным счётом одного и того же сигнала. */
+ * expedition/claim/route.ts, weekly-challenge/attempt/route.ts). Не за PvP-победы — тем PvP-игрок
+ * уже награждён напрямую через рост pvpRating, начислять очки лиги ещё и за это было бы двойным
+ * счётом одного и того же сигнала. */
 export const LEAGUE_POINTS = {
   dungeonOrTrialCompleted: 15,
   expeditionClaimed: 10,
+  weeklyChallengeWon: 20,
 } as const;
 
 /** Итоговый результат для сезонной таблицы лиги — pvpRating (матчмейкинг Арены остаётся на

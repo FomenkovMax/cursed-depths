@@ -36,6 +36,7 @@ import { useRespec } from '@/hooks/useRespec';
 import { useGuildUpgrades } from '@/hooks/useGuildUpgrades';
 import { useSocialFeatures } from '@/hooks/useSocialFeatures';
 import { useCharacterSlots } from '@/hooks/useCharacterSlots';
+import { useAccountVault } from '@/hooks/useAccountVault';
 import { usePremiumFeatures } from '@/hooks/usePremiumFeatures';
 import { useCombatState } from '@/hooks/useCombatState';
 import { AchievementsTab } from '@/components/game/AchievementsTab';
@@ -507,6 +508,14 @@ export default function CursedDepths() {
   const characterSlots = useCharacterSlots({ apiCall, telegramIdRef, tab, onMessage: setMessage });
   const premium = usePremiumFeatures({
     apiCall, telegramIdRef, screen, tab, player, onPlayerUpdate: setPlayer, onMessage: setMessage, refreshPlayer,
+  });
+  // Осколки Короны отображаются везде из premium.premiumState (не из player — то же поле есть
+  // и в Player, но по существующей конвенции витрина берёт его из /api/shop/premium/state), так
+  // что после перевода Осколков в сейф/из сейфа нужно дёрнуть refreshPremiumState(), иначе шапка
+  // и кошелёк на вкладке "Премиум" останутся со старым числом до следующего премиум-действия.
+  const accountVault = useAccountVault({
+    apiCall, telegramIdRef, tab, onPlayerUpdate: setPlayer, onMessage: setMessage, refreshPlayer,
+    onShardsChanged: premium.refreshPremiumState,
   });
 
   // ===== PARTY (короткий поллинг вместо realtime-инфраструктуры — нет ни WebSocket, ни
@@ -1270,6 +1279,21 @@ export default function CursedDepths() {
             stashLoading={stashLoading}
             onStoreItem={handleStoreItem}
             onRetrieveItem={handleRetrieveItem}
+            vaultAvailable={accountVault.state?.available ?? false}
+            vaultGold={accountVault.state?.gold ?? 0}
+            vaultShards={accountVault.state?.crownShards ?? 0}
+            vaultItems={accountVault.state?.items ?? []}
+            vaultCapacity={accountVault.state?.capacity ?? 0}
+            vaultLoading={accountVault.loading}
+            vaultTransferring={accountVault.transferring}
+            playerGold={player?.gold ?? 0}
+            playerShards={premium.premiumState?.crownShards ?? 0}
+            onDepositGold={accountVault.depositGold}
+            onWithdrawGold={accountVault.withdrawGold}
+            onDepositShards={accountVault.depositShards}
+            onWithdrawShards={accountVault.withdrawShards}
+            onStoreToVault={accountVault.storeItem}
+            onRetrieveFromVault={accountVault.retrieveItem}
           />
 
           <QuestsTab player={player} loading={loading} onClaimQuest={handleClaimQuest} />

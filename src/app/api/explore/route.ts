@@ -16,6 +16,7 @@ import { EXPLORATION_EVENTS } from '@/lib/combat/exploration-events';
 import { rollGearInstance } from '@/lib/economy/item-affixes';
 import { goldFindMessage, encounterMessage } from '@/lib/combat/exploration-flavor';
 import { findPet } from '@/lib/economy/pets';
+import { enforceActionCooldown, ActionCooldownError } from '@/lib/economy/rate-limit';
 
 export async function POST(req: NextRequest) {
   const auth = validateTelegramRequest(req);
@@ -35,6 +36,7 @@ export async function POST(req: NextRequest) {
     if (await isInActivePartyCombat(player.id)) {
       return NextResponse.json({ error: 'Нельзя исследовать локацию во время боя пати' }, { status: 400 });
     }
+    await enforceActionCooldown(db, player.id);
 
     // Вне-боевая регенерация (forest-whisper и аналоги) — каждый вызов /api/explore это единственный
     // в игре реальный аналог "хода вне боя" (см. заголовок lib/combat/passive-engine.ts).
@@ -202,6 +204,9 @@ export async function POST(req: NextRequest) {
       player: updated,
     });
   } catch (error) {
+    if (error instanceof ActionCooldownError) {
+      return NextResponse.json({ error: 'Слишком быстро — подождите немного.' }, { status: 429 });
+    }
     console.error('[API] Route error:', error);
     if (error instanceof Error && error.message?.includes('connection')) {
       return NextResponse.json({ error: 'Ошибка подключения к базе данных. Попробуйте позже.' }, { status: 503 });

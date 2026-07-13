@@ -342,6 +342,33 @@ export interface StashItemView {
   quantity: number;
 }
 
+// Общий сейф на аккаунт (schema.prisma AccountVault) — предметно повторяет StashItemView, но
+// это отдельный тип: источник данных другой (AccountVaultItem, а не StashItem), и путать их в
+// UI (GridItem-объединениях) нельзя, хотя поля совпадают.
+export interface AccountVaultItemView {
+  id: string;
+  itemId: string;
+  name: string;
+  type: string;
+  rarity: string;
+  stats: string | null;
+  icon: string | null;
+  itemLevel: number | null;
+  affixTier: string | null;
+  affixes: string | null;
+  enhancementLevel: number;
+  quantity: number;
+}
+
+export interface AccountVaultStateView {
+  /** false, пока у игрока нет accountId (второй слот ещё не создан) — сейфу нечего шарить. */
+  available: boolean;
+  gold: number;
+  crownShards: number;
+  items: AccountVaultItemView[];
+  capacity: number;
+}
+
 export interface WorldBossContributorView {
   playerId: string;
   name: string;

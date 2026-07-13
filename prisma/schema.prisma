@@ -379,6 +379,47 @@ model StashItem {
   @@index([playerId])
 }
 
+// Общий кошелёк/сейф на АККАУНТ (не на слот персонажа) — расшаривается между слотами,
+// сгруппированными Player.accountId (см. комментарий у Player.accountId). Сознательно НЕ
+// Player{Feature}State по правилу CLAUDE.md: та схема — для премиум-фич ОДНОГО персонажа,
+// здесь же ключ принципиально другой — accountId (общий владелец), а не playerId, потому что
+// смысл фичи — быть видимой ОБОИМ слотам одновременно. Доступен только когда у игрока уже есть
+// accountId, т.е. второй слот создан (см. api/account/create-character) — до этого делить
+// нечего, и заводить пустой vault не имеет смысла (создаётся лениво, upsert при первом депозите).
+model AccountVault {
+  id          String   @id @default(cuid())
+  accountId   String   @unique
+  gold        Int      @default(0)
+  crownShards Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  items       AccountVaultItem[]
+}
+
+// Предметный аналог StashItem, но привязан к AccountVault, а не к Player — те же поля
+// намеренно продублированы (не переиспользуется StashItem напрямую), чтобы playerId оставался
+// обязательным на StashItem и не пришлось делать его nullable ради шаринга одной модели между
+// двумя разными владельцами (Player vs AccountVault).
+model AccountVaultItem {
+  id               String       @id @default(cuid())
+  vaultId          String
+  vault            AccountVault @relation(fields: [vaultId], references: [id], onDelete: Cascade)
+  itemId           String
+  name             String
+  type             String
+  rarity           String
+  stats            String?
+  icon             String?
+  itemLevel        Int?
+  affixTier        String?
+  affixes          String?
+  enhancementLevel Int          @default(0)
+  quantity         Int          @default(1)
+
+  @@index([vaultId])
+}
+
 // Крепость — единственный синглтон-объект territory-control между ГИЛЬДИЯМИ (в отличие от
 // WorldBoss, который общий для всех игроков разом, здесь соревнуются гильдии между собой).
 // Недельный цикл (ISO-неделя, lib/fortress.ts currentWeekId) — гильдия с наибольшей суммой

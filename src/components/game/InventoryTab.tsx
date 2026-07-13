@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ItemIconTile } from '@/components/game/ItemIconTile';
 import { RARITY_COLORS, RARITY_NAMES_RU, ITEMS } from '@/lib/game-data';
-import { PlayerData, InventoryItem, StashItemView, SLOT_RU, ITEM_TYPE_RU, AFFIX_TIER_RU, AFFIX_TIER_COLORS, parseStats, parseAffixes } from '@/lib/game-types';
+import { PlayerData, InventoryItem, StashItemView, AccountVaultItemView, SLOT_RU, ITEM_TYPE_RU, AFFIX_TIER_RU, AFFIX_TIER_COLORS, parseStats, parseAffixes } from '@/lib/game-types';
 
 interface InventoryTabProps {
   player: PlayerData | null;
@@ -19,9 +20,71 @@ interface InventoryTabProps {
   stashLoading: boolean;
   onStoreItem: (inventoryId: string) => void;
   onRetrieveItem: (stashItemId: string) => void;
+  vaultAvailable: boolean;
+  vaultGold: number;
+  vaultShards: number;
+  vaultItems: AccountVaultItemView[];
+  vaultCapacity: number;
+  vaultLoading: boolean;
+  vaultTransferring: boolean;
+  playerGold: number;
+  playerShards: number;
+  onDepositGold: (amount: number) => void;
+  onWithdrawGold: (amount: number) => void;
+  onDepositShards: (amount: number) => void;
+  onWithdrawShards: (amount: number) => void;
+  onStoreToVault: (inventoryId: string) => void;
+  onRetrieveFromVault: (vaultItemId: string) => void;
 }
 
-type GridItem = InventoryItem | StashItemView;
+type GridItem = InventoryItem | StashItemView | AccountVaultItemView;
+
+/** Ввод суммы + кнопки "положить"/"забрать" — переиспользуется для золота и Осколков Короны в
+ * панели общего сейфа. */
+function CurrencyTransferRow({ icon, label, playerAmount, vaultAmount, disabled, onDeposit, onWithdraw }: {
+  icon: string; label: string; playerAmount: number; vaultAmount: number; disabled: boolean;
+  onDeposit: (amount: number) => void; onWithdraw: (amount: number) => void;
+}) {
+  const [amount, setAmount] = useState('');
+  const parsed = Math.floor(Number(amount));
+  const valid = Number.isFinite(parsed) && parsed > 0;
+
+  return (
+    <div className="space-y-1.5 p-2 rounded-lg bg-secondary/20 border border-border/60">
+      <div className="flex items-center justify-between text-xs">
+        <span>{icon} {label}</span>
+        <span className="text-muted-foreground">У вас: {playerAmount} • В сейфе: {vaultAmount}</span>
+      </div>
+      <div className="flex gap-1.5">
+        <Input
+          type="number"
+          placeholder="Сумма"
+          className="h-8 text-xs"
+          value={amount}
+          onChange={e => setAmount(e.target.value)}
+        />
+        <Button
+          size="sm"
+          variant="outline"
+          className="h-8 text-[10px] border-border shrink-0"
+          disabled={disabled || !valid || parsed > playerAmount}
+          onClick={() => { onDeposit(parsed); setAmount(''); }}
+        >
+          Положить
+        </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          className="h-8 text-[10px] border-border shrink-0"
+          disabled={disabled || !valid || parsed > vaultAmount}
+          onClick={() => { onWithdraw(parsed); setAmount(''); }}
+        >
+          Забрать
+        </Button>
+      </div>
+    </div>
+  );
+}
 
 function statLabel(k: string): string {
   return k === 'attack' ? 'АТК' : k === 'defense' ? 'ЗАЩ' : k === 'healHp' ? 'ЛечHP' : k === 'healMp' ? 'ЛечMP' : k === 'damage' ? 'Урон' : k;
@@ -73,10 +136,13 @@ function PortraitGrid({ equipped, onSelect }: { equipped: InventoryItem[]; onSel
 export function InventoryTab({
   player, loading, onEquip, onUseItem, onLearnBlueprint,
   stashItems, stashCapacity, stashLoading, onStoreItem, onRetrieveItem,
+  vaultAvailable, vaultGold, vaultShards, vaultItems, vaultCapacity, vaultLoading, vaultTransferring,
+  playerGold, playerShards, onDepositGold, onWithdrawGold, onDepositShards, onWithdrawShards,
+  onStoreToVault, onRetrieveFromVault,
 }: InventoryTabProps) {
   const playerInventory = player?.inventory || [];
-  const [view, setView] = useState<'inventory' | 'stash'>('inventory');
-  const [detail, setDetail] = useState<{ item: GridItem; source: 'inventory' | 'stash' } | null>(null);
+  const [view, setView] = useState<'inventory' | 'stash' | 'vault'>('inventory');
+  const [detail, setDetail] = useState<{ item: GridItem; source: 'inventory' | 'stash' | 'vault' } | null>(null);
 
   const equipped = playerInventory.filter(i => i.equipped);
   const unequipped = playerInventory.filter(i => !i.equipped);
@@ -108,9 +174,77 @@ export function InventoryTab({
         >
           🗄️ Хранилище ({stashItems.length}/{stashCapacity})
         </Button>
+        {/* Общий сейф аккаунта (schema.prisma AccountVault) — виден и когда недоступен
+            (второй слот ещё не создан), чтобы игрок понимал, что фича есть, но открывается
+            вторым персонажем, а не терялся в её отсутствии. */}
+        <Button
+          size="sm"
+          variant={view === 'vault' ? 'default' : 'ghost'}
+          className="flex-1 h-8 text-xs"
+          onClick={() => setView('vault')}
+        >
+          📦 Сейф{vaultAvailable ? ` (${vaultItems.length}/${vaultCapacity})` : ''}
+        </Button>
       </div>
 
-      {view === 'stash' ? (
+      {view === 'vault' ? (
+        <>
+          {!vaultAvailable ? (
+            <Card className="border-border">
+              <CardContent className="px-4 py-4">
+                <p className="text-xs text-muted-foreground text-center">
+                  Общий сейф расшарен между персонажами одного аккаунта — станет доступен, когда вы
+                  создадите второго персонажа (вкладка «Персонажи»).
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <>
+              <Card className="border-border">
+                <CardHeader className="pb-2 pt-3 px-4">
+                  <CardTitle className="text-sm">📦 Общий сейф</CardTitle>
+                  <p className="text-[10px] text-muted-foreground leading-relaxed pt-0.5">
+                    Золото, Осколки Короны и предметы здесь видны обоим персонажам аккаунта.
+                  </p>
+                </CardHeader>
+                <CardContent className="px-4 pb-3 space-y-2">
+                  <CurrencyTransferRow
+                    icon="💰" label="Золото"
+                    playerAmount={playerGold} vaultAmount={vaultGold}
+                    disabled={vaultTransferring}
+                    onDeposit={onDepositGold} onWithdraw={onWithdrawGold}
+                  />
+                  <CurrencyTransferRow
+                    icon="👑" label="Осколки Короны"
+                    playerAmount={playerShards} vaultAmount={vaultShards}
+                    disabled={vaultTransferring}
+                    onDeposit={onDepositShards} onWithdraw={onWithdrawShards}
+                  />
+                </CardContent>
+              </Card>
+
+              <Card className="border-border">
+                <CardHeader className="pb-2 pt-3 px-4">
+                  <CardTitle className="text-sm">Предметы в сейфе</CardTitle>
+                </CardHeader>
+                <CardContent className="px-4 pb-3">
+                  {vaultItems.length === 0 ? (
+                    <p className="text-xs text-muted-foreground text-center py-2">
+                      {vaultLoading ? 'Загрузка...' : 'Сейф пуст — уберите сюда предметы из инвентаря, чтобы поделиться ими со вторым персонажем'}
+                    </p>
+                  ) : (
+                    <div className="grid grid-cols-5 gap-2">
+                      {vaultItems.map(item => (
+                        <ItemIconTile key={item.id} item={item} onClick={() => setDetail({ item, source: 'vault' })} />
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </>
+          )}
+        </>
+      ) : view === 'stash' ? (
         <Card className="border-border">
           <CardHeader className="pb-2 pt-3 px-4">
             <CardTitle className="text-sm">Хранилище</CardTitle>
@@ -219,6 +353,10 @@ export function InventoryTab({
                   <Button size="sm" onClick={() => { onRetrieveItem(detail.item.id); setDetail(null); }} disabled={loading}>
                     Достать в инвентарь
                   </Button>
+                ) : detail.source === 'vault' ? (
+                  <Button size="sm" onClick={() => { onRetrieveFromVault(detail.item.id); setDetail(null); }} disabled={vaultTransferring}>
+                    Достать в инвентарь
+                  </Button>
                 ) : (
                   <>
                     {(detail.item as InventoryItem).equipped ? (
@@ -251,6 +389,17 @@ export function InventoryTab({
                         >
                           🗄️ В хранилище
                         </Button>
+                        {vaultAvailable && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="border-border"
+                            onClick={() => { onStoreToVault(detail.item.id); setDetail(null); }}
+                            disabled={vaultTransferring || vaultItems.length >= vaultCapacity}
+                          >
+                            📦 В общий сейф
+                          </Button>
+                        )}
                       </>
                     )}
                   </>

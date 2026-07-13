@@ -80,6 +80,9 @@ model Player {
                             // сезона (matchmaking по-прежнему использует чистый pvpRating —
                             // очки лиги влияют только на сезонную таблицу). Обнуляется при
                             // переходе сезона вместе с softReset рейтинга.
+  lastReminderSentDate  String? // "YYYY-MM-DD" последней даты, когда GET /api/cron/daily-reminder
+                            // отправил push-напоминание — не даёт cron'у слать дубликаты, если
+                            // сработает дважды за день (тот же паттерн, что lastDailyReward ниже).
   worldBossAttacksToday Int @default(0) // сбрасывается лениво при первой атаке нового дня
   worldBossAttackDate   String? // "YYYY-MM-DD" последней атаки — тот же паттерн, что lastDailyReward
   fortressAssaultsToday Int @default(0) // штурмы Крепости (lib/fortress.ts) — тот же паттерн

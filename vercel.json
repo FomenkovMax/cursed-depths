@@ -1,5 +1,11 @@
 {
   "framework": "nextjs",
   "installCommand": "npm install",
-  "buildCommand": "DATABASE_URL=file:./db/custom.db npx prisma generate && DATABASE_URL=file:./db/custom.db next build"
+  "buildCommand": "DATABASE_URL=file:./db/custom.db npx prisma generate && DATABASE_URL=file:./db/custom.db next build",
+  "crons": [
+    {
+      "path": "/api/cron/daily-reminder",
+      "schedule": "0 18 * * *"
+    }
+  ]
 }

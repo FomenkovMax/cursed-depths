@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { currentPvpSeasonId, previousPvpSeasonId, daysUntilPvpSeasonEnd, softResetRating, PVP_SEASON_LENGTH_DAYS } from './pvp-season';
+import { currentPvpSeasonId, previousPvpSeasonId, daysUntilPvpSeasonEnd, softResetRating, leagueScore, PVP_SEASON_LENGTH_DAYS } from './pvp-season';
 
 describe('currentPvpSeasonId / previousPvpSeasonId', () => {
   it('advances to the next season exactly PVP_SEASON_LENGTH_DAYS after the previous one started', () => {
@@ -73,5 +73,18 @@ describe('softResetRating', () => {
     const lower = softResetRating(1200);
     const higher = softResetRating(1500);
     expect(higher).toBeGreaterThan(lower);
+  });
+});
+
+describe('leagueScore', () => {
+  it('is a pure sum of rating and PvE bonus', () => {
+    expect(leagueScore(1000, 0)).toBe(1000);
+    expect(leagueScore(1000, 25)).toBe(1025);
+  });
+
+  it('lets a lower-rated but PvE-active player outrank a higher-rated inactive one', () => {
+    const pvpOnlyPlayer = leagueScore(1100, 0);
+    const mixedPlayer = leagueScore(1000, 150);
+    expect(mixedPlayer).toBeGreaterThan(pvpOnlyPlayer);
   });
 });

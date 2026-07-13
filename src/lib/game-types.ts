@@ -481,6 +481,17 @@ export interface PvpSeasonRewardView {
   player: { name: string; class: { icon: string } };
 }
 
+// Живая (не замороженная) строка таблицы ТЕКУЩЕГО сезона лиги — leagueScore = pvpRating +
+// leagueBonusScore (PvE-очки за данжи/испытания/экспедиции этого сезона, lib/social/pvp-season.ts).
+export interface SeasonStandingView {
+  id: string;
+  name: string;
+  class: { icon: string };
+  pvpRating: number;
+  leagueBonusScore: number;
+  leagueScore: number;
+}
+
 export interface MarketListingView {
   id: string;
   itemId: string;

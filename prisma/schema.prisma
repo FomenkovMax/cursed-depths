@@ -74,6 +74,12 @@ model Player {
                             // при поражении НЕ трогаются, это асинхронный "призрачный бой"
   pvpWins         Int       @default(0)
   pvpLosses       Int       @default(0)
+  leagueBonusScore Int      @default(0) // очки лиги за PvE-активность в ТЕКУЩЕМ сезоне (данжи,
+                            // испытания, экспедиции — lib/social/pvp-season.ts LEAGUE_POINTS),
+                            // складывается с pvpRating для итогового ранжирования топ-N в конце
+                            // сезона (matchmaking по-прежнему использует чистый pvpRating —
+                            // очки лиги влияют только на сезонную таблицу). Обнуляется при
+                            // переходе сезона вместе с softReset рейтинга.
   worldBossAttacksToday Int @default(0) // сбрасывается лениво при первой атаке нового дня
   worldBossAttackDate   String? // "YYYY-MM-DD" последней атаки — тот же паттерн, что lastDailyReward
   fortressAssaultsToday Int @default(0) // штурмы Крепости (lib/fortress.ts) — тот же паттерн

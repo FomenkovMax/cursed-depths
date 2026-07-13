@@ -4,17 +4,20 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { PvpOpponentView, PvpFightResultView, PvpLeagueView, PvpSeasonRewardView } from '@/lib/game-types';
+import { PvpOpponentView, PvpFightResultView, PvpLeagueView, PvpSeasonRewardView, SeasonStandingView } from '@/lib/game-types';
 
 interface PvpTabProps {
   opponents: PvpOpponentView[];
   myRating: number;
+  myLeagueBonusScore: number;
+  myLeagueScore: number;
   myLeague: PvpLeagueView | null;
   myWins: number;
   myLosses: number;
   seasonId: string | null;
   daysUntilSeasonEnd: number | null;
   previousSeasonTop3: PvpSeasonRewardView[];
+  seasonStandings: SeasonStandingView[];
   loading: boolean;
   onChallenge: (opponentId: string) => Promise<PvpFightResultView | null>;
 }
@@ -22,7 +25,8 @@ interface PvpTabProps {
 const RANK_MEDAL: Record<number, string> = { 1: '🥇', 2: '🥈', 3: '🥉' };
 
 export function PvpTab({
-  opponents, myRating, myLeague, myWins, myLosses, seasonId, daysUntilSeasonEnd, previousSeasonTop3, loading, onChallenge,
+  opponents, myRating, myLeagueBonusScore, myLeagueScore, myLeague, myWins, myLosses,
+  seasonId, daysUntilSeasonEnd, previousSeasonTop3, seasonStandings, loading, onChallenge,
 }: PvpTabProps) {
   const [lastResult, setLastResult] = useState<PvpFightResultView | null>(null);
   const [fightingId, setFightingId] = useState<string | null>(null);
@@ -42,21 +46,49 @@ export function PvpTab({
       </div>
 
       <Card className="border-gold/40 bg-gold/5">
-        <CardContent className="p-3 flex items-center justify-between">
-          <div>
-            <div className="text-sm font-bold">{myLeague ? `${myLeague.icon} ${myLeague.nameRu}` : '—'}</div>
-            <div className="text-[10px] text-muted-foreground">Рейтинг {myRating} • {myWins}П / {myLosses}Пор</div>
+        <CardContent className="p-3 space-y-1.5">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-sm font-bold">{myLeague ? `${myLeague.icon} ${myLeague.nameRu}` : '—'}</div>
+              <div className="text-[10px] text-muted-foreground">Рейтинг {myRating} • {myWins}П / {myLosses}Пор</div>
+            </div>
+            {seasonId && (
+              <div className="text-right">
+                <div className="text-[10px] text-gold font-medium">🏆 Сезон {seasonId}</div>
+                {daysUntilSeasonEnd !== null && (
+                  <div className="text-[9px] text-muted-foreground">до сброса рейтинга: {daysUntilSeasonEnd} дн.</div>
+                )}
+              </div>
+            )}
           </div>
-          {seasonId && (
-            <div className="text-right">
-              <div className="text-[10px] text-gold font-medium">🏆 Сезон {seasonId}</div>
-              {daysUntilSeasonEnd !== null && (
-                <div className="text-[9px] text-muted-foreground">до сброса рейтинга: {daysUntilSeasonEnd} дн.</div>
-              )}
+          {/* Итог сезона считается не только по PvP-рейтингу — данжи/испытания/экспедиции тоже
+              дают очки лиги (lib/social/pvp-season.ts LEAGUE_POINTS), матчмейкинг соперников
+              выше по-прежнему на чистом рейтинге. */}
+          {myLeagueBonusScore > 0 && (
+            <div className="text-[10px] text-muted-foreground border-t border-gold/20 pt-1.5">
+              🗺️ Очки лиги за сезон: <span className="text-gold font-medium">{myLeagueScore}</span> (рейтинг {myRating} + PvE {myLeagueBonusScore})
             </div>
           )}
         </CardContent>
       </Card>
+
+      {seasonStandings.length > 0 && (
+        <Card className="border-border">
+          <CardHeader className="pb-2 pt-3 px-4">
+            <CardTitle className="text-sm">📊 Таблица текущего сезона</CardTitle>
+          </CardHeader>
+          <CardContent className="px-4 pb-3 space-y-1">
+            {seasonStandings.map((s, i) => (
+              <div key={s.id} className="flex items-center gap-2 text-xs">
+                <span className="w-5 text-center shrink-0 text-muted-foreground">{RANK_MEDAL[i + 1] ?? `#${i + 1}`}</span>
+                <span className="shrink-0">{s.class.icon}</span>
+                <span className="flex-1 truncate">{s.name}</span>
+                <span className="text-[10px] text-gold shrink-0">{s.leagueScore} очков</span>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
 
       {previousSeasonTop3.length > 0 && (
         <Card className="border-border">

@@ -22,6 +22,7 @@ import {
   PvpLeagueView,
   PvpFightResultView,
   PvpSeasonRewardView,
+  SeasonStandingView,
   TrophyRoomStateView,
   AuctionStateView,
 } from '@/lib/game-types';
@@ -83,12 +84,15 @@ export default function CursedDepths() {
   const [auctionLoading, setAuctionLoading] = useState(false);
   const [pvpOpponents, setPvpOpponents] = useState<PvpOpponentView[]>([]);
   const [pvpMyRating, setPvpMyRating] = useState(1000);
+  const [pvpMyLeagueBonusScore, setPvpMyLeagueBonusScore] = useState(0);
+  const [pvpMyLeagueScore, setPvpMyLeagueScore] = useState(1000);
   const [pvpMyLeague, setPvpMyLeague] = useState<PvpLeagueView | null>(null);
   const [pvpMyWins, setPvpMyWins] = useState(0);
   const [pvpMyLosses, setPvpMyLosses] = useState(0);
   const [pvpSeasonId, setPvpSeasonId] = useState<string | null>(null);
   const [pvpDaysUntilSeasonEnd, setPvpDaysUntilSeasonEnd] = useState<number | null>(null);
   const [pvpPreviousSeasonTop3, setPvpPreviousSeasonTop3] = useState<PvpSeasonRewardView[]>([]);
+  const [pvpSeasonStandings, setPvpSeasonStandings] = useState<SeasonStandingView[]>([]);
   const [pvpLoading, setPvpLoading] = useState(false);
   const [stashItems, setStashItems] = useState<StashItemView[]>([]);
   const [stashCapacity, setStashCapacity] = useState(60);
@@ -391,12 +395,15 @@ export default function CursedDepths() {
       .then(data => {
         if (data.opponents) setPvpOpponents(data.opponents);
         if (typeof data.myRating === 'number') setPvpMyRating(data.myRating);
+        if (typeof data.myLeagueBonusScore === 'number') setPvpMyLeagueBonusScore(data.myLeagueBonusScore);
+        if (typeof data.myLeagueScore === 'number') setPvpMyLeagueScore(data.myLeagueScore);
         if (data.myLeague) setPvpMyLeague(data.myLeague);
         if (typeof data.myWins === 'number') setPvpMyWins(data.myWins);
         if (typeof data.myLosses === 'number') setPvpMyLosses(data.myLosses);
         if (data.seasonId) setPvpSeasonId(data.seasonId);
         if (typeof data.daysUntilSeasonEnd === 'number') setPvpDaysUntilSeasonEnd(data.daysUntilSeasonEnd);
         if (data.previousSeasonTop3) setPvpPreviousSeasonTop3(data.previousSeasonTop3);
+        if (data.seasonStandings) setPvpSeasonStandings(data.seasonStandings);
       })
       .catch(() => setMessage({ text: 'Не удалось загрузить арену', type: 'error' }))
       .finally(() => setPvpLoading(false));
@@ -1430,12 +1437,15 @@ export default function CursedDepths() {
           <PvpTab
             opponents={pvpOpponents}
             myRating={pvpMyRating}
+            myLeagueBonusScore={pvpMyLeagueBonusScore}
+            myLeagueScore={pvpMyLeagueScore}
             myLeague={pvpMyLeague}
             myWins={pvpMyWins}
             myLosses={pvpMyLosses}
             seasonId={pvpSeasonId}
             daysUntilSeasonEnd={pvpDaysUntilSeasonEnd}
             previousSeasonTop3={pvpPreviousSeasonTop3}
+            seasonStandings={pvpSeasonStandings}
             loading={pvpLoading}
             onChallenge={handlePvpChallenge}
           />

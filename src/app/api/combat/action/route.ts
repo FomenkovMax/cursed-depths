@@ -69,6 +69,7 @@ import { findDungeon } from '@/lib/combat/dungeons';
 import { findTrial, type TrialRoomOption } from '@/lib/combat/trials';
 import { rollGearInstance, rollCurrencyDrop } from '@/lib/economy/item-affixes';
 import { rollTemperScrollDrop } from '@/lib/economy/item-enhancement';
+import { LEAGUE_POINTS } from '@/lib/social/pvp-season';
 import { dungeonModifierEffect, heatLevelEffect, multiplyEffects } from '@/lib/combat/dungeon-modifiers';
 import { abyssScaling, abyssEnemyIdForDepth, isEliteDepth } from '@/lib/combat/abyss';
 import { FORTRESS_ID, CONTROL_GOLD_BONUS } from '@/lib/social/fortress';
@@ -1048,6 +1049,12 @@ export async function POST(req: NextRequest) {
         updateData.consumableFightsLeft = remaining;
         if (remaining <= 0) updateData.consumableAttackBonus = 0;
       }
+    }
+
+    // Очки сезонной лиги за PvE (lib/social/pvp-season.ts) — данж и испытание дают одинаковый
+    // бонус, чтобы не создавать перекос "какой из двух видов забега выгоднее фармить ради лиги".
+    if (dungeonJustCompleted || trialJustCompleted) {
+      updateData.leagueBonusScore = { increment: LEAGUE_POINTS.dungeonOrTrialCompleted };
     }
 
     // Wrap all DB writes in a transaction

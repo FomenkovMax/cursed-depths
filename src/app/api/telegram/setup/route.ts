@@ -20,6 +20,9 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'WEBAPP_URL not set' }, { status: 500 });
   }
 
+  // Record<string, unknown> здесь осознанно (аудит #2, топ-10 #10) — значения это сырые JSON-ответы
+  // Telegram Bot API (setWebhook/setChatMenuButton/setMyCommands/setMyDescription), для которых нет
+  // типизированного SDK в проекте; более узкий тип пришлось бы выдумывать, а не выводить реально.
   const results: Record<string, unknown> = {};
 
   try {

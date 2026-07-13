@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { Prisma } from '@prisma/client';
 import { db } from '@/lib/db';
 import { validateTelegramRequest } from '@/lib/auth';
 import { findPremiumSku } from '@/lib/premium/premium-shop';
@@ -23,7 +24,7 @@ export async function POST(req: NextRequest) {
     }
 
     const updated = await db.$transaction(async (tx) => {
-      const data: Record<string, unknown> = { crownShards: { decrement: sku.costShards } };
+      const data: Prisma.PlayerUpdateInput = { crownShards: { decrement: sku.costShards } };
 
       if (sku.effect.kind === 'premium_days') {
         // Если премиум уже активен — продлеваем ОТ текущего срока истечения, а не от "сейчас",

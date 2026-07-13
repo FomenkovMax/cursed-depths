@@ -6,6 +6,7 @@ import { validateTelegramRequest } from '@/lib/auth';
 import { addItemToInventory } from '@/lib/economy/inventory-utils';
 import { issueDailyQuests } from '@/lib/economy/quests';
 import { isDeathDebuffActive, DEATH_DEBUFF_XP_MULT } from '@/lib/premium/premium-shop';
+import { computeNextStreak, streakDayInCycle, STREAK_MULTIPLIERS, STREAK_CYCLE_LENGTH } from '@/lib/economy/daily-streak';
 
 /** Брошено внутри транзакции, если ежедневная награда уже забрана СЕГОДНЯ В МОМЕНТ фактической
  * записи (см. комментарий у updateMany ниже) — напр. параллельный дубликат того же запроса. */
@@ -29,9 +30,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Вы уже получили ежедневную награду сегодня' }, { status: 400 });
     }
 
-    const goldReward = rollDice('2d6') * player.level;
+    // Стрик за подряд идущие дни (аудит #2, топ-10 #2) — считается от снимка ДО транзакции, как
+    // и lastDailyReward ниже: при гонке двух параллельных запросов обе ветки посчитают одно и то
+    // же значение, но только одна реально запишется благодаря updateMany-guard в транзакции.
+    const nextStreak = computeNextStreak(player.lastDailyReward, player.dailyStreak, today);
+    const streakDay = streakDayInCycle(nextStreak);
+    const streakMult = STREAK_MULTIPLIERS[streakDay];
+
+    const goldReward = Math.round(rollDice('2d6') * player.level * streakMult);
     const xpDebuffMult = isDeathDebuffActive(player.deathDebuffUntil, player.premiumUntil) ? DEATH_DEBUFF_XP_MULT : 1;
-    const xpReward = Math.round(10 * player.level * xpDebuffMult);
+    const xpReward = Math.round(10 * player.level * xpDebuffMult * streakMult);
+    // День 7 цикла — дополнительное зелье здоровья поверх обычного.
+    const potionQuantity = streakDay === STREAK_CYCLE_LENGTH ? 3 : 1;
 
     // Левел-ап при пересечении порога XP — как в combat/action и quests/claim. Раньше это поле
     // просто инкрементировалось без проверки порога, и уровень/statPoints/maxHp не росли, пока
@@ -58,6 +68,7 @@ export async function POST(req: NextRequest) {
       gold: { increment: goldReward },
       xp: newXp,
       lastDailyReward: today,
+      dailyStreak: nextStreak,
     };
     if (leveledUp) {
       updateData.level = newLevel;
@@ -82,7 +93,7 @@ export async function POST(req: NextRequest) {
       // Свежий набор ежедневных квестов на новый день (до итогового запроса с include: quests)
       await issueDailyQuests(tx, player.id, player.level);
 
-      // Give a health potion (stacks with existing)
+      // Give health potions (stacks with existing) — x3 на день 7 стрик-цикла.
       await addItemToInventory({
         playerId: player.id,
         itemId: 'health_potion',
@@ -91,7 +102,7 @@ export async function POST(req: NextRequest) {
         rarity: 'common',
         stats: '{"healHp":15}',
         icon: '🧪',
-        quantity: 1,
+        quantity: potionQuantity,
       }, tx);
 
       return tx.player.findUniqueOrThrow({
@@ -100,11 +111,17 @@ export async function POST(req: NextRequest) {
       });
     });
 
+    const streakSuffix = streakDay === STREAK_CYCLE_LENGTH
+      ? ` 🔥 День ${streakDay}/${STREAK_CYCLE_LENGTH} стрика — тройная награда зельями!`
+      : ` 🔥 Стрик: день ${streakDay}/${STREAK_CYCLE_LENGTH}.`;
+
     return NextResponse.json({
-      message: `Ежедневная награда! +${goldReward} золота, +${xpReward} XP, Зелье здоровья!`,
+      message: `Ежедневная награда! +${goldReward} золота, +${xpReward} XP, Зелье здоровья x${potionQuantity}!${streakSuffix}`,
       goldReward,
       xpReward,
       leveledUp,
+      streak: nextStreak,
+      streakDay,
       player: updated,
     });
   } catch (error) {

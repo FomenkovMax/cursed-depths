@@ -176,6 +176,7 @@ export function OverviewTab({
 
       <TodayPanel
         canClaimDaily={canClaimDaily}
+        dailyStreak={player?.dailyStreak ?? 0}
         onClaimDaily={onDaily}
         worldBoss={worldBoss}
         fortress={fortress}

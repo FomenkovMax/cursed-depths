@@ -53,6 +53,10 @@ model Player {
   combatLog       String?   // JSON string
   bossState       String?   // JSON string — фазы/щит/ДоТ/призывы текущего боя с боссом (см. lib/boss-mechanics.ts)
   lastDailyReward String?   // ISO date string
+  dailyStreak     Int       @default(0) // сколько дней подряд забирал ежедневную награду —
+                            // растёт при заходе на следующий день после lastDailyReward,
+                            // обнуляется в 1 при пропуске (см. lib/economy/daily-streak.ts).
+                            // Классический day1..7 retention-хук, которого раньше не было вовсе.
   consumableAttackBonus  Int @default(0) // временный бонус к атаке от Эликсира Мощи (elixir_power)
   consumableFightsLeft   Int @default(0) // на сколько ещё боёв действует consumableAttackBonus
   totalKills      Int       @default(0) // счётчики за всё время — база для ачивок (achievements.ts)

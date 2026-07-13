@@ -1,23 +1,19 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { LOCATIONS, ENEMIES, CRAFTING_RECIPES } from '@/lib/game-data';
+import { LOCATIONS, CRAFTING_RECIPES } from '@/lib/game-data';
 import { stageUnlockLevel } from '@/lib/combat/combat-engine';
 import { parseDeathWard } from '@/lib/combat/conditional-ability-engine';
 import { Tabs } from '@/components/ui/tabs';
 import { NavBar } from '@/components/game/NavBar';
 import {
   PlayerData,
-  CombatLogEntry,
   GameScreen,
   GameTab,
   GameMessage,
   TelegramGlobal,
   PartyData,
   PartyCombatStateResponse,
-  ExplorationEvent,
-  CheckRollResultView,
-  TrialJunctionView,
   AchievementEntry,
   CodexEntryView,
   MarketListingView,
@@ -41,6 +37,7 @@ import { useGuildUpgrades } from '@/hooks/useGuildUpgrades';
 import { useSocialFeatures } from '@/hooks/useSocialFeatures';
 import { useCharacterSlots } from '@/hooks/useCharacterSlots';
 import { usePremiumFeatures } from '@/hooks/usePremiumFeatures';
+import { useCombatState } from '@/hooks/useCombatState';
 import { AchievementsTab } from '@/components/game/AchievementsTab';
 import { TrophyRoomTab } from '@/components/game/TrophyRoomTab';
 import { CodexTab } from '@/components/game/CodexTab';
@@ -68,11 +65,6 @@ export default function CursedDepths() {
   const [message, setMessage] = useState<GameMessage>(null);
   const [adventureLog, setAdventureLog] = useState<{ id: number; text: string; type: 'info' | 'success' | 'error' }[]>([]);
   const adventureLogIdRef = useRef(0);
-  const [combatLog, setCombatLog] = useState<CombatLogEntry[]>([]);
-  const [shaking, setShaking] = useState(false);
-  const [levelUpAnimation, setLevelUpAnimation] = useState(false);
-  const [diceRoll, setDiceRoll] = useState<CheckRollResultView | null>(null);
-  const [floatingDamage, setFloatingDamage] = useState<{ id: number; text: string; color: string }[]>([]);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [leaderboardLoading, setLeaderboardLoading] = useState(false);
   const [currentSeason, setCurrentSeason] = useState<string | null>(null);
@@ -102,8 +94,6 @@ export default function CursedDepths() {
   const [stashLoading, setStashLoading] = useState(false);
   const [party, setParty] = useState<PartyData | null>(null);
   const [partyCombatState, setPartyCombatState] = useState<PartyCombatStateResponse | null>(null);
-  const [explorationEvent, setExplorationEvent] = useState<ExplorationEvent | null>(null);
-  const [trialJunction, setTrialJunction] = useState<TrialJunctionView | null>(null);
   // Изученные рецепты тира 3 (game-data.ts CRAFTING_RECIPES) — отдельный стейт, а не поле
   // player: только GET /api/player включает player.recipes в ответ, остальные роуты
   // (explore/combat/travel) — нет, и setPlayer(data.player) после них затёр бы это поле,
@@ -119,7 +109,6 @@ export default function CursedDepths() {
   // Telegram ID & initData (refs to avoid setState-in-effect lint issues)
   const telegramIdRef = useRef('');
   const initDataRef = useRef('');
-  const floatIdRef = useRef(0);
   const initDone = useRef(false);
 
   // Журнал похождений на вкладке "Обзор" — та же нарративная обратная связь, что и toast в
@@ -130,6 +119,34 @@ export default function CursedDepths() {
     adventureLogIdRef.current += 1;
     setAdventureLog(prev => [{ id: adventureLogIdRef.current, text: message.text, type: message.type }, ...prev].slice(0, 20));
   }, [message]);
+
+  // ===== API HELPER ===== (поднят выше loadPlayer — combat нужен apiCall, а loadPlayer нужен
+  // combat.setCombatLog для восстановления боевого лога при возврате в игру посреди боя)
+  const apiCall = useCallback(async (url: string, method = 'GET', body?: unknown) => {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'x-telegram-id': telegramIdRef.current,
+    };
+    // Send validated initData for proper server-side authentication
+    if (initDataRef.current) {
+      headers['X-Telegram-Init-Data'] = initDataRef.current;
+    }
+    const res = await fetch(url, {
+      method,
+      headers,
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    const data = await res.json();
+    // If response is not OK, add status info to the error
+    if (!res.ok && !data.error) {
+      data.error = `Ошибка сервера (${res.status})`;
+    }
+    return data;
+  }, []);
+
+  const combat = useCombatState({
+    apiCall, player, setLoading, onPlayerUpdate: setPlayer, onMessage: setMessage, onNavigateTab: setTab,
+  });
 
   // ===== LOAD PLAYER =====
   const loadPlayer = useCallback(async (tgId: string) => {
@@ -165,8 +182,8 @@ export default function CursedDepths() {
         if (data.player.inCombat) {
           try {
             const logs = data.player.combatLog ? JSON.parse(data.player.combatLog) : [];
-            setCombatLog(logs);
-          } catch { setCombatLog([]); }
+            combat.setCombatLog(logs);
+          } catch { combat.setCombatLog([]); }
           setTab('combat');
         }
         setScreen('game');
@@ -276,29 +293,6 @@ export default function CursedDepths() {
 
     return () => clearInterval(pollInterval);
   }, [initTelegram]);
-
-  // ===== API HELPER =====
-  const apiCall = useCallback(async (url: string, method = 'GET', body?: unknown) => {
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-      'x-telegram-id': telegramIdRef.current,
-    };
-    // Send validated initData for proper server-side authentication
-    if (initDataRef.current) {
-      headers['X-Telegram-Init-Data'] = initDataRef.current;
-    }
-    const res = await fetch(url, {
-      method,
-      headers,
-      body: body ? JSON.stringify(body) : undefined,
-    });
-    const data = await res.json();
-    // If response is not OK, add status info to the error
-    if (!res.ok && !data.error) {
-      data.error = `Ошибка сервера (${res.status})`;
-    }
-    return data;
-  }, []);
 
   const respec = useRespec({ apiCall, onPlayerUpdate: setPlayer, onMessage: setMessage });
 
@@ -481,14 +475,9 @@ export default function CursedDepths() {
 
   // То же самое для гильдии — "?joinGuild=<id>" — реализовано внутри useSocialFeatures().
 
-  // ===== FLOATING DAMAGE HELPER =====
-  const addFloatingDamage = useCallback((text: string, color: string) => {
-    const id = ++floatIdRef.current;
-    setFloatingDamage(prev => [...prev, { id, text, color }]);
-    setTimeout(() => {
-      setFloatingDamage(prev => prev.filter(f => f.id !== id));
-    }, 1000);
-  }, []);
+  // ===== FLOATING DAMAGE HELPER / EXPLORE / EVENT CHOICE / DUNGEON / ABYSS / TRIALS / COMBAT
+  // ACTION — вынесены в useCombatState() (см. вызов хука выше, перед loadPlayer) per CLAUDE.md,
+  // аудит 1.4/A1.
 
   // ===== REFRESH PLAYER =====
   const refreshPlayer = useCallback(async () => {
@@ -593,211 +582,6 @@ export default function CursedDepths() {
     setLoading(false);
   };
 
-  // ===== EXPLORE =====
-  const handleExplore = async () => {
-    if (!player || player.inCombat) return;
-    setLoading(true);
-    try {
-      const data = await apiCall('/api/explore', 'POST');
-      if (data.error) {
-        setMessage({ text: data.error, type: 'error' });
-      } else if (data.type === 'combat') {
-        setPlayer(data.player);
-        setCombatLog([{ text: data.message, turn: 0 }]);
-        setTab('combat');
-        setMessage({ text: data.message, type: 'info' });
-      } else if (data.type === 'safe') {
-        setPlayer(data.player);
-        addFloatingDamage(`+${data.goldFound} 💰`, '#fbbf24');
-        setMessage({ text: data.message, type: 'success' });
-      } else if (data.type === 'explore') {
-        setPlayer(data.player);
-        addFloatingDamage(`+${data.goldFound} 💰`, '#fbbf24');
-        setMessage({ text: data.message, type: 'success' });
-      } else if (data.type === 'event') {
-        setPlayer(data.player);
-        setExplorationEvent(data.event);
-      }
-    } catch {
-      setMessage({ text: 'Ошибка исследования', type: 'error' });
-    }
-    setLoading(false);
-  };
-
-  const handleEventChoice = async (choiceId: string) => {
-    if (!explorationEvent) return;
-    setLoading(true);
-    try {
-      const data = await apiCall('/api/explore/event', 'POST', { eventId: explorationEvent.id, choiceId });
-      setExplorationEvent(null);
-      if (data.checkResult) {
-        setDiceRoll(data.checkResult);
-        setTimeout(() => setDiceRoll(null), 1600);
-      }
-      if (data.error) {
-        setMessage({ text: data.error, type: 'error' });
-      } else if (data.type === 'combat') {
-        setPlayer(data.player);
-        setCombatLog([{ text: data.message, turn: 0 }]);
-        setTab('combat');
-        setMessage({ text: data.message, type: 'info' });
-      } else {
-        setPlayer(data.player);
-        if (data.goldDelta > 0) addFloatingDamage(`+${data.goldDelta} 💰`, '#fbbf24');
-        else if (data.goldDelta < 0) addFloatingDamage(`${data.goldDelta} 💰`, '#ef4444');
-        setMessage({ text: data.message, type: data.negative ? 'error' : 'success' });
-        if (data.leveledUp) {
-          setLevelUpAnimation(true);
-          setTimeout(() => setLevelUpAnimation(false), 1500);
-        }
-      }
-    } catch {
-      setExplorationEvent(null);
-      setMessage({ text: 'Ошибка события', type: 'error' });
-    }
-    setLoading(false);
-  };
-
-  // ===== DUNGEON =====
-  const handleStartDungeon = async (dungeonId: string, heatLevel: number) => {
-    if (!player || player.inCombat) return;
-    setLoading(true);
-    try {
-      const data = await apiCall('/api/dungeon/start', 'POST', { dungeonId, heatLevel });
-      if (data.error) {
-        setMessage({ text: data.error, type: 'error' });
-      } else {
-        setPlayer(data.player);
-        setCombatLog([{ text: data.message, turn: 0 }]);
-        setTab('combat');
-        setMessage({ text: data.message, type: 'info' });
-      }
-    } catch {
-      setMessage({ text: 'Ошибка входа в данж', type: 'error' });
-    }
-    setLoading(false);
-  };
-
-  const handleStartAbyss = async () => {
-    if (!player || player.inCombat) return;
-    setLoading(true);
-    try {
-      const data = await apiCall('/api/abyss/start', 'POST', {});
-      if (data.error) {
-        setMessage({ text: data.error, type: 'error' });
-      } else {
-        setPlayer(data.player);
-        setCombatLog([{ text: data.message, turn: 0 }]);
-        setTab('combat');
-        setMessage({ text: data.message, type: 'info' });
-      }
-    } catch {
-      setMessage({ text: 'Ошибка спуска в Разлом', type: 'error' });
-    }
-    setLoading(false);
-  };
-
-  // ===== TRIALS (lib/combat/trials.ts) — ветвящийся аналог данжей, см. combat/action.ts trial-ветку =====
-  const handleStartTrial = async (trialId: string) => {
-    if (!player || player.inCombat) return;
-    setLoading(true);
-    try {
-      const data = await apiCall('/api/trial/start', 'POST', { trialId });
-      if (data.error) {
-        setMessage({ text: data.error, type: 'error' });
-      } else {
-        setPlayer(data.player);
-        setTrialJunction(data.trialJunction ?? null);
-        setMessage({ text: data.message, type: 'info' });
-      }
-    } catch {
-      setMessage({ text: 'Ошибка входа в испытание', type: 'error' });
-    }
-    setLoading(false);
-  };
-
-  const handleTrialChoose = async (direction: 'left' | 'right') => {
-    if (!trialJunction) return;
-    setLoading(true);
-    try {
-      const data = await apiCall('/api/trial/choose', 'POST', { direction });
-      setTrialJunction(null);
-      if (data.error) {
-        setMessage({ text: data.error, type: 'error' });
-      } else if (data.type === 'combat') {
-        setPlayer(data.player);
-        setCombatLog([{ text: data.message, turn: 0 }]);
-        setTab('combat');
-        setMessage({ text: data.message, type: 'info' });
-      } else if (data.type === 'junction') {
-        setPlayer(data.player);
-        if (data.goldDelta > 0) addFloatingDamage(`+${data.goldDelta} 💰`, '#fbbf24');
-        setMessage({ text: data.message, type: 'success' });
-        setTrialJunction(data.trialJunction ?? null);
-      }
-    } catch {
-      setTrialJunction(null);
-      setMessage({ text: 'Ошибка испытания', type: 'error' });
-    }
-    setLoading(false);
-  };
-
-  // ===== COMBAT ACTION =====
-  const handleCombatAction = async (action: string, itemId?: string, abilityId?: string) => {
-    if (!player || !player.inCombat) return;
-    setLoading(true);
-    setShaking(true);
-    setTimeout(() => setShaking(false), 300);
-    try {
-      const body: Record<string, string> = { action };
-      if (itemId) body.itemId = itemId;
-      if (abilityId) body.abilityId = abilityId;
-      const data = await apiCall('/api/combat/action', 'POST', body);
-
-      if (data.combatLog) {
-        setCombatLog(prev => [...prev, ...data.combatLog]);
-      }
-
-      if (data.player) {
-        setPlayer(data.player);
-      }
-
-      if (data.playerWon) {
-        addFloatingDamage(`+${data.xpGained} XP`, '#60a5fa');
-        addFloatingDamage(`+${data.goldGained} 💰`, '#fbbf24');
-        if (data.dungeonCompleted) {
-          setMessage({ text: `🏆 Данж пройден! +${data.xpGained} XP, +${data.goldGained} золота`, type: 'success' });
-        } else if (data.trialCompleted) {
-          setMessage({ text: `🏆 Испытание пройдено! +${data.xpGained} XP, +${data.goldGained} золота`, type: 'success' });
-        } else if (data.dungeonRoomCleared) {
-          setMessage({ text: `Комната пройдена! Следующий враг уже здесь...`, type: 'success' });
-        } else if (data.trialJunction) {
-          setTrialJunction(data.trialJunction);
-          setMessage({ text: 'Комната пройдена! Впереди развилка.', type: 'success' });
-        } else {
-          setMessage({ text: `Победа! +${data.xpGained} XP, +${data.goldGained} золота`, type: 'success' });
-        }
-      } else if (data.playerFled) {
-        setMessage({ text: 'Вы сбежали из боя!', type: 'info' });
-        setTab('overview');
-      }
-
-      if (data.combatOver && !data.playerWon && !data.playerFled) {
-        setMessage({ text: 'Вы погибли... Вернитесь в таверну.', type: 'error' });
-        setTab('overview');
-      }
-
-      if (data.leveledUp) {
-        setLevelUpAnimation(true);
-        setTimeout(() => setLevelUpAnimation(false), 1500);
-        setMessage({ text: `УРОВЕНЬ ПОВЫШЕН! Теперь уровень ${data.player.level}!`, type: 'success' });
-      }
-    } catch {
-      setMessage({ text: 'Ошибка боя', type: 'error' });
-    }
-    setLoading(false);
-  };
-
   // ===== TRAVEL =====
   const handleTravel = async (locationId: string) => {
     if (!player || player.inCombat) return;
@@ -846,8 +630,7 @@ export default function CursedDepths() {
         setPlayer(data.player);
         setMessage({ text: data.message, type: 'success' });
         if (data.leveledUp) {
-          setLevelUpAnimation(true);
-          setTimeout(() => setLevelUpAnimation(false), 1500);
+          combat.triggerLevelUp();
         }
       }
     } catch {
@@ -1182,8 +965,7 @@ export default function CursedDepths() {
         // quests/claim/route.ts), но раньше UI никак это не показывал — тот же самый переход
         // уровня из боя или дейлика давал анимацию, а из квеста нет.
         if (data.leveledUp) {
-          setLevelUpAnimation(true);
-          setTimeout(() => setLevelUpAnimation(false), 1500);
+          combat.triggerLevelUp();
         }
       }
     } catch {
@@ -1297,12 +1079,6 @@ export default function CursedDepths() {
     return LOCATIONS.find(l => l.id === player.locationId) || LOCATIONS[0];
   };
 
-  // ===== HELPER: Get current enemy info =====
-  const getCurrentEnemy = () => {
-    if (!player?.enemyId) return null;
-    return ENEMIES.find(e => e.id === player.enemyId) || null;
-  };
-
   // ===== SAFE ACCESSORS =====
   const playerInventory = player?.inventory || [];
 
@@ -1358,7 +1134,6 @@ export default function CursedDepths() {
 
   // ===== RENDER: MAIN GAME =====
   const location = getCurrentLocation();
-  const enemy = getCurrentEnemy();
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -1387,7 +1162,7 @@ export default function CursedDepths() {
       )}
 
       {/* Level up overlay */}
-      {levelUpAnimation && (
+      {combat.levelUpAnimation && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center pointer-events-none">
           <div className="animate-level-up text-center">
             <div className="text-6xl mb-2">⬆️</div>
@@ -1399,25 +1174,25 @@ export default function CursedDepths() {
       {/* Проверка характеристики (rollStatCheck) — крупная цифра + цветовой код успех/провал,
           BG3-подача броска (аудит 3, BG3 "переносимо в Telegram") поверх уже посчитанного
           d20+модификатор vs СЛ, который раньше был виден только мелким текстом в тосте. */}
-      {diceRoll && (
+      {combat.diceRoll && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center pointer-events-none">
           <div className="animate-level-up text-center">
-            <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1">{diceRoll.statLabel}</div>
-            <div className={`text-5xl font-bold ${diceRoll.success ? 'text-uncommon' : 'text-destructive'}`}>
-              {diceRoll.total}
+            <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1">{combat.diceRoll.statLabel}</div>
+            <div className={`text-5xl font-bold ${combat.diceRoll.success ? 'text-uncommon' : 'text-destructive'}`}>
+              {combat.diceRoll.total}
             </div>
             <div className="text-xs text-muted-foreground mt-1">
-              🎲{diceRoll.roll} {diceRoll.modifier >= 0 ? '+' : ''}{diceRoll.modifier} vs СЛ {diceRoll.dc}
+              🎲{combat.diceRoll.roll} {combat.diceRoll.modifier >= 0 ? '+' : ''}{combat.diceRoll.modifier} vs СЛ {combat.diceRoll.dc}
             </div>
-            <div className={`text-lg font-bold mt-1 ${diceRoll.success ? 'text-uncommon' : 'text-destructive'}`}>
-              {diceRoll.success ? 'Успех!' : 'Провал'}
+            <div className={`text-lg font-bold mt-1 ${combat.diceRoll.success ? 'text-uncommon' : 'text-destructive'}`}>
+              {combat.diceRoll.success ? 'Успех!' : 'Провал'}
             </div>
           </div>
         </div>
       )}
 
-      <ExplorationEventModal event={explorationEvent} loading={loading} onChoose={handleEventChoice} />
-      <TrialJunctionModal junction={trialJunction} loading={loading} onChoose={handleTrialChoose} />
+      <ExplorationEventModal event={combat.explorationEvent} loading={loading} onChoose={combat.handleEventChoice} />
+      <TrialJunctionModal junction={combat.trialJunction} loading={loading} onChoose={combat.handleTrialChoose} />
       <RespecModal
         open={respec.open}
         player={player}
@@ -1437,7 +1212,7 @@ export default function CursedDepths() {
             location={location}
             loading={loading}
             adventureLog={adventureLog}
-            onExplore={handleExplore}
+            onExplore={combat.handleExplore}
             onRest={handleRest}
             onTravel={handleTravel}
             onDaily={handleDaily}
@@ -1446,9 +1221,9 @@ export default function CursedDepths() {
             onAllocateStat={handleAllocateStat}
             onBuyItem={handleBuyItem}
             onSellItem={handleSellItem}
-            onStartDungeon={handleStartDungeon}
-            onStartAbyss={handleStartAbyss}
-            onStartTrial={handleStartTrial}
+            onStartDungeon={combat.handleStartDungeon}
+            onStartAbyss={combat.handleStartAbyss}
+            onStartTrial={combat.handleStartTrial}
             activePetId={premium.petsState?.activePetId ?? null}
             crownShards={premium.premiumState?.crownShards ?? 0}
             battlePassXp={premium.battlePassState?.premiumActive ? premium.battlePassState.xp : null}
@@ -1463,13 +1238,13 @@ export default function CursedDepths() {
 
           <CombatTab
             player={player}
-            enemy={enemy}
-            shaking={shaking}
-            floatingDamage={floatingDamage}
-            combatLog={combatLog}
+            enemy={combat.enemy}
+            shaking={combat.shaking}
+            floatingDamage={combat.floatingDamage}
+            combatLog={combat.combatLog}
             loading={loading}
             availableAbilities={getAvailableAbilities()}
-            onCombatAction={handleCombatAction}
+            onCombatAction={combat.handleCombatAction}
             onGoToOverview={() => setTab('overview')}
           />
 

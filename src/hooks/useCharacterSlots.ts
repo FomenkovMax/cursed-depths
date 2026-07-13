@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
-import { CharacterSlotsStateView, GameMessage, GameTab } from '@/lib/game-types';
+import { ApiCallFn, CharacterSlotsStateView, GameMessage, GameTab } from '@/lib/game-types';
 
 interface UseCharacterSlotsArgs {
-  apiCall: (url: string, method?: string, body?: unknown) => Promise<Record<string, unknown> & { error?: string }>;
+  apiCall: ApiCallFn;
   telegramIdRef: React.RefObject<string>;
   tab: GameTab;
   onMessage: (message: GameMessage) => void;

@@ -1,9 +1,9 @@
 import { useCallback, useRef, useState } from 'react';
 import { ENEMIES } from '@/lib/game-data';
-import { CombatLogEntry, CheckRollResultView, ExplorationEvent, GameMessage, GameTab, PlayerData, TrialJunctionView } from '@/lib/game-types';
+import { ApiCallFn, CombatLogEntry, CheckRollResultView, ExplorationEvent, GameMessage, GameTab, PlayerData, TrialJunctionView } from '@/lib/game-types';
 
 interface UseCombatStateArgs {
-  apiCall: (url: string, method?: string, body?: unknown) => Promise<Record<string, unknown> & { error?: string; message?: string }>;
+  apiCall: ApiCallFn;
   player: PlayerData | null;
   setLoading: (loading: boolean) => void;
   onPlayerUpdate: (player: PlayerData) => void;

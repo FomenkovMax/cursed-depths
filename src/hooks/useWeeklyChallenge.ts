@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
-import { GameMessage, GameTab, WeeklyChallengeAttemptResultView, WeeklyChallengeStateView } from '@/lib/game-types';
+import { ApiCallFn, GameMessage, GameTab, WeeklyChallengeAttemptResultView, WeeklyChallengeStateView } from '@/lib/game-types';
 
 interface UseWeeklyChallengeArgs {
-  apiCall: (url: string, method?: string, body?: unknown) => Promise<Record<string, unknown> & { error?: string; message?: string }>;
+  apiCall: ApiCallFn;
   telegramIdRef: React.RefObject<string>;
   tab: GameTab;
   onMessage: (message: GameMessage) => void;

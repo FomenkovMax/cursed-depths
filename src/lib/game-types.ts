@@ -266,6 +266,15 @@ export type GameTab = 'overview' | 'combat' | 'map' | 'inventory' | 'quests' | '
 
 export type GameMessage = { text: string; type: 'info' | 'success' | 'error' } | null;
 
+/** Единая сигнатура apiCall() (page.tsx), которую хуки принимают как параметр — раньше
+ * дублировалась построчно в каждом хуке (аудит 2/#7: apiCall() возвращал неявный any через
+ * res.json(), граница ответов API не была типизирована нигде). Не решает типизацию каждого
+ * конкретного эндпоинта (для этого нужен generic-параметр на каждый вызов) — но убирает
+ * implicit any по умолчанию и держит контракт в одном месте вместо N копий. Хуки с известной
+ * узкой формой ответа (useRespec, useGuildUpgrades) намеренно держат свой более точный тип, а
+ * не сужаются до этого — не трогать. */
+export type ApiCallFn = (url: string, method?: string, body?: unknown) => Promise<Record<string, unknown> & { error?: string; message?: string }>;
+
 export interface EventChoice {
   id: string;
   label: string;

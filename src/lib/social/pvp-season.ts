@@ -8,6 +8,12 @@
  * тренировку целиком), а удержание 30% отклонения от базы, тот же принцип, что у soft reset в
  * большинстве ranked-лестниц (Overwatch/Apex и т.п.).
  *
+ * Итоговый результат сезона (топ-N, см. leagueScore ниже) — не чистый pvpRating, а pvpRating +
+ * PvE-очки сезона (Player.leagueBonusScore, LEAGUE_POINTS): изначально лига считала только
+ * PvP-победы, что оставляло игроков, качающихся через данжи/испытания/экспедиции, полностью вне
+ * таблицы. Матчмейкинг соперников на Арене (api/pvp/opponents) по-прежнему использует чистый
+ * pvpRating — сумма влияет только на итоговое место в сезоне, не на подбор противника.
+ *
  * Как и currentSeasonId (lib/seasons.ts), сезон определяется чисто по дате — никакой
  * cron-инфраструктуры. Раздача награды + сброс рейтингов выполняются лениво при первом же
  * обращении к /api/pvp/opponents в новом сезоне.
@@ -50,4 +56,19 @@ const MIN_RATING = 100;
  * бесконечно из сезона в сезон. */
 export function softResetRating(rating: number): number {
   return Math.max(MIN_RATING, Math.round(SOFT_RESET_BASE + (rating - SOFT_RESET_BASE) * SOFT_RESET_RETENTION));
+}
+
+/** Очки лиги за PvE-активность за ТЕКУЩИЙ сезон (Player.leagueBonusScore) — начисляются в
+ * соответствующих роутах (combat/action.ts на dungeonCompleted/trialCompleted,
+ * expedition/claim/route.ts). Не за PvP-победы — тем PvP-игрок уже награждён напрямую через рост
+ * pvpRating, начислять очки лиги ещё и за это было бы двойным счётом одного и того же сигнала. */
+export const LEAGUE_POINTS = {
+  dungeonOrTrialCompleted: 15,
+  expeditionClaimed: 10,
+} as const;
+
+/** Итоговый результат для сезонной таблицы лиги — pvpRating (матчмейкинг Арены остаётся на
+ * чистом рейтинге, не на этой сумме) плюс очки за PvE-активность сезона. */
+export function leagueScore(pvpRating: number, leagueBonusScore: number): number {
+  return pvpRating + leagueBonusScore;
 }

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { validateTelegramRequest } from '@/lib/auth';
 import { leagueForRating } from '@/lib/combat/pvp';
-import { currentPvpSeasonId, previousPvpSeasonId, daysUntilPvpSeasonEnd, softResetRating, PVP_SEASON_TOP_N } from '@/lib/social/pvp-season';
+import { currentPvpSeasonId, previousPvpSeasonId, daysUntilPvpSeasonEnd, softResetRating, leagueScore, PVP_SEASON_TOP_N } from '@/lib/social/pvp-season';
 
 const OPPONENT_COUNT = 8;
 
@@ -21,10 +21,12 @@ async function distributePreviousPvpSeasonRewardIfNeeded() {
   const already = await db.pvpSeasonReward.findFirst({ where: { season } });
   if (already) return;
 
-  const allPlayers = await db.player.findMany({
-    select: { id: true, pvpRating: true },
-    orderBy: { pvpRating: 'desc' },
-  });
+  // Ранжируем по leagueScore (pvpRating + PvE-очки сезона), не по чистому pvpRating — см.
+  // комментарий в lib/social/pvp-season.ts. SQLite/libsql через Prisma не умеет ORDER BY по
+  // сумме двух колонок — сортируем в JS, тот же приём, что и ниже для подбора соперников.
+  const allPlayers = (await db.player.findMany({
+    select: { id: true, pvpRating: true, leagueBonusScore: true },
+  })).sort((a, b) => leagueScore(b.pvpRating, b.leagueBonusScore) - leagueScore(a.pvpRating, a.leagueBonusScore));
   if (allPlayers.length === 0) return;
 
   const topPlayers = allPlayers.slice(0, PVP_SEASON_TOP_N);
@@ -45,8 +47,13 @@ async function distributePreviousPvpSeasonRewardIfNeeded() {
 
   for (const p of allPlayers) {
     const newRating = softResetRating(p.pvpRating);
-    if (newRating !== p.pvpRating) {
-      await db.player.update({ where: { id: p.id }, data: { pvpRating: newRating } }).catch(() => {});
+    // leagueBonusScore обнуляется целиком (не смягчается, в отличие от рейтинга) — это очки
+    // ЗА ТЕКУЩИЙ сезон, у следующего сезона свой набор PvE-активности с нуля.
+    if (newRating !== p.pvpRating || p.leagueBonusScore !== 0) {
+      await db.player.update({
+        where: { id: p.id },
+        data: { pvpRating: newRating, leagueBonusScore: 0 },
+      }).catch(() => {});
     }
   }
 }
@@ -91,15 +98,35 @@ export async function GET(req: NextRequest) {
       include: { player: { select: { name: true, class: { select: { icon: true } } } } },
     });
 
+    // Живая таблица ТЕКУЩЕГО сезона (не сохраняется — пересчитывается на каждый запрос) —
+    // в отличие от previousSeasonTop3 (заморожена в конце сезона), тут видно, как PvE-очки
+    // (данжи/испытания/экспедиции) двигают место в лиге прямо сейчас, посреди сезона.
+    const seasonStandings = (await db.player.findMany({
+      select: { id: true, name: true, pvpRating: true, leagueBonusScore: true, class: { select: { icon: true } } },
+    }))
+      .sort((a, b) => leagueScore(b.pvpRating, b.leagueBonusScore) - leagueScore(a.pvpRating, a.leagueBonusScore))
+      .slice(0, 10)
+      .map(p => ({
+        id: p.id,
+        name: p.name,
+        class: p.class,
+        pvpRating: p.pvpRating,
+        leagueBonusScore: p.leagueBonusScore,
+        leagueScore: leagueScore(p.pvpRating, p.leagueBonusScore),
+      }));
+
     return NextResponse.json({
       opponents,
       myRating: player.pvpRating,
+      myLeagueBonusScore: player.leagueBonusScore,
+      myLeagueScore: leagueScore(player.pvpRating, player.leagueBonusScore),
       myLeague: leagueForRating(player.pvpRating),
       myWins: player.pvpWins,
       myLosses: player.pvpLosses,
       seasonId: currentPvpSeasonId(),
       daysUntilSeasonEnd: daysUntilPvpSeasonEnd(),
       previousSeasonTop3,
+      seasonStandings,
     });
   } catch (error) {
     console.error('[API] Route error:', error);

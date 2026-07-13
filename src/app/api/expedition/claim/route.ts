@@ -5,6 +5,7 @@ import { findExpeditionTier, expeditionReward } from '@/lib/premium/expeditions'
 import { isPremiumActive, PREMIUM_GOLD_XP_MULT, isDeathDebuffActive, DEATH_DEBUFF_XP_MULT } from '@/lib/premium/premium-shop';
 import { ITEMS } from '@/lib/game-data';
 import { addItemToInventory } from '@/lib/economy/inventory-utils';
+import { LEAGUE_POINTS } from '@/lib/social/pvp-season';
 
 export async function POST(req: NextRequest) {
   const auth = validateTelegramRequest(req);
@@ -72,6 +73,7 @@ export async function POST(req: NextRequest) {
         xp: newXp,
         expeditionTierId: null,
         expeditionEndsAt: null,
+        leagueBonusScore: { increment: LEAGUE_POINTS.expeditionClaimed },
         ...(leveledUp ? { level: newLevel, xpToNext: newXpToNext, statPoints: newStatPoints, maxHp: newMaxHp, hp: newMaxHp } : {}),
       },
       include: { inventory: true, quests: true, race: true, class: { include: { abilities: true } } },

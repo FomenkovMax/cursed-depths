@@ -92,3 +92,26 @@ Pass, Bounty Board, Expeditions и т.п.) состояние **не добав�
 применяет только аддитивный дифф (`ALTER TABLE ADD COLUMN` / `CREATE TABLE` / `CREATE INDEX`) —
 никогда не удаляет и не меняет существующее, безопасен для многократного/повторного запуска
 (дифф от уже синхронной базы — пустой).
+
+## Language
+
+This user writes in Russian.
+
+## Framework: molyanov-ai-dev (установлен 2026-07-18)
+
+В `.claude/` установлен spec-driven фреймворк разработки
+[molyanov-ai-dev](https://github.com/pavel-molyanov/molyanov-ai-dev) (MIT): `.claude/agents/` (22
+специализированных субагента-валидатора/ревьюера — `code-reviewer`, `security-auditor`,
+`tech-spec-validator`, `skeptic` и др.), `.claude/commands/` (слэш-команды пайплайна —
+`/new-user-spec`, `/new-tech-spec`, `/decompose-tech-spec`, `/do-task`, `/do-feature`, `/done`,
+`/write-code`, `/init-project-knowledge`), `.claude/skills/` (20 методологических скиллов —
+планирование, TDD-разработка, ревью, деплой, документация), `.claude/hooks/` (1 хук —
+`post-compact-restore.sh`, восстанавливает контекст выполнения фичи после сжатия сессии), и
+`.claude/shared/` (шаблоны спеков/задач/интервью). Копия `README.md` фреймворка лежит в
+`.claude/README.md` — полное описание команд и агентов.
+
+Это не заменяет существующие `skills/` (генерация контента) и `.claude`-конвенции проекта выше —
+это отдельный, опциональный пайплайн для тех, кто хочет вести новую фичу через
+интервью → спека → декомпозиция → TDD-таски, а не писать код напрямую. Existing project skills
+under `skills/` at repo root (ASR, LLM, TTS, docx, xlsx, etc.) are unrelated content-generation
+skills, not part of this framework.

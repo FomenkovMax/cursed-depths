@@ -32,6 +32,8 @@ interface CombatTabProps {
   player: PlayerData | null;
   enemy: typeof ENEMIES[0] | null;
   shaking: boolean;
+  enemyHitFlash: boolean;
+  abilityCastGlow: boolean;
   floatingDamage: { id: number; text: string; color: string }[];
   combatLog: CombatLogEntry[];
   loading: boolean;
@@ -44,6 +46,8 @@ export function CombatTab({
   player,
   enemy,
   shaking,
+  enemyHitFlash,
+  abilityCastGlow,
   floatingDamage,
   combatLog,
   loading,
@@ -102,7 +106,20 @@ export function CombatTab({
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-3">
-                  <span className="text-3xl">{enemy.icon}</span>
+                  {/* Портрет врага/босса — сейчас эмодзи-плейсхолдер (реальный AI-арт ещё не
+                      подключён, см. план ассетов), но реакция на удар и луч способности уже
+                      навешаны на обёртку, а не на конкретный <span>, так что переживут замену
+                      эмодзи на <img> без переделки анимаций. */}
+                  <div className="relative w-10 h-10 flex items-center justify-center overflow-hidden rounded">
+                    <span className={`text-3xl ${enemyHitFlash ? 'animate-enemy-hit' : ''}`}>
+                      {enemy.icon}
+                    </span>
+                    {abilityCastGlow && (
+                      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+                        <div className="animate-ability-beam absolute -inset-y-6 w-4 bg-gradient-to-b from-transparent via-gold/90 to-transparent blur-[1px]" />
+                      </div>
+                    )}
+                  </div>
                   <div>
                     <h3 className="font-bold text-sm" style={{ color: enemy.isBoss ? '#f59e0b' : '#ef4444' }}>
                       {enemy.nameRu}

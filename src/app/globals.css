@@ -121,6 +121,31 @@ body {
   animation: pulse-border 2s ease-in-out infinite;
 }
 
+/* Enemy/boss hit reaction — flinch + red flash on the portrait itself, distinct from the
+   outer screen shake (that one fires on every action; this one only when HP actually drops) */
+@keyframes enemyHitReact {
+  0% { transform: scale(1) rotate(0deg); filter: brightness(1) saturate(1); }
+  30% { transform: scale(0.92) translateX(-4px) rotate(-4deg); filter: brightness(1.6) saturate(2) drop-shadow(0 0 8px rgba(239, 68, 68, 0.9)); }
+  60% { transform: scale(1.04) translateX(3px) rotate(2deg); filter: brightness(1.2) saturate(1.4); }
+  100% { transform: scale(1) rotate(0deg); filter: brightness(1) saturate(1); }
+}
+
+.animate-enemy-hit {
+  animation: enemyHitReact 0.4s ease-out;
+}
+
+/* Ability cast beam — diagonal sweep of light across the enemy/boss portrait */
+@keyframes abilityBeamSweep {
+  0% { transform: translate(-140%, -20%) rotate(20deg); opacity: 0; }
+  15% { opacity: 1; }
+  50% { transform: translate(10%, 10%) rotate(20deg); opacity: 1; }
+  100% { transform: translate(160%, 40%) rotate(20deg); opacity: 0; }
+}
+
+.animate-ability-beam {
+  animation: abilityBeamSweep 0.7s ease-in-out;
+}
+
 /* Fade in */
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(10px); }

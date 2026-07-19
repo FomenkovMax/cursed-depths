@@ -1267,6 +1267,8 @@ export default function CursedDepths() {
             player={player}
             enemy={combat.enemy}
             shaking={combat.shaking}
+            enemyHitFlash={combat.enemyHitFlash}
+            abilityCastGlow={combat.abilityCastGlow}
             floatingDamage={combat.floatingDamage}
             combatLog={combat.combatLog}
             loading={loading}

@@ -20,6 +20,8 @@ interface UseCombatStateArgs {
 export function useCombatState({ apiCall, player, setLoading, onPlayerUpdate, onMessage, onNavigateTab }: UseCombatStateArgs) {
   const [combatLog, setCombatLog] = useState<CombatLogEntry[]>([]);
   const [shaking, setShaking] = useState(false);
+  const [enemyHitFlash, setEnemyHitFlash] = useState(false);
+  const [abilityCastGlow, setAbilityCastGlow] = useState(false);
   const [levelUpAnimation, setLevelUpAnimation] = useState(false);
   const [diceRoll, setDiceRoll] = useState<CheckRollResultView | null>(null);
   const [floatingDamage, setFloatingDamage] = useState<{ id: number; text: string; color: string }[]>([]);
@@ -196,6 +198,13 @@ export function useCombatState({ apiCall, player, setLoading, onPlayerUpdate, on
     setLoading(true);
     setShaking(true);
     setTimeout(() => setShaking(false), 300);
+    // "Луч" на способность показываем сразу по нажатию — это визуализация каста, а не результата,
+    // так что не ждём ответа сервера (иначе на медленной сети анимация будет с заметной задержкой).
+    if (action === 'ability') {
+      setAbilityCastGlow(true);
+      setTimeout(() => setAbilityCastGlow(false), 700);
+    }
+    const prevEnemyHp = player.enemyHp ?? null;
     try {
       const body: Record<string, string> = { action };
       if (itemId) body.itemId = itemId;
@@ -207,7 +216,16 @@ export function useCombatState({ apiCall, player, setLoading, onPlayerUpdate, on
       }
 
       if (data.player) {
-        onPlayerUpdate(data.player as unknown as PlayerData);
+        const updatedPlayer = data.player as unknown as PlayerData;
+        // Реакция врага/босса на попадание — сравниваем HP до и после хода, а не парсим текст
+        // журнала боя, чтобы не зависеть от формулировок (и работать одинаково для атаки,
+        // способности и урона от предметов).
+        const newEnemyHp = updatedPlayer.enemyHp ?? null;
+        if (prevEnemyHp !== null && newEnemyHp !== null && newEnemyHp < prevEnemyHp) {
+          setEnemyHitFlash(true);
+          setTimeout(() => setEnemyHitFlash(false), 400);
+        }
+        onPlayerUpdate(updatedPlayer);
       }
 
       if (data.playerWon) {
@@ -248,7 +266,7 @@ export function useCombatState({ apiCall, player, setLoading, onPlayerUpdate, on
   const enemy = player?.enemyId ? (ENEMIES.find(e => e.id === player.enemyId) ?? null) : null;
 
   return {
-    combatLog, setCombatLog, shaking, levelUpAnimation, diceRoll, floatingDamage,
+    combatLog, setCombatLog, shaking, enemyHitFlash, abilityCastGlow, levelUpAnimation, diceRoll, floatingDamage,
     explorationEvent, trialJunction, enemy,
     addFloatingDamage, triggerLevelUp, handleExplore, handleEventChoice, handleStartDungeon, handleStartAbyss,
     handleStartTrial, handleTrialChoose, handleCombatAction,

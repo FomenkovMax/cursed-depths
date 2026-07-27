@@ -7,6 +7,8 @@ import { Badge } from '@/components/ui/badge';
 import { ItemIconTile } from '@/components/game/ItemIconTile';
 import { RARITY_COLORS } from '@/lib/game-data';
 import { PlayerData, AuctionStateView, AFFIX_TIER_RU, AFFIX_TIER_COLORS, parseStats } from '@/lib/game-types';
+import { ITEM_ICON_IMAGES, CURRENCY_ICON_IMAGES } from '@/lib/asset-icons';
+import { AssetIcon } from '@/components/game/AssetIcon';
 
 interface AuctionTabProps {
   player: PlayerData | null;
@@ -151,7 +153,7 @@ export function AuctionTab({ player, state, loading, onListItem, onBid, onCancel
               <Card key={a.id} className={`border-border ${a.isOwn ? 'border-primary/40' : a.isMyBid ? 'border-uncommon/40' : ''}`}>
                 <CardContent className="p-3 space-y-2">
                   <div className="flex items-start gap-2">
-                    <span className="text-xl shrink-0">{a.icon}</span>
+                    <AssetIcon src={ITEM_ICON_IMAGES[a.itemId]} emoji={a.icon ?? ''} size={26} className="text-xl shrink-0" />
                     <div className="flex-1 min-w-0">
                       <div className="text-xs font-medium" style={{ color: RARITY_COLORS[a.rarity] }}>
                         {a.name} {a.quantity > 1 ? `x${a.quantity}` : ''}
@@ -174,7 +176,7 @@ export function AuctionTab({ player, state, loading, onListItem, onBid, onCancel
                       )}
                     </div>
                     <div className="text-right shrink-0">
-                      <div className="text-xs text-gold font-bold">💰 {a.currentBid ?? a.startingPrice}</div>
+                      <div className="text-xs text-gold font-bold inline-flex items-center gap-1"><AssetIcon src={CURRENCY_ICON_IMAGES.gold} emoji="💰" size={12} /> {a.currentBid ?? a.startingPrice}</div>
                       <div className="text-[9px] text-muted-foreground">
                         {a.currentBid ? `лидер: ${a.isMyBid ? 'вы' : a.currentBidderName}` : 'ставок нет'}
                       </div>

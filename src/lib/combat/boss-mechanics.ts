@@ -401,6 +401,17 @@ export function resolveBossTurn(
     result.bossHeal += Math.round(enemyMaxHp * mechanics.summonHealPercentPerStack * state.summonStacks);
   }
 
+  // Потолок пассивного самоисцеления (selfHeal + heal от стаков призыва вместе). Без него связка
+  // selfHealPercent + summonHealPercentPerStack*summonMaxStacks (heart_of_ailet: 10% + 5×3% = 25%/ход)
+  // в Бездонном Разломе на большой глубине превышала урон игрока за один удар — босс восстанавливался
+  // до maxHp каждый ход и оставался на 100% HP бесконечно, хотя урон в журнале боя показывался как
+  // нанесённый (баг из отчёта игрока: "Сердце Айлет" на глубине 80 не терял HP). Игрок наносит урон
+  // ровно один раз за ход, поэтому пассивный реген не должен превышать долю maxHp, отбиваемую одним
+  // ударом — кража ХП (hpDrainPercent) ниже не капается, она пропорциональна урону САМОГО босса, а не
+  // проценту от его maxHp, и такой раскрутки не создаёт.
+  const PASSIVE_HEAL_CAP_PERCENT = 0.12;
+  result.bossHeal = Math.min(result.bossHeal, Math.round(enemyMaxHp * PASSIVE_HEAL_CAP_PERCENT));
+
   // Щитовой берсерк
   if (mechanics.enrageOnShieldBreak && state.shieldBroken) {
     damageMult *= mechanics.enrageOnShieldBreak.damageMult;

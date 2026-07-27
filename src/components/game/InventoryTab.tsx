@@ -6,6 +6,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ItemIconTile } from '@/components/game/ItemIconTile';
+import { PaperDoll } from '@/components/game/character-viewer/PaperDoll';
+import { AssetIcon } from '@/components/game/AssetIcon';
+import { CURRENCY_ICON_IMAGES, ITEM_ICON_IMAGES } from '@/lib/asset-icons';
+import { currentClassPortrait } from '@/lib/character-portrait';
 import { RARITY_COLORS, RARITY_NAMES_RU, ITEMS } from '@/lib/game-data';
 import { PlayerData, InventoryItem, StashItemView, AccountVaultItemView, SLOT_RU, ITEM_TYPE_RU, AFFIX_TIER_RU, AFFIX_TIER_COLORS, parseStats, parseAffixes } from '@/lib/game-types';
 
@@ -41,8 +45,8 @@ type GridItem = InventoryItem | StashItemView | AccountVaultItemView;
 
 /** Ввод суммы + кнопки "положить"/"забрать" — переиспользуется для золота и Осколков Короны в
  * панели общего сейфа. */
-function CurrencyTransferRow({ icon, label, playerAmount, vaultAmount, disabled, onDeposit, onWithdraw }: {
-  icon: string; label: string; playerAmount: number; vaultAmount: number; disabled: boolean;
+function CurrencyTransferRow({ icon, image, label, playerAmount, vaultAmount, disabled, onDeposit, onWithdraw }: {
+  icon: string; image?: string; label: string; playerAmount: number; vaultAmount: number; disabled: boolean;
   onDeposit: (amount: number) => void; onWithdraw: (amount: number) => void;
 }) {
   const [amount, setAmount] = useState('');
@@ -52,7 +56,7 @@ function CurrencyTransferRow({ icon, label, playerAmount, vaultAmount, disabled,
   return (
     <div className="space-y-1.5 p-2 rounded-lg bg-secondary/20 border border-border/60">
       <div className="flex items-center justify-between text-xs">
-        <span>{icon} {label}</span>
+        <span className="inline-flex items-center gap-1"><AssetIcon src={image} emoji={icon} size={14} /> {label}</span>
         <span className="text-muted-foreground">У вас: {playerAmount} • В сейфе: {vaultAmount}</span>
       </div>
       <div className="flex gap-1.5">
@@ -90,49 +94,6 @@ function statLabel(k: string): string {
   return k === 'attack' ? 'АТК' : k === 'defense' ? 'ЗАЩ' : k === 'healHp' ? 'ЛечHP' : k === 'healMp' ? 'ЛечMP' : k === 'damage' ? 'Урон' : k;
 }
 
-// Расположение "в полный рост": голова сверху по центру, амулет и первое кольцо по бокам
-// тела, оружие и второе кольцо на уровне рук, ноги внизу — читается как силуэт персонажа,
-// а не произвольная сетка. area-имена совпадают с полями Inventory.slot.
-const PORTRAIT_AREAS = `
-  ".      head   ."
-  "amulet body   ring1"
-  "weapon hands  ring2"
-  ".      legs   ."
-`;
-const PORTRAIT_SLOTS: { slot: string; area: string }[] = [
-  { slot: 'head', area: 'head' },
-  { slot: 'amulet', area: 'amulet' },
-  { slot: 'body', area: 'body' },
-  { slot: 'ring1', area: 'ring1' },
-  { slot: 'weapon', area: 'weapon' },
-  { slot: 'hands', area: 'hands' },
-  { slot: 'ring2', area: 'ring2' },
-  { slot: 'legs', area: 'legs' },
-];
-
-function PortraitGrid({ equipped, onSelect }: { equipped: InventoryItem[]; onSelect: (item: InventoryItem) => void }) {
-  const bySlot = new Map(equipped.map(i => [i.slot, i]));
-  return (
-    <div className="grid gap-2" style={{ gridTemplateAreas: PORTRAIT_AREAS, gridTemplateColumns: 'repeat(3, 1fr)' }}>
-      {PORTRAIT_SLOTS.map(({ slot, area }) => {
-        const item = bySlot.get(slot);
-        return (
-          <div key={slot} style={{ gridArea: area }} className="flex flex-col items-center gap-1">
-            {item ? (
-              <ItemIconTile item={item} equipped onClick={() => onSelect(item)} />
-            ) : (
-              <div className="aspect-square w-full rounded-lg border border-dashed border-border/50 bg-secondary/10 flex items-center justify-center text-muted-foreground/40 text-lg">
-                {slot === 'weapon' ? '⚔️' : slot === 'head' ? '👤' : slot === 'body' ? '👕' : slot === 'hands' ? '🤚' : slot === 'legs' ? '🦵' : slot === 'amulet' ? '📿' : '💍'}
-              </div>
-            )}
-            <span className="text-[9px] text-muted-foreground text-center leading-none">{SLOT_RU[slot] ?? slot}</span>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
 export function InventoryTab({
   player, loading, onEquip, onUseItem, onLearnBlueprint,
   stashItems, stashCapacity, stashLoading, onStoreItem, onRetrieveItem,
@@ -146,6 +107,7 @@ export function InventoryTab({
 
   const equipped = playerInventory.filter(i => i.equipped);
   const unequipped = playerInventory.filter(i => !i.equipped);
+  const classPortrait = player ? currentClassPortrait(player) : undefined;
 
   const detailStats = detail ? parseStats(detail.item.stats) : {};
   const detailAffixes = detail ? parseAffixes(detail.item.affixes) : [];
@@ -209,13 +171,13 @@ export function InventoryTab({
                 </CardHeader>
                 <CardContent className="px-4 pb-3 space-y-2">
                   <CurrencyTransferRow
-                    icon="💰" label="Золото"
+                    icon="💰" image={CURRENCY_ICON_IMAGES.gold} label="Золото"
                     playerAmount={playerGold} vaultAmount={vaultGold}
                     disabled={vaultTransferring}
                     onDeposit={onDepositGold} onWithdraw={onWithdrawGold}
                   />
                   <CurrencyTransferRow
-                    icon="👑" label="Осколки Короны"
+                    icon="👑" image={CURRENCY_ICON_IMAGES.crownShards} label="Осколки Короны"
                     playerAmount={playerShards} vaultAmount={vaultShards}
                     disabled={vaultTransferring}
                     onDeposit={onDepositShards} onWithdraw={onWithdrawShards}
@@ -265,16 +227,24 @@ export function InventoryTab({
         </Card>
       ) : (
         <>
-          {/* Портрет — расположение по слотам "в полный рост", а не плоская сетка: голова
-              сверху, тело в центре с амулетом/кольцом по бокам, оружие и вторая рука ниже,
-              ноги внизу. Под каждый предмет своя иконка уже есть (ItemIconTile), место под
-              арт персонажа/анимацию класса — на будущее (см. обсуждение с пользователем). */}
+          {/* Портрет — 2D-силуэт персонажа с иконками надетых предметов, разложенными
+              анатомически (см. src/components/game/character-viewer/PaperDoll), визуально
+              меняется по надетым предметам как и раньше. Своих иллюстрированных 2D-арт-ассетов
+              персонажа/экипировки в проекте нет — силуэт держит компоновку, каждый предмет
+              представлен той же иконкой, что и везде в инвентаре, ничего не заглушено. */}
           <Card className="border-border">
             <CardHeader className="pb-2 pt-3 px-4">
               <CardTitle className="text-sm">Портрет</CardTitle>
             </CardHeader>
-            <CardContent className="px-4 pb-3">
-              <PortraitGrid equipped={equipped} onSelect={item => setDetail({ item, source: 'inventory' })} />
+            <CardContent className="px-4 pb-3 space-y-2">
+              {/* Портрет текущей открытой эволюции класса (см. lib/character-portrait.ts) —
+                  меняется сам по мере роста уровня, отдельно от силуэта с экипировкой ниже. */}
+              {classPortrait && (
+                <div className="rounded-lg overflow-hidden border border-border/60 aspect-[3/2] bg-secondary/20">
+                  <img src={classPortrait} alt="" className="w-full h-full object-cover object-top" />
+                </div>
+              )}
+              <PaperDoll equipped={equipped} onSelect={item => setDetail({ item, source: 'inventory' })} />
             </CardContent>
           </Card>
 
@@ -306,7 +276,7 @@ export function InventoryTab({
             <>
               <DialogHeader>
                 <DialogTitle className="flex items-center gap-2 text-sm" style={{ color: RARITY_COLORS[detail.item.rarity] }}>
-                  <span className="text-2xl">{detail.item.icon}</span>
+                  <AssetIcon src={ITEM_ICON_IMAGES[detail.item.itemId]} emoji={detail.item.icon ?? ''} size={32} className="text-2xl" />
                   <span>
                     {detail.item.name}
                     {detail.item.enhancementLevel > 0 && <span className="ml-1 text-gold">+{detail.item.enhancementLevel}</span>}

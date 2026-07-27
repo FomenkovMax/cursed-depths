@@ -7,6 +7,8 @@ import { Badge } from '@/components/ui/badge';
 import { ItemIconTile } from '@/components/game/ItemIconTile';
 import { RARITY_COLORS } from '@/lib/game-data';
 import { PlayerData, MarketListingView, AFFIX_TIER_RU, AFFIX_TIER_COLORS, parseStats } from '@/lib/game-types';
+import { ITEM_ICON_IMAGES, CURRENCY_ICON_IMAGES } from '@/lib/asset-icons';
+import { AssetIcon } from '@/components/game/AssetIcon';
 
 interface MarketTabProps {
   player: PlayerData | null;
@@ -98,7 +100,7 @@ export function MarketTab({ player, listings, loading, onListItem, onBuyItem, on
               <Card key={l.id} className={`border-border ${l.isOwn ? 'border-primary/40' : ''}`}>
                 <CardContent className="p-3">
                   <div className="flex items-start gap-2">
-                    <span className="text-xl shrink-0">{l.icon}</span>
+                    <AssetIcon src={ITEM_ICON_IMAGES[l.itemId]} emoji={l.icon ?? ''} size={26} className="text-xl shrink-0" />
                     <div className="flex-1 min-w-0">
                       <div className="text-xs font-medium" style={{ color: RARITY_COLORS[l.rarity] }}>
                         {l.name} {l.quantity > 1 ? `x${l.quantity}` : ''}
@@ -119,7 +121,7 @@ export function MarketTab({ player, listings, loading, onListItem, onBuyItem, on
                       )}
                     </div>
                     <div className="flex flex-col items-end gap-1 shrink-0">
-                      <span className="text-xs text-gold font-bold">💰 {l.price}</span>
+                      <span className="text-xs text-gold font-bold inline-flex items-center gap-1"><AssetIcon src={CURRENCY_ICON_IMAGES.gold} emoji="💰" size={12} /> {l.price}</span>
                       {l.isOwn ? (
                         <Button variant="outline" size="sm" className="h-7 text-xs border-destructive/50 text-destructive" disabled={loading} onClick={() => onCancelListing(l.id)}>
                           Снять

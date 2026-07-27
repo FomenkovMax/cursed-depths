@@ -1,5 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { TitlesStateView } from '@/lib/game-types';
+import { TITLE_ICON_IMAGES } from '@/lib/asset-icons';
+import { AssetIcon } from '@/components/game/AssetIcon';
 
 interface TitlesPanelProps {
   state: TitlesStateView | null;
@@ -36,7 +38,11 @@ export function TitlesPanel({ state, loading, equippingTitleId, onEquipTitle }: 
             t.equipped ? 'border-gold/60 bg-gold/10' : t.unlocked ? 'border-border bg-secondary/20' : 'border-border/40 bg-secondary/10 opacity-60'
           }`}
         >
-          <span className="text-xl shrink-0">{t.unlocked ? t.icon : '🔒'}</span>
+          {t.unlocked ? (
+            <AssetIcon src={TITLE_ICON_IMAGES[t.id]} emoji={t.icon} size={26} className="text-xl shrink-0" />
+          ) : (
+            <span className="text-xl shrink-0">🔒</span>
+          )}
           <div className="flex-1 min-w-0">
             <div className={`text-sm font-medium truncate ${t.unlocked ? t.colorClass : 'text-muted-foreground'}`}>
               {t.nameRu}

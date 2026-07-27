@@ -11,6 +11,7 @@ import { PlayerData, AbilityData, CombatLogEntry } from '@/lib/game-types';
 import { findDungeon } from '@/lib/combat/dungeons';
 import { findDungeonModifier, heatLevelLabel } from '@/lib/combat/dungeon-modifiers';
 import { isEliteDepth } from '@/lib/combat/abyss';
+import { BOSS_PORTRAIT_IMAGES } from '@/lib/asset-icons';
 
 const ACTIVE_EFFECT_LABELS: Record<string, string> = {
   player_damage_buff: 'Урон усилен',
@@ -32,6 +33,8 @@ interface CombatTabProps {
   player: PlayerData | null;
   enemy: typeof ENEMIES[0] | null;
   shaking: boolean;
+  enemyHitFlash: boolean;
+  abilityCastGlow: boolean;
   floatingDamage: { id: number; text: string; color: string }[];
   combatLog: CombatLogEntry[];
   loading: boolean;
@@ -44,6 +47,8 @@ export function CombatTab({
   player,
   enemy,
   shaking,
+  enemyHitFlash,
+  abilityCastGlow,
   floatingDamage,
   combatLog,
   loading,
@@ -102,7 +107,22 @@ export function CombatTab({
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-3">
-                  <span className="text-3xl">{enemy.icon}</span>
+                  {/* Портрет босса — реальный AI-арт (src/lib/asset-icons.ts BOSS_PORTRAIT_IMAGES),
+                      обычные враги остаются эмодзи (для них портретов не генерировали). Реакция
+                      на удар и луч способности навешаны на обёртку, а не на конкретный <span>/
+                      <img>, поэтому свежая работает без переделки анимаций. */}
+                  <div className={`relative w-10 h-10 flex items-center justify-center overflow-hidden rounded ${enemyHitFlash ? 'animate-enemy-hit' : ''}`}>
+                    {enemy.isBoss && BOSS_PORTRAIT_IMAGES[enemy.id] ? (
+                      <img src={BOSS_PORTRAIT_IMAGES[enemy.id]} alt="" className="w-full h-full object-cover object-top" />
+                    ) : (
+                      <span className="text-3xl">{enemy.icon}</span>
+                    )}
+                    {abilityCastGlow && (
+                      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+                        <div className="animate-ability-beam absolute -inset-y-6 w-4 bg-gradient-to-b from-transparent via-gold/90 to-transparent blur-[1px]" />
+                      </div>
+                    )}
+                  </div>
                   <div>
                     <h3 className="font-bold text-sm" style={{ color: enemy.isBoss ? '#f59e0b' : '#ef4444' }}>
                       {enemy.nameRu}

@@ -612,6 +612,7 @@ export interface TitlesStateView {
 
 export interface AuctionEntryView {
   id: string;
+  itemId: string;
   name: string;
   type: string;
   rarity: string;

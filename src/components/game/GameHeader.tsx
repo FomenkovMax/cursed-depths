@@ -3,6 +3,8 @@ import { computeEquipmentBonuses } from '@/lib/combat/equipment-stats';
 import { stageUnlockLevel } from '@/lib/combat/combat-engine';
 import { findPet } from '@/lib/economy/pets';
 import { findTitle } from '@/lib/social/titles';
+import { CURRENCY_ICON_IMAGES, TITLE_ICON_IMAGES } from '@/lib/asset-icons';
+import { AssetIcon } from '@/components/game/AssetIcon';
 
 interface GameHeaderProps {
   player: PlayerData | null;
@@ -49,8 +51,8 @@ export function GameHeader({ player, locationIcon, locationName, crownShards, ac
           <span className="text-xl">{player?.race?.icon || '👤'}</span>
           <div>
             {activeTitle && (
-              <div className={`text-[10px] font-medium leading-tight ${activeTitle.colorClass}`}>
-                {activeTitle.icon} {activeTitle.nameRu}
+              <div className={`flex items-center gap-1 text-[10px] font-medium leading-tight ${activeTitle.colorClass}`}>
+                <AssetIcon src={TITLE_ICON_IMAGES[activeTitle.id]} emoji={activeTitle.icon} size={12} /> {activeTitle.nameRu}
               </div>
             )}
             <div className="font-bold text-sm text-foreground leading-tight">{player?.name}</div>
@@ -62,7 +64,7 @@ export function GameHeader({ player, locationIcon, locationName, crownShards, ac
         </div>
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-1">
-            <span className="text-xs">💰</span>
+            <AssetIcon src={CURRENCY_ICON_IMAGES.gold} emoji="💰" size={14} className="text-xs" />
             <span className="text-xs font-bold text-gold">{player?.gold || 0}</span>
           </div>
           {/* Осколки Короны — премиум-валюта (lib/premium/premium-shop.ts) — постоянно на виду и
@@ -72,7 +74,7 @@ export function GameHeader({ player, locationIcon, locationName, crownShards, ac
             onClick={onOpenPremium}
             className="flex items-center gap-1 rounded-full bg-gold/10 border border-gold/30 px-1.5 py-0.5"
           >
-            <span className="text-xs">👑</span>
+            <AssetIcon src={CURRENCY_ICON_IMAGES.crownShards} emoji="👑" size={14} className="text-xs" />
             <span className="text-xs font-bold text-gold">{crownShards}</span>
           </button>
           <div className="text-xs text-muted-foreground">

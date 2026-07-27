@@ -23,6 +23,15 @@ export async function POST(req: NextRequest) {
 
     if (!player) return NextResponse.json({ error: 'Персонаж не найден' }, { status: 404 });
 
+    // Этот роут — для использования предметов ВНЕ боя (баф на будущие бои и т.п.). В бою лечение/
+    // мана через него не тратило ход и не давало врагу атаковать в ответ — можно было бесконечно
+    // отлечиваться мимо панели "Использовать предмет" в CombatTab (баг из отчёта игрока). Единственный
+    // путь применить расходник во время боя — action: 'use_item' в combat/action/route.ts, который
+    // уже корректно тратит ход и резолвит ответный удар врага.
+    if (player.inCombat) {
+      return NextResponse.json({ error: 'В бою используйте предметы через панель боя' }, { status: 400 });
+    }
+
     const item = player.inventory.find(i => i.id === inventoryId);
     if (!item) return NextResponse.json({ error: 'Предмет не найден' }, { status: 404 });
     if (item.type !== 'consumable') return NextResponse.json({ error: 'Это не расходуемый предмет' }, { status: 400 });

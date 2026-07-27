@@ -8,6 +8,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import { GameMessage, RaceData, STAT_SHORT_RU, PATH_NAMES_RU, ROLE_NAMES_RU } from '@/lib/game-types';
+import { RACE_PORTRAIT_IMAGES, CLASS_PORTRAIT_IMAGES } from '@/lib/asset-icons';
 
 // Короткая философия каждого Пути из мифологии мира (см. lib/social/codex.ts 'karsus_paths') —
 // связывает механический выбор класса (path: 'ash'|'blight') с тем, ЧТО это значит в лоре,
@@ -133,6 +134,13 @@ export function CharacterCreationScreen({
           {creationStep === 1 && (
             <div className="animate-fade-in">
               <h2 className="text-lg font-bold mb-3 text-center">Выберите расу</h2>
+              {/* Портрет выбранной расы — крупный painterly-арт (см. src/lib/asset-icons.ts),
+                  обновляется по клику на карточку ниже, список карточек остаётся компактным. */}
+              {charRace && RACE_PORTRAIT_IMAGES[charRace] && (
+                <div className="mb-3 rounded-lg overflow-hidden border border-primary/40 aspect-[3/2] bg-secondary/20">
+                  <img src={RACE_PORTRAIT_IMAGES[charRace]} alt="" className="w-full h-full object-cover object-top" />
+                </div>
+              )}
               {racesLoading ? (
                 <p className="text-sm text-muted-foreground text-center py-8">Загрузка рас...</p>
               ) : (
@@ -182,6 +190,11 @@ export function CharacterCreationScreen({
           {creationStep === 2 && (
             <div className="animate-fade-in">
               <h2 className="text-lg font-bold mb-3 text-center">Выберите класс</h2>
+              {charClass && CLASS_PORTRAIT_IMAGES[charClass] && (
+                <div className="mb-3 rounded-lg overflow-hidden border border-primary/40 aspect-[3/2] bg-secondary/20">
+                  <img src={CLASS_PORTRAIT_IMAGES[charClass]} alt="" className="w-full h-full object-cover object-top" />
+                </div>
+              )}
               <ScrollArea className="h-[45vh]">
                 <div className="grid gap-2 pr-2">
                   {classes.map(cls => (
@@ -233,7 +246,13 @@ export function CharacterCreationScreen({
               <Card className="border-primary/50 bg-card mb-4">
                 <CardContent className="p-4">
                   <div className="text-center mb-4">
-                    <div className="text-4xl mb-2">{raceData?.icon} {classData?.icon}</div>
+                    {classData && CLASS_PORTRAIT_IMAGES[classData.slug] ? (
+                      <div className="mb-2 rounded-lg overflow-hidden border border-primary/40 aspect-[3/4] max-w-[200px] mx-auto bg-secondary/20">
+                        <img src={CLASS_PORTRAIT_IMAGES[classData.slug]} alt="" className="w-full h-full object-cover object-top" />
+                      </div>
+                    ) : (
+                      <div className="text-4xl mb-2">{raceData?.icon} {classData?.icon}</div>
+                    )}
                     <h3 className="text-xl font-bold text-primary">{charName}</h3>
                     <p className="text-sm text-muted-foreground">
                       {raceData?.name} • {classData?.name}

@@ -168,3 +168,63 @@ export const ITEM_ICON_IMAGES: Record<string, string> = {
   wooden_talisman: '/images/items/wooden_talisman.webp',
   worn_gloves: '/images/items/worn_gloves.webp',
 };
+
+// Портреты рас (Race.slug) — все 6 покрыты. Большие painterly-арты (896×1200 исходник, 480px
+// webp), не путать с ITEM/TAB/CURRENCY-иконками выше — те специально мелкие и плоские
+// ("minimal iconic shape"), портреты — детальные картины для крупного показа (создание
+// персонажа, боевой экран), не для мелких инлайн-иконок.
+export const RACE_PORTRAIT_IMAGES: Record<string, string> = {
+  dragonborn: '/images/portraits/races/dragonborn.webp',
+  dwarves: '/images/portraits/races/dwarves.webp',
+  elves: '/images/portraits/races/elves.webp',
+  humans: '/images/portraits/races/humans.webp',
+  orcs: '/images/portraits/races/orcs.webp',
+  undead: '/images/portraits/races/undead.webp',
+};
+
+// Портреты классов (GameClass.slug), базовая форма (стадия 1) — все 26 покрыты. Эволюционные
+// портреты (стадии 2-3, ~50 сгенерировано) сюда не входят — отдельный заход.
+export const CLASS_PORTRAIT_IMAGES: Record<string, string> = {
+  'ash-gladiator': '/images/portraits/classes/ash-gladiator.webp',
+  'blood-hunter': '/images/portraits/classes/blood-hunter.webp',
+  'bond-breaker': '/images/portraits/classes/bond-breaker.webp',
+  'bone-guardian': '/images/portraits/classes/bone-guardian.webp',
+  collapser: '/images/portraits/classes/collapser.webp',
+  'decay-alchemist': '/images/portraits/classes/decay-alchemist.webp',
+  'flame-legate': '/images/portraits/classes/flame-legate.webp',
+  'frenzied-berserker': '/images/portraits/classes/frenzied-berserker.webp',
+  'grave-smith': '/images/portraits/classes/grave-smith.webp',
+  'heat-eater': '/images/portraits/classes/heat-eater.webp',
+  'horde-leader': '/images/portraits/classes/horde-leader.webp',
+  'moon-archer': '/images/portraits/classes/moon-archer.webp',
+  oathkeeper: '/images/portraits/classes/oathkeeper.webp',
+  'obsidian-warrior': '/images/portraits/classes/obsidian-warrior.webp',
+  paladin: '/images/portraits/classes/paladin.webp',
+  'plague-reaper': '/images/portraits/classes/plague-reaper.webp',
+  priest: '/images/portraits/classes/priest.webp',
+  ranger: '/images/portraits/classes/ranger.webp',
+  rogue: '/images/portraits/classes/rogue.webp',
+  'rune-reaper': '/images/portraits/classes/rune-reaper.webp',
+  sorcerer: '/images/portraits/classes/sorcerer.webp',
+  stoneskin: '/images/portraits/classes/stoneskin.webp',
+  'thread-keeper': '/images/portraits/classes/thread-keeper.webp',
+  'void-thief': '/images/portraits/classes/void-thief.webp',
+  'wall-keeper': '/images/portraits/classes/wall-keeper.webp',
+  warrior: '/images/portraits/classes/warrior.webp',
+};
+
+// Портреты боссов (Enemy.id, isBoss: true) — все 12 покрыты.
+export const BOSS_PORTRAIT_IMAGES: Record<string, string> = {
+  broken_oath: '/images/portraits/bosses/broken_oath.webp',
+  echo_of_ailet: '/images/portraits/bosses/echo_of_ailet.webp',
+  first_dragon: '/images/portraits/bosses/first_dragon.webp',
+  first_risen: '/images/portraits/bosses/first_risen.webp',
+  first_witness: '/images/portraits/bosses/first_witness.webp',
+  flame_of_velarion: '/images/portraits/bosses/flame_of_velarion.webp',
+  gatekeeper_of_the_deep: '/images/portraits/bosses/gatekeeper_of_the_deep.webp',
+  grumgar_unborn: '/images/portraits/bosses/grumgar_unborn.webp',
+  heart_of_ailet: '/images/portraits/bosses/heart_of_ailet.webp',
+  keeper_of_ashes: '/images/portraits/bosses/keeper_of_ashes.webp',
+  mirror_of_kessara: '/images/portraits/bosses/mirror_of_kessara.webp',
+  statue_of_tornak: '/images/portraits/bosses/statue_of_tornak.webp',
+};

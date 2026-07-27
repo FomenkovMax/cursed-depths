@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { LOCATIONS } from '@/lib/game-data';
 import { PlayerData, WaypointsStateView } from '@/lib/game-types';
+import { LOCATION_IMAGES } from '@/lib/asset-icons';
 
 interface MapTabProps {
   player: PlayerData | null;
@@ -77,7 +78,11 @@ export function MapTab({ player, location, loading, onTravel, waypointsState, wa
           >
             <CardContent className="p-3">
               <div className="flex items-center gap-3">
-                <span className="text-2xl">{loc.icon}</span>
+                {LOCATION_IMAGES[loc.id] ? (
+                  <img src={LOCATION_IMAGES[loc.id]} alt="" className="w-12 h-12 rounded-md object-cover shrink-0" />
+                ) : (
+                  <span className="text-2xl">{loc.icon}</span>
+                )}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <h4 className="font-bold text-sm truncate">{loc.nameRu}</h4>

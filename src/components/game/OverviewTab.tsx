@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Slider } from '@/components/ui/slider';
 import { ItemIconTile } from '@/components/game/ItemIconTile';
 import { LOCATIONS } from '@/lib/game-data';
+import { LOCATION_IMAGES } from '@/lib/asset-icons';
 import { PlayerData, STAT_SHORT_RU } from '@/lib/game-types';
 import { computeEquipmentBonuses } from '@/lib/combat/equipment-stats';
 import { findPet } from '@/lib/economy/pets';
@@ -118,10 +119,17 @@ export function OverviewTab({
     <TabsContent value="overview" className="flex-1 overflow-y-auto p-4 space-y-4 m-0">
       {/* Location card — описание крупнее и заметнее, ближе к нарративной сцене чат-бота
           в референсе, а не подпись мелким текстом под заголовком */}
-      <Card className="border-border">
+      <Card className="border-border overflow-hidden">
+        {location && LOCATION_IMAGES[location.id] && (
+          <div className="aspect-[16/9] bg-secondary/20">
+            <img src={LOCATION_IMAGES[location.id]} alt="" className="w-full h-full object-cover" />
+          </div>
+        )}
         <CardContent className="p-4">
           <div className="flex items-start gap-3 mb-3">
-            <span className="text-4xl leading-none">{location?.icon}</span>
+            {!(location && LOCATION_IMAGES[location.id]) && (
+              <span className="text-4xl leading-none">{location?.icon}</span>
+            )}
             <div>
               <h3 className="font-bold text-sm">{location?.nameRu}</h3>
               <p className="text-xs text-muted-foreground leading-relaxed mt-0.5">{location?.descriptionRu}</p>

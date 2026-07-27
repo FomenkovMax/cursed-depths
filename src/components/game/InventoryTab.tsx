@@ -9,6 +9,7 @@ import { ItemIconTile } from '@/components/game/ItemIconTile';
 import { PaperDoll } from '@/components/game/character-viewer/PaperDoll';
 import { AssetIcon } from '@/components/game/AssetIcon';
 import { CURRENCY_ICON_IMAGES, ITEM_ICON_IMAGES } from '@/lib/asset-icons';
+import { currentClassPortrait } from '@/lib/character-portrait';
 import { RARITY_COLORS, RARITY_NAMES_RU, ITEMS } from '@/lib/game-data';
 import { PlayerData, InventoryItem, StashItemView, AccountVaultItemView, SLOT_RU, ITEM_TYPE_RU, AFFIX_TIER_RU, AFFIX_TIER_COLORS, parseStats, parseAffixes } from '@/lib/game-types';
 
@@ -106,6 +107,7 @@ export function InventoryTab({
 
   const equipped = playerInventory.filter(i => i.equipped);
   const unequipped = playerInventory.filter(i => !i.equipped);
+  const classPortrait = player ? currentClassPortrait(player) : undefined;
 
   const detailStats = detail ? parseStats(detail.item.stats) : {};
   const detailAffixes = detail ? parseAffixes(detail.item.affixes) : [];
@@ -234,7 +236,14 @@ export function InventoryTab({
             <CardHeader className="pb-2 pt-3 px-4">
               <CardTitle className="text-sm">Портрет</CardTitle>
             </CardHeader>
-            <CardContent className="px-4 pb-3">
+            <CardContent className="px-4 pb-3 space-y-2">
+              {/* Портрет текущей открытой эволюции класса (см. lib/character-portrait.ts) —
+                  меняется сам по мере роста уровня, отдельно от силуэта с экипировкой ниже. */}
+              {classPortrait && (
+                <div className="rounded-lg overflow-hidden border border-border/60 aspect-[3/2] bg-secondary/20">
+                  <img src={classPortrait} alt="" className="w-full h-full object-cover object-top" />
+                </div>
+              )}
               <PaperDoll equipped={equipped} onSelect={item => setDetail({ item, source: 'inventory' })} />
             </CardContent>
           </Card>

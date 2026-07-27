@@ -423,6 +423,11 @@ export interface Item {
   icon: string;
   value: number;
   gearSlot?: GearSlotId; // только для type 'weapon'/'armor'/'accessory' — см. GearSlotId выше
+  model3d?: string; // путь к GLB в public/models/equipment для 3D-вьюпорта персонажа
+                     // (src/components/game/character-viewer) — не задан почти ни у одного
+                     // предмета, пока не произведены реальные модели; EquipmentSocket в этом
+                     // случае рисует примитив-заглушку по gearSlot/rarity, см.
+                     // src/lib/character-viewer/sockets.ts
 }
 
 export const ITEMS: Item[] = [

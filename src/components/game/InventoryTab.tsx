@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import dynamic from 'next/dynamic';
 import { TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,6 +9,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { ItemIconTile } from '@/components/game/ItemIconTile';
 import { RARITY_COLORS, RARITY_NAMES_RU, ITEMS } from '@/lib/game-data';
 import { PlayerData, InventoryItem, StashItemView, AccountVaultItemView, SLOT_RU, ITEM_TYPE_RU, AFFIX_TIER_RU, AFFIX_TIER_COLORS, parseStats, parseAffixes } from '@/lib/game-types';
+import { useCharacterViewer } from '@/hooks/useCharacterViewer';
+
+// WebGL-канвас грузится только в браузере — на сервере three.js/WebGL недоступны, а сама
+// вкладка открывается нечасто, так что тянуть R3F в общий бандл незачем.
+const CharacterViewport = dynamic(
+  () => import('@/components/game/character-viewer/CharacterViewport').then(m => m.CharacterViewport),
+  { ssr: false, loading: () => <div className="aspect-square w-full rounded-lg bg-secondary/10 border border-border/60 animate-pulse" /> }
+);
 
 interface InventoryTabProps {
   player: PlayerData | null;
@@ -143,6 +152,7 @@ export function InventoryTab({
   const playerInventory = player?.inventory || [];
   const [view, setView] = useState<'inventory' | 'stash' | 'vault'>('inventory');
   const [detail, setDetail] = useState<{ item: GridItem; source: 'inventory' | 'stash' | 'vault' } | null>(null);
+  const { autoRotate, toggleAutoRotate } = useCharacterViewer();
 
   const equipped = playerInventory.filter(i => i.equipped);
   const unequipped = playerInventory.filter(i => !i.equipped);
@@ -265,15 +275,29 @@ export function InventoryTab({
         </Card>
       ) : (
         <>
-          {/* Портрет — расположение по слотам "в полный рост", а не плоская сетка: голова
-              сверху, тело в центре с амулетом/кольцом по бокам, оружие и вторая рука ниже,
-              ноги внизу. Под каждый предмет своя иконка уже есть (ItemIconTile), место под
-              арт персонажа/анимацию класса — на будущее (см. обсуждение с пользователем). */}
+          {/* Портрет — 3D-вьюпорт персонажа сверху (визуально меняется по надетым предметам,
+              см. src/components/game/character-viewer) + расположение иконок по слотам "в
+              полный рост" снизу как быстрый tap-list, ничего не убрано. ВАЖНО: реальных 3D-
+              моделей экипировки/персонажа в проекте нет — вьюпорт рисует условные фигуры-
+              заглушки (примитивы three.js, раскрашенные по редкости предмета), пока не
+              появятся настоящие GLB-модели (Item.model3d, game-data.ts). */}
           <Card className="border-border">
-            <CardHeader className="pb-2 pt-3 px-4">
+            <CardHeader className="pb-2 pt-3 px-4 flex flex-row items-center justify-between">
               <CardTitle className="text-sm">Портрет</CardTitle>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-6 px-2 text-[10px] text-muted-foreground"
+                onClick={toggleAutoRotate}
+              >
+                {autoRotate ? '⏸ Вращение' : '▶ Вращение'}
+              </Button>
             </CardHeader>
-            <CardContent className="px-4 pb-3">
+            <CardContent className="px-4 pb-3 space-y-2">
+              <CharacterViewport equipped={equipped} autoRotate={autoRotate} />
+              <p className="text-[9px] text-muted-foreground/70 text-center leading-tight">
+                Заглушка-модель — реальные 3D-ассеты экипировки ещё не созданы
+              </p>
               <PortraitGrid equipped={equipped} onSelect={item => setDetail({ item, source: 'inventory' })} />
             </CardContent>
           </Card>

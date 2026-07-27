@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { ItemIconTile } from '@/components/game/ItemIconTile';
 import { PaperDoll } from '@/components/game/character-viewer/PaperDoll';
 import { AssetIcon } from '@/components/game/AssetIcon';
-import { CURRENCY_ICON_IMAGES } from '@/lib/asset-icons';
+import { CURRENCY_ICON_IMAGES, ITEM_ICON_IMAGES } from '@/lib/asset-icons';
 import { RARITY_COLORS, RARITY_NAMES_RU, ITEMS } from '@/lib/game-data';
 import { PlayerData, InventoryItem, StashItemView, AccountVaultItemView, SLOT_RU, ITEM_TYPE_RU, AFFIX_TIER_RU, AFFIX_TIER_COLORS, parseStats, parseAffixes } from '@/lib/game-types';
 
@@ -267,7 +267,7 @@ export function InventoryTab({
             <>
               <DialogHeader>
                 <DialogTitle className="flex items-center gap-2 text-sm" style={{ color: RARITY_COLORS[detail.item.rarity] }}>
-                  <span className="text-2xl">{detail.item.icon}</span>
+                  <AssetIcon src={ITEM_ICON_IMAGES[detail.item.itemId]} emoji={detail.item.icon ?? ''} size={32} className="text-2xl" />
                   <span>
                     {detail.item.name}
                     {detail.item.enhancementLevel > 0 && <span className="ml-1 text-gold">+{detail.item.enhancementLevel}</span>}

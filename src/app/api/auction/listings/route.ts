@@ -31,6 +31,7 @@ export async function GET(req: NextRequest) {
 
     const auctions = rows.map(a => ({
       id: a.id,
+      itemId: a.itemId,
       name: a.name,
       type: a.type,
       rarity: a.rarity,

@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { ItemIconTile } from '@/components/game/ItemIconTile';
 import { AssetIcon } from '@/components/game/AssetIcon';
-import { CURRENCY_ICON_IMAGES } from '@/lib/asset-icons';
+import { CURRENCY_ICON_IMAGES, ITEM_ICON_IMAGES } from '@/lib/asset-icons';
 import { CRAFTING_RECIPES, ITEMS, RARITY_COLORS } from '@/lib/game-data';
 import { PlayerData, AFFIX_TIER_RU, AFFIX_TIER_COLORS, parseStats, parseAffixes } from '@/lib/game-types';
 import { CURRENCY_IDS, enchantCostForReroll, type AffixTierName } from '@/lib/economy/item-affixes';
@@ -145,7 +145,7 @@ export function CraftTab({ player, loading, canCraftRecipe, learnedRecipeIds, on
                     if (!currencyDef) return null;
                     return (
                       <div key={currencyId} className="flex items-center gap-2 p-1.5 rounded bg-secondary/10">
-                        <span className="text-lg shrink-0">{currencyDef.icon}</span>
+                        <AssetIcon src={CURRENCY_ICON_IMAGES[currencyId]} emoji={currencyDef.icon} size={22} className="text-lg shrink-0" />
                         <div className="flex-1 min-w-0">
                           <div className="text-xs font-medium">{currencyDef.nameRu} {owned ? `x${owned.quantity}` : 'x0'}</div>
                           <div className="text-[10px] text-muted-foreground">{currencyDef.descriptionRu}</div>
@@ -267,7 +267,10 @@ export function CraftTab({ player, loading, canCraftRecipe, learnedRecipeIds, on
                               variant="outline"
                               className={`text-[10px] h-5 px-1 ${hasEnough ? 'text-uncommon border-uncommon/30' : 'text-destructive border-destructive/30'}`}
                             >
-                              {matItem?.icon} {matItem?.nameRu} x{mat.quantity}
+                              <span className="inline-flex items-center gap-1">
+                                <AssetIcon src={matItem ? ITEM_ICON_IMAGES[matItem.id] : undefined} emoji={matItem?.icon ?? ''} size={12} />
+                                {matItem?.nameRu} x{mat.quantity}
+                              </span>
                               {!hasEnough && ` (${invItem?.quantity || 0})`}
                             </Badge>
                           );
@@ -278,8 +281,9 @@ export function CraftTab({ player, loading, canCraftRecipe, learnedRecipeIds, on
                       <div className="flex items-center gap-2 mt-1.5">
                         <span className="text-[10px] text-muted-foreground">Результат:</span>
                         {resultItem && (
-                          <span className="text-xs font-medium" style={{ color: RARITY_COLORS[resultItem.rarity] }}>
-                            {resultItem.icon} {resultItem.nameRu}
+                          <span className="text-xs font-medium inline-flex items-center gap-1" style={{ color: RARITY_COLORS[resultItem.rarity] }}>
+                            <AssetIcon src={ITEM_ICON_IMAGES[resultItem.id]} emoji={resultItem.icon} size={14} />
+                            {resultItem.nameRu}
                             {recipe.result.quantity > 1 ? ` x${recipe.result.quantity}` : ''}
                           </span>
                         )}

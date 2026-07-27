@@ -5,6 +5,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { getShopBuyableItems, getSellPrice, isSellableItem } from '@/lib/economy/shop';
 import { RARITY_COLORS, RARITY_NAMES_RU } from '@/lib/game-data';
 import { PlayerData, ITEM_TYPE_RU } from '@/lib/game-types';
+import { ITEM_ICON_IMAGES, CURRENCY_ICON_IMAGES } from '@/lib/asset-icons';
+import { AssetIcon } from '@/components/game/AssetIcon';
 
 interface MarketPanelProps {
   player: PlayerData;
@@ -53,7 +55,7 @@ export function MarketPanel({ player, loading, onBuy, onSell }: MarketPanelProps
                     className="flex items-center gap-2 p-2 rounded-lg bg-secondary/20 border"
                     style={{ borderColor: RARITY_COLORS[itemData.rarity] + '30' }}
                   >
-                    <span className="text-lg">{itemData.icon}</span>
+                    <AssetIcon src={ITEM_ICON_IMAGES[itemData.id]} emoji={itemData.icon} size={22} className="text-lg" />
                     <div className="flex-1 min-w-0">
                       <div className="text-xs font-medium truncate" style={{ color: RARITY_COLORS[itemData.rarity] }}>
                         {itemData.nameRu}
@@ -68,7 +70,7 @@ export function MarketPanel({ player, loading, onBuy, onSell }: MarketPanelProps
                       disabled={loading || !canAfford}
                       onClick={() => onBuy(itemData.id)}
                     >
-                      💰 {itemData.value}
+                      <span className="inline-flex items-center gap-1"><AssetIcon src={CURRENCY_ICON_IMAGES.gold} emoji="💰" size={12} /> {itemData.value}</span>
                     </Button>
                   </div>
                 );
@@ -82,7 +84,7 @@ export function MarketPanel({ player, loading, onBuy, onSell }: MarketPanelProps
                   className="flex items-center gap-2 p-2 rounded-lg bg-secondary/20 border"
                   style={{ borderColor: RARITY_COLORS[item.rarity] + '30' }}
                 >
-                  <span className="text-lg">{item.icon}</span>
+                  <AssetIcon src={ITEM_ICON_IMAGES[item.itemId]} emoji={item.icon ?? ''} size={22} className="text-lg" />
                   <div className="flex-1 min-w-0">
                     <div className="text-xs font-medium truncate" style={{ color: RARITY_COLORS[item.rarity] }}>
                       {item.name} {item.quantity > 1 ? `x${item.quantity}` : ''}
@@ -96,7 +98,7 @@ export function MarketPanel({ player, loading, onBuy, onSell }: MarketPanelProps
                     disabled={loading}
                     onClick={() => onSell(item.id)}
                   >
-                    💰 {getSellPrice(item.itemId)}
+                    <span className="inline-flex items-center gap-1"><AssetIcon src={CURRENCY_ICON_IMAGES.gold} emoji="💰" size={12} /> {getSellPrice(item.itemId)}</span>
                   </Button>
                 </div>
               ))

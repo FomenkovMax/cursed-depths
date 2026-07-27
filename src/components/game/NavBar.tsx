@@ -6,6 +6,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { GameTab } from '@/lib/game-types';
+import { TAB_ICON_IMAGES } from '@/lib/asset-icons';
+import { AssetIcon } from '@/components/game/AssetIcon';
 
 interface TabMeta {
   icon: string;
@@ -52,6 +54,7 @@ interface NavBarProps {
 interface NavButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   active: boolean;
   icon: string;
+  image?: string;
   label: string;
   variant?: 'default' | 'danger' | 'gold';
   dot?: boolean;
@@ -68,7 +71,7 @@ const VARIANT_ACTIVE_CLASS: Record<NonNullable<NavButtonProps['variant']>, strin
 // <button>; without this the two group triggers below render a <button> nested inside Radix's
 // own trigger <button>, which is invalid HTML and breaks hydration.
 const NavButton = forwardRef<HTMLButtonElement, NavButtonProps>(function NavButton(
-  { active, icon, label, variant = 'default', dot, className, ...rest },
+  { active, icon, image, label, variant = 'default', dot, className, ...rest },
   ref,
 ) {
   return (
@@ -80,7 +83,7 @@ const NavButton = forwardRef<HTMLButtonElement, NavButtonProps>(function NavButt
       } ${className ?? ''}`}
       {...rest}
     >
-      <span className="text-lg leading-none">{icon}</span>
+      <AssetIcon src={image} emoji={icon} size={20} className="text-lg leading-none" />
       <span className="truncate max-w-full px-0.5">{label}</span>
       {dot && (
         <span className="absolute top-1 right-2.5 w-2 h-2 bg-destructive rounded-full animate-pulse" />
@@ -100,6 +103,7 @@ export function NavBar({ tab, onChangeTab, inCombat }: NavBarProps) {
           key={t}
           active={tab === t}
           icon={TAB_META[t].icon}
+          image={TAB_ICON_IMAGES[t]}
           label={TAB_META[t].label}
           variant={t === 'combat' ? 'danger' : 'default'}
           dot={t === 'combat' && inCombat}
@@ -110,6 +114,7 @@ export function NavBar({ tab, onChangeTab, inCombat }: NavBarProps) {
       <NavButton
         active={tab === 'premium'}
         icon={TAB_META.premium.icon}
+        image={TAB_ICON_IMAGES.premium}
         label={TAB_META.premium.label}
         variant="gold"
         onClick={() => onChangeTab('premium')}
@@ -122,7 +127,7 @@ export function NavBar({ tab, onChangeTab, inCombat }: NavBarProps) {
         <DropdownMenuContent align="center" className="min-w-40">
           {HERO_GROUP.map(t => (
             <DropdownMenuItem key={t} onClick={() => onChangeTab(t)} className={tab === t ? 'bg-primary/10 text-primary' : ''}>
-              <span className="mr-1.5">{TAB_META[t].icon}</span> {TAB_META[t].label}
+              <AssetIcon src={TAB_ICON_IMAGES[t]} emoji={TAB_META[t].icon} size={16} className="mr-1.5" /> {TAB_META[t].label}
             </DropdownMenuItem>
           ))}
         </DropdownMenuContent>
@@ -135,7 +140,7 @@ export function NavBar({ tab, onChangeTab, inCombat }: NavBarProps) {
         <DropdownMenuContent align="end" className="min-w-40">
           {WORLD_GROUP.map(t => (
             <DropdownMenuItem key={t} onClick={() => onChangeTab(t)} className={tab === t ? 'bg-primary/10 text-primary' : ''}>
-              <span className="mr-1.5">{TAB_META[t].icon}</span> {TAB_META[t].label}
+              <AssetIcon src={TAB_ICON_IMAGES[t]} emoji={TAB_META[t].icon} size={16} className="mr-1.5" /> {TAB_META[t].label}
             </DropdownMenuItem>
           ))}
         </DropdownMenuContent>

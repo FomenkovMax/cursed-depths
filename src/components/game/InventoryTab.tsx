@@ -7,6 +7,8 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ItemIconTile } from '@/components/game/ItemIconTile';
 import { PaperDoll } from '@/components/game/character-viewer/PaperDoll';
+import { AssetIcon } from '@/components/game/AssetIcon';
+import { CURRENCY_ICON_IMAGES } from '@/lib/asset-icons';
 import { RARITY_COLORS, RARITY_NAMES_RU, ITEMS } from '@/lib/game-data';
 import { PlayerData, InventoryItem, StashItemView, AccountVaultItemView, SLOT_RU, ITEM_TYPE_RU, AFFIX_TIER_RU, AFFIX_TIER_COLORS, parseStats, parseAffixes } from '@/lib/game-types';
 
@@ -42,8 +44,8 @@ type GridItem = InventoryItem | StashItemView | AccountVaultItemView;
 
 /** Ввод суммы + кнопки "положить"/"забрать" — переиспользуется для золота и Осколков Короны в
  * панели общего сейфа. */
-function CurrencyTransferRow({ icon, label, playerAmount, vaultAmount, disabled, onDeposit, onWithdraw }: {
-  icon: string; label: string; playerAmount: number; vaultAmount: number; disabled: boolean;
+function CurrencyTransferRow({ icon, image, label, playerAmount, vaultAmount, disabled, onDeposit, onWithdraw }: {
+  icon: string; image?: string; label: string; playerAmount: number; vaultAmount: number; disabled: boolean;
   onDeposit: (amount: number) => void; onWithdraw: (amount: number) => void;
 }) {
   const [amount, setAmount] = useState('');
@@ -53,7 +55,7 @@ function CurrencyTransferRow({ icon, label, playerAmount, vaultAmount, disabled,
   return (
     <div className="space-y-1.5 p-2 rounded-lg bg-secondary/20 border border-border/60">
       <div className="flex items-center justify-between text-xs">
-        <span>{icon} {label}</span>
+        <span className="inline-flex items-center gap-1"><AssetIcon src={image} emoji={icon} size={14} /> {label}</span>
         <span className="text-muted-foreground">У вас: {playerAmount} • В сейфе: {vaultAmount}</span>
       </div>
       <div className="flex gap-1.5">
@@ -167,13 +169,13 @@ export function InventoryTab({
                 </CardHeader>
                 <CardContent className="px-4 pb-3 space-y-2">
                   <CurrencyTransferRow
-                    icon="💰" label="Золото"
+                    icon="💰" image={CURRENCY_ICON_IMAGES.gold} label="Золото"
                     playerAmount={playerGold} vaultAmount={vaultGold}
                     disabled={vaultTransferring}
                     onDeposit={onDepositGold} onWithdraw={onWithdrawGold}
                   />
                   <CurrencyTransferRow
-                    icon="👑" label="Осколки Короны"
+                    icon="👑" image={CURRENCY_ICON_IMAGES.crownShards} label="Осколки Короны"
                     playerAmount={playerShards} vaultAmount={vaultShards}
                     disabled={vaultTransferring}
                     onDeposit={onDepositShards} onWithdraw={onWithdrawShards}

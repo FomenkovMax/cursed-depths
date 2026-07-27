@@ -5,6 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { ItemIconTile } from '@/components/game/ItemIconTile';
+import { AssetIcon } from '@/components/game/AssetIcon';
+import { CURRENCY_ICON_IMAGES } from '@/lib/asset-icons';
 import { CRAFTING_RECIPES, ITEMS, RARITY_COLORS } from '@/lib/game-data';
 import { PlayerData, AFFIX_TIER_RU, AFFIX_TIER_COLORS, parseStats, parseAffixes } from '@/lib/game-types';
 import { CURRENCY_IDS, enchantCostForReroll, type AffixTierName } from '@/lib/economy/item-affixes';
@@ -183,7 +185,7 @@ export function CraftTab({ player, loading, canCraftRecipe, learnedRecipeIds, on
               const chance = Math.round(temperSuccessChance(selectedTarget.enhancementLevel) * 100);
               return (
                 <div className="flex items-center gap-2 p-1.5 rounded bg-secondary/10">
-                  <span className="text-lg shrink-0">📯</span>
+                  <AssetIcon src={CURRENCY_ICON_IMAGES.tempering_scroll} emoji="📯" size={22} className="text-lg shrink-0" />
                   <div className="flex-1 min-w-0">
                     <div className="text-xs font-medium">
                       Свиток Закалки {scroll ? `x${scroll.quantity}` : 'x0'}

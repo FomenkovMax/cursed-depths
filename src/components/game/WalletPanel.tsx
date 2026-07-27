@@ -1,4 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { CURRENCY_ICON_IMAGES } from '@/lib/asset-icons';
+import { AssetIcon } from '@/components/game/AssetIcon';
 
 export interface WalletCurrency {
   id: string;
@@ -19,10 +21,10 @@ interface WalletPanelProps {
   battlePassXp: number | null;
 }
 
-function WalletCell({ icon, label, value, hint }: { icon: string; label: string; value: number; hint?: string }) {
+function WalletCell({ icon, image, label, value, hint }: { icon: string; image?: string; label: string; value: number; hint?: string }) {
   return (
     <div className="flex items-center gap-2 p-2 rounded-lg bg-secondary/20 border border-border/60 min-w-0">
-      <span className="text-lg shrink-0">{icon}</span>
+      <AssetIcon src={image} emoji={icon} size={22} className="text-lg" />
       <div className="min-w-0">
         <div className="text-sm font-bold tabular-nums leading-tight">{value}</div>
         <div className="text-[9px] text-muted-foreground truncate">{label}</div>
@@ -44,11 +46,11 @@ export function WalletPanel({ gold, crownShards, currencies, battlePassXp }: Wal
       </CardHeader>
       <CardContent className="px-4 pb-3">
         <div className="grid grid-cols-3 gap-1.5">
-          <WalletCell icon="💰" label="Золото" value={gold} />
-          <WalletCell icon="👑" label="Осколки Короны" value={crownShards} />
+          <WalletCell icon="💰" image={CURRENCY_ICON_IMAGES.gold} label="Золото" value={gold} />
+          <WalletCell icon="👑" image={CURRENCY_ICON_IMAGES.crownShards} label="Осколки Короны" value={crownShards} />
           {battlePassXp !== null && <WalletCell icon="🎫" label="Очки пропуска" value={battlePassXp} />}
           {currencies.map(c => (
-            <WalletCell key={c.id} icon={c.icon} label={c.nameRu} value={c.quantity} hint={c.functionHint} />
+            <WalletCell key={c.id} icon={c.icon} image={CURRENCY_ICON_IMAGES[c.id]} label={c.nameRu} value={c.quantity} hint={c.functionHint} />
           ))}
         </div>
       </CardContent>

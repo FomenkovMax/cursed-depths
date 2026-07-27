@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import dynamic from 'next/dynamic';
 import { TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,16 +6,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ItemIconTile } from '@/components/game/ItemIconTile';
+import { PaperDoll } from '@/components/game/character-viewer/PaperDoll';
 import { RARITY_COLORS, RARITY_NAMES_RU, ITEMS } from '@/lib/game-data';
 import { PlayerData, InventoryItem, StashItemView, AccountVaultItemView, SLOT_RU, ITEM_TYPE_RU, AFFIX_TIER_RU, AFFIX_TIER_COLORS, parseStats, parseAffixes } from '@/lib/game-types';
-import { useCharacterViewer } from '@/hooks/useCharacterViewer';
-
-// WebGL-канвас грузится только в браузере — на сервере three.js/WebGL недоступны, а сама
-// вкладка открывается нечасто, так что тянуть R3F в общий бандл незачем.
-const CharacterViewport = dynamic(
-  () => import('@/components/game/character-viewer/CharacterViewport').then(m => m.CharacterViewport),
-  { ssr: false, loading: () => <div className="aspect-square w-full rounded-lg bg-secondary/10 border border-border/60 animate-pulse" /> }
-);
 
 interface InventoryTabProps {
   player: PlayerData | null;
@@ -99,49 +91,6 @@ function statLabel(k: string): string {
   return k === 'attack' ? 'АТК' : k === 'defense' ? 'ЗАЩ' : k === 'healHp' ? 'ЛечHP' : k === 'healMp' ? 'ЛечMP' : k === 'damage' ? 'Урон' : k;
 }
 
-// Расположение "в полный рост": голова сверху по центру, амулет и первое кольцо по бокам
-// тела, оружие и второе кольцо на уровне рук, ноги внизу — читается как силуэт персонажа,
-// а не произвольная сетка. area-имена совпадают с полями Inventory.slot.
-const PORTRAIT_AREAS = `
-  ".      head   ."
-  "amulet body   ring1"
-  "weapon hands  ring2"
-  ".      legs   ."
-`;
-const PORTRAIT_SLOTS: { slot: string; area: string }[] = [
-  { slot: 'head', area: 'head' },
-  { slot: 'amulet', area: 'amulet' },
-  { slot: 'body', area: 'body' },
-  { slot: 'ring1', area: 'ring1' },
-  { slot: 'weapon', area: 'weapon' },
-  { slot: 'hands', area: 'hands' },
-  { slot: 'ring2', area: 'ring2' },
-  { slot: 'legs', area: 'legs' },
-];
-
-function PortraitGrid({ equipped, onSelect }: { equipped: InventoryItem[]; onSelect: (item: InventoryItem) => void }) {
-  const bySlot = new Map(equipped.map(i => [i.slot, i]));
-  return (
-    <div className="grid gap-2" style={{ gridTemplateAreas: PORTRAIT_AREAS, gridTemplateColumns: 'repeat(3, 1fr)' }}>
-      {PORTRAIT_SLOTS.map(({ slot, area }) => {
-        const item = bySlot.get(slot);
-        return (
-          <div key={slot} style={{ gridArea: area }} className="flex flex-col items-center gap-1">
-            {item ? (
-              <ItemIconTile item={item} equipped onClick={() => onSelect(item)} />
-            ) : (
-              <div className="aspect-square w-full rounded-lg border border-dashed border-border/50 bg-secondary/10 flex items-center justify-center text-muted-foreground/40 text-lg">
-                {slot === 'weapon' ? '⚔️' : slot === 'head' ? '👤' : slot === 'body' ? '👕' : slot === 'hands' ? '🤚' : slot === 'legs' ? '🦵' : slot === 'amulet' ? '📿' : '💍'}
-              </div>
-            )}
-            <span className="text-[9px] text-muted-foreground text-center leading-none">{SLOT_RU[slot] ?? slot}</span>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
 export function InventoryTab({
   player, loading, onEquip, onUseItem, onLearnBlueprint,
   stashItems, stashCapacity, stashLoading, onStoreItem, onRetrieveItem,
@@ -152,7 +101,6 @@ export function InventoryTab({
   const playerInventory = player?.inventory || [];
   const [view, setView] = useState<'inventory' | 'stash' | 'vault'>('inventory');
   const [detail, setDetail] = useState<{ item: GridItem; source: 'inventory' | 'stash' | 'vault' } | null>(null);
-  const { autoRotate, toggleAutoRotate } = useCharacterViewer();
 
   const equipped = playerInventory.filter(i => i.equipped);
   const unequipped = playerInventory.filter(i => !i.equipped);
@@ -275,30 +223,17 @@ export function InventoryTab({
         </Card>
       ) : (
         <>
-          {/* Портрет — 3D-вьюпорт персонажа сверху (визуально меняется по надетым предметам,
-              см. src/components/game/character-viewer) + расположение иконок по слотам "в
-              полный рост" снизу как быстрый tap-list, ничего не убрано. ВАЖНО: реальных 3D-
-              моделей экипировки/персонажа в проекте нет — вьюпорт рисует условные фигуры-
-              заглушки (примитивы three.js, раскрашенные по редкости предмета), пока не
-              появятся настоящие GLB-модели (Item.model3d, game-data.ts). */}
+          {/* Портрет — 2D-силуэт персонажа с иконками надетых предметов, разложенными
+              анатомически (см. src/components/game/character-viewer/PaperDoll), визуально
+              меняется по надетым предметам как и раньше. Своих иллюстрированных 2D-арт-ассетов
+              персонажа/экипировки в проекте нет — силуэт держит компоновку, каждый предмет
+              представлен той же иконкой, что и везде в инвентаре, ничего не заглушено. */}
           <Card className="border-border">
-            <CardHeader className="pb-2 pt-3 px-4 flex flex-row items-center justify-between">
+            <CardHeader className="pb-2 pt-3 px-4">
               <CardTitle className="text-sm">Портрет</CardTitle>
-              <Button
-                size="sm"
-                variant="ghost"
-                className="h-6 px-2 text-[10px] text-muted-foreground"
-                onClick={toggleAutoRotate}
-              >
-                {autoRotate ? '⏸ Вращение' : '▶ Вращение'}
-              </Button>
             </CardHeader>
-            <CardContent className="px-4 pb-3 space-y-2">
-              <CharacterViewport equipped={equipped} autoRotate={autoRotate} />
-              <p className="text-[9px] text-muted-foreground/70 text-center leading-tight">
-                Заглушка-модель — реальные 3D-ассеты экипировки ещё не созданы
-              </p>
-              <PortraitGrid equipped={equipped} onSelect={item => setDetail({ item, source: 'inventory' })} />
+            <CardContent className="px-4 pb-3">
+              <PaperDoll equipped={equipped} onSelect={item => setDetail({ item, source: 'inventory' })} />
             </CardContent>
           </Card>
 

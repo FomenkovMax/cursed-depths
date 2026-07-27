@@ -3,7 +3,7 @@ import { computeEquipmentBonuses } from '@/lib/combat/equipment-stats';
 import { stageUnlockLevel } from '@/lib/combat/combat-engine';
 import { findPet } from '@/lib/economy/pets';
 import { findTitle } from '@/lib/social/titles';
-import { CURRENCY_ICON_IMAGES } from '@/lib/asset-icons';
+import { CURRENCY_ICON_IMAGES, TITLE_ICON_IMAGES } from '@/lib/asset-icons';
 import { AssetIcon } from '@/components/game/AssetIcon';
 
 interface GameHeaderProps {
@@ -51,8 +51,8 @@ export function GameHeader({ player, locationIcon, locationName, crownShards, ac
           <span className="text-xl">{player?.race?.icon || '👤'}</span>
           <div>
             {activeTitle && (
-              <div className={`text-[10px] font-medium leading-tight ${activeTitle.colorClass}`}>
-                {activeTitle.icon} {activeTitle.nameRu}
+              <div className={`flex items-center gap-1 text-[10px] font-medium leading-tight ${activeTitle.colorClass}`}>
+                <AssetIcon src={TITLE_ICON_IMAGES[activeTitle.id]} emoji={activeTitle.icon} size={12} /> {activeTitle.nameRu}
               </div>
             )}
             <div className="font-bold text-sm text-foreground leading-tight">{player?.name}</div>

@@ -3,6 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { PlayerData } from '@/lib/game-types';
 import { findTitle } from '@/lib/social/titles';
+import { TITLE_ICON_IMAGES } from '@/lib/asset-icons';
+import { AssetIcon } from '@/components/game/AssetIcon';
 
 export interface LeaderboardEntry {
   id: string;
@@ -90,7 +92,9 @@ export function LeaderboardTab({ player, leaderboard, loading, currentSeason, pr
                   <span className="text-xl">{entry.race?.icon || '👤'}</span>
                   <div className="flex-1 min-w-0">
                     {title && (
-                      <div className={`text-[9px] font-medium truncate ${title.colorClass}`}>{title.icon} {title.nameRu}</div>
+                      <div className={`flex items-center gap-1 text-[9px] font-medium truncate ${title.colorClass}`}>
+                        <AssetIcon src={TITLE_ICON_IMAGES[title.id]} emoji={title.icon} size={11} /> {title.nameRu}
+                      </div>
                     )}
                     <div className="text-xs font-medium truncate">
                       {entry.name}

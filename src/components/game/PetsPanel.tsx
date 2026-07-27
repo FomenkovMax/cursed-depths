@@ -1,6 +1,8 @@
 import { RARITY_COLORS, RARITY_NAMES_RU } from '@/lib/game-data';
 import { STAT_SHORT_RU } from '@/lib/game-types';
 import type { PetsStateView } from '@/lib/game-types';
+import { PET_ICON_IMAGES, CURRENCY_ICON_IMAGES } from '@/lib/asset-icons';
+import { AssetIcon } from '@/components/game/AssetIcon';
 
 interface PetsPanelProps {
   state: PetsStateView | null;
@@ -32,9 +34,10 @@ export function PetsPanel({ state, loading, buyingPetId, activatingPetId, onBuyP
           type="button"
           onClick={() => onActivatePet(null)}
           disabled={activatingPetId !== null}
-          className="w-full text-left p-2 rounded-lg border border-primary bg-primary/10 text-[10px] disabled:opacity-50"
+          className="w-full text-left p-2 rounded-lg border border-primary bg-primary/10 text-[10px] disabled:opacity-50 flex items-center gap-1"
         >
-          Активен: {state?.catalog.find(p => p.id === activePetId)?.icon} {state?.catalog.find(p => p.id === activePetId)?.nameRu} — нажмите, чтобы снять
+          <AssetIcon src={PET_ICON_IMAGES[activePetId]} emoji={state?.catalog.find(p => p.id === activePetId)?.icon ?? ''} size={13} />
+          <span>Активен: {state?.catalog.find(p => p.id === activePetId)?.nameRu} — нажмите, чтобы снять</span>
         </button>
       )}
 
@@ -52,7 +55,7 @@ export function PetsPanel({ state, loading, buyingPetId, activatingPetId, onBuyP
               style={{ borderColor: isActive ? undefined : rarityColor + '50' }}
             >
               <div className="flex items-center gap-2">
-                <span className="text-xl">{pet.icon}</span>
+                <AssetIcon src={PET_ICON_IMAGES[pet.id]} emoji={pet.icon} size={26} className="text-xl" />
                 <div className="min-w-0 flex-1">
                   <div className="text-xs font-medium truncate">{pet.nameRu}</div>
                   <div className="text-[9px]" style={{ color: rarityColor }}>{RARITY_NAMES_RU[pet.rarity] ?? pet.rarity}</div>
@@ -77,9 +80,13 @@ export function PetsPanel({ state, loading, buyingPetId, activatingPetId, onBuyP
                   type="button"
                   onClick={() => onBuyPet(pet.id)}
                   disabled={loading || buyingPetId === pet.id || !affordable}
-                  className="h-7 text-[10px] rounded-md border border-gold/40 text-gold font-medium disabled:opacity-50 hover:bg-gold/10"
+                  className="h-7 text-[10px] rounded-md border border-gold/40 text-gold font-medium disabled:opacity-50 hover:bg-gold/10 flex items-center justify-center gap-1"
                 >
-                  {buyingPetId === pet.id ? '...' : `👑 ${pet.costShards}`}
+                  {buyingPetId === pet.id ? '...' : (
+                    <>
+                      <AssetIcon src={CURRENCY_ICON_IMAGES.crownShards} emoji="👑" size={12} /> {pet.costShards}
+                    </>
+                  )}
                 </button>
               )}
             </div>

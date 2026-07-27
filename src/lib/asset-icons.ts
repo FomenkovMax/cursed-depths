@@ -36,3 +36,39 @@ export const CURRENCY_ICON_IMAGES: Record<string, string> = {
   kessara_whisper: '/images/currency/kessara_whisper.webp',
   tempering_scroll: '/images/currency/tempering_scroll.webp',
 };
+
+// Ключи — Title.id (src/lib/social/titles.ts), все 16 титулов покрыты.
+export const TITLE_ICON_IMAGES: Record<string, string> = {
+  ashen_wanderer: '/images/titles/ashen_wanderer.webp',
+  deep_veteran: '/images/titles/deep_veteran.webp',
+  ashen_legend: '/images/titles/ashen_legend.webp',
+  slayer: '/images/titles/slayer.webp',
+  blood_harvest: '/images/titles/blood_harvest.webp',
+  arena_champion: '/images/titles/arena_champion.webp',
+  arena_elite: '/images/titles/arena_elite.webp',
+  abyss_conqueror: '/images/titles/abyss_conqueror.webp',
+  abyss_lord: '/images/titles/abyss_lord.webp',
+  trophy_hunter: '/images/titles/trophy_hunter.webp',
+  trophy_legend: '/images/titles/trophy_legend.webp',
+  achievement_collector: '/images/titles/achievement_collector.webp',
+  pet_master: '/images/titles/pet_master.webp',
+  patron: '/images/titles/patron.webp',
+  clan_chief: '/images/titles/clan_chief.webp',
+  voice_of_karsus: '/images/titles/voice_of_karsus.webp',
+};
+
+// Ключи — Pet.id (src/lib/economy/pets.ts), все 12 питомцев покрыты.
+export const PET_ICON_IMAGES: Record<string, string> = {
+  ash_kitten: '/images/pets/ash_kitten.webp',
+  rusty_crow: '/images/pets/rusty_crow.webp',
+  root_sprite: '/images/pets/root_sprite.webp',
+  ember_moth: '/images/pets/ember_moth.webp',
+  void_hare: '/images/pets/void_hare.webp',
+  bone_hound: '/images/pets/bone_hound.webp',
+  kessara_owl: '/images/pets/kessara_owl.webp',
+  molten_salamander: '/images/pets/molten_salamander.webp',
+  ailet_fawn: '/images/pets/ailet_fawn.webp',
+  tornak_golemling: '/images/pets/tornak_golemling.webp',
+  karsus_wyrmling: '/images/pets/karsus_wyrmling.webp',
+  cursed_shade_cub: '/images/pets/cursed_shade_cub.webp',
+};

@@ -8,6 +8,8 @@ import { Progress } from '@/components/ui/progress';
 import { GuildData, WorldBossStateView, WorldBossAttackResultView, FortressStateView, FortressAssaultResultView, GuildRaidBossStateView, GuildRaidAttackResultView } from '@/lib/game-types';
 import { findTitle } from '@/lib/social/titles';
 import { GUILD_UPGRADES, canUnlockGuildUpgrade, type GuildBuildingId } from '@/lib/social/guild-upgrades';
+import { TITLE_ICON_IMAGES } from '@/lib/asset-icons';
+import { AssetIcon } from '@/components/game/AssetIcon';
 
 interface GuildTabProps {
   playerId: string | null;
@@ -353,7 +355,9 @@ export function GuildTab({
                     <span className="text-xl">{m.player.class.icon}</span>
                     <div className="flex-1 min-w-0">
                       {title && (
-                        <div className={`text-[9px] font-medium truncate ${title.colorClass}`}>{title.icon} {title.nameRu}</div>
+                        <div className={`flex items-center gap-1 text-[9px] font-medium truncate ${title.colorClass}`}>
+                          <AssetIcon src={TITLE_ICON_IMAGES[title.id]} emoji={title.icon} size={11} /> {title.nameRu}
+                        </div>
                       )}
                       <div className="text-xs font-medium truncate">
                         {m.player.name}

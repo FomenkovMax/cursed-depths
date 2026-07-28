@@ -11,7 +11,7 @@ import { PlayerData, AbilityData, CombatLogEntry } from '@/lib/game-types';
 import { findDungeon } from '@/lib/combat/dungeons';
 import { findDungeonModifier, heatLevelLabel } from '@/lib/combat/dungeon-modifiers';
 import { isEliteDepth } from '@/lib/combat/abyss';
-import { BOSS_PORTRAIT_IMAGES } from '@/lib/asset-icons';
+import { BOSS_PORTRAIT_IMAGES, ENEMY_ICON_IMAGES } from '@/lib/asset-icons';
 
 const ACTIVE_EFFECT_LABELS: Record<string, string> = {
   player_damage_buff: 'Урон усилен',
@@ -107,13 +107,15 @@ export function CombatTab({
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-3">
-                  {/* Портрет босса — реальный AI-арт (src/lib/asset-icons.ts BOSS_PORTRAIT_IMAGES),
-                      обычные враги остаются эмодзи (для них портретов не генерировали). Реакция
-                      на удар и луч способности навешаны на обёртку, а не на конкретный <span>/
-                      <img>, поэтому свежая работает без переделки анимаций. */}
+                  {/* Портрет врага — реальный AI-арт: боссы (BOSS_PORTRAIT_IMAGES) и обычные враги
+                      (ENEMY_ICON_IMAGES) в src/lib/asset-icons.ts, эмодзи — только запасной вариант.
+                      Реакция на удар и луч способности навешаны на обёртку, а не на конкретный
+                      <span>/<img>, поэтому подмена работает без переделки анимаций. */}
                   <div className={`relative w-10 h-10 flex items-center justify-center overflow-hidden rounded ${enemyHitFlash ? 'animate-enemy-hit' : ''}`}>
                     {enemy.isBoss && BOSS_PORTRAIT_IMAGES[enemy.id] ? (
                       <img src={BOSS_PORTRAIT_IMAGES[enemy.id]} alt="" className="w-full h-full object-cover object-top" />
+                    ) : ENEMY_ICON_IMAGES[enemy.id] ? (
+                      <img src={ENEMY_ICON_IMAGES[enemy.id]} alt="" className="w-full h-full object-cover object-top" />
                     ) : (
                       <span className="text-3xl">{enemy.icon}</span>
                     )}

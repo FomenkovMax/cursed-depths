@@ -104,50 +104,51 @@ export function CombatTab({
           )}
 
           {/* Enemy card */}
-          <Card className={`border-destructive/50 ${shaking ? 'animate-shake' : ''}`}>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-3">
-                  {/* Портрет врага — реальный AI-арт: боссы (BOSS_PORTRAIT_IMAGES) и обычные враги
-                      (ENEMY_ICON_IMAGES) в src/lib/asset-icons.ts, эмодзи — только запасной вариант.
-                      Реакция на удар и луч способности навешаны на обёртку, а не на конкретный
-                      <span>/<img>, поэтому подмена работает без переделки анимаций. */}
-                  <div className={`relative w-10 h-10 flex items-center justify-center overflow-hidden rounded ${enemyHitFlash ? 'animate-enemy-hit' : ''}`}>
-                    {enemy.isBoss && BOSS_PORTRAIT_IMAGES[enemy.id] ? (
-                      <img src={BOSS_PORTRAIT_IMAGES[enemy.id]} alt="" className="w-full h-full object-cover object-top" />
-                    ) : ENEMY_ICON_IMAGES[enemy.id] ? (
-                      <img src={ENEMY_ICON_IMAGES[enemy.id]} alt="" className="w-full h-full object-cover object-top" />
-                    ) : (
-                      <span className="text-3xl">{enemy.icon}</span>
-                    )}
-                    {abilityCastGlow && (
-                      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-                        <div className="animate-ability-beam absolute -inset-y-6 w-4 bg-gradient-to-b from-transparent via-gold/90 to-transparent blur-[1px]" />
-                      </div>
-                    )}
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-sm" style={{ color: enemy.isBoss ? '#f59e0b' : '#ef4444' }}>
-                      {enemy.nameRu}
-                      {enemy.isBoss && <Badge className="ml-1 text-[10px] h-4 bg-gold/20 text-gold">БОСС</Badge>}
-                    </h3>
-                    <div className="text-[10px] text-muted-foreground">
-                      {/* "Класс Брони" переименован в "Защита" (аудит 2.3) — поле снижает урон
-                          напрямую (mitigateDamage), броска на попадание нет, а ярлык "AC" обещал
-                          игроку D&D-механику шанса промаха, которой в бою не существует. */}
-                      Защита {enemy.ac} • АТК +{enemy.attack} • Урон {enemy.damage}
-                    </div>
-                  </div>
+          <Card className={`border-destructive/50 overflow-hidden ${shaking ? 'animate-shake' : ''}`}>
+            {/* Портрет врага в полный рост — реальный AI-арт: боссы (BOSS_PORTRAIT_IMAGES, исходник
+                full-body 480×643) и обычные враги (ENEMY_ICON_IMAGES, квадратные спрайты), эмодзи —
+                только запасной вариант. Раньше показывался мелкой 40×40 иконкой — портретный арт
+                боссов уже был full-body, просто терялся в квадратной обрезке. Реакция на удар и луч
+                способности навешаны на обёртку, а не на конкретный <span>/<img>, поэтому подмена
+                работает без переделки анимаций. */}
+            <div
+              className={`relative w-full overflow-hidden bg-secondary/20 ${enemy.isBoss && BOSS_PORTRAIT_IMAGES[enemy.id] ? 'aspect-[3/4] max-h-[420px]' : 'aspect-square max-h-72'} ${enemyHitFlash ? 'animate-enemy-hit' : ''}`}
+            >
+              {enemy.isBoss && BOSS_PORTRAIT_IMAGES[enemy.id] ? (
+                <img src={BOSS_PORTRAIT_IMAGES[enemy.id]} alt="" className="w-full h-full object-cover object-top" />
+              ) : ENEMY_ICON_IMAGES[enemy.id] ? (
+                <img src={ENEMY_ICON_IMAGES[enemy.id]} alt="" className="w-full h-full object-cover object-top" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-7xl">{enemy.icon}</div>
+              )}
+              {abilityCastGlow && (
+                <div className="absolute inset-0 pointer-events-none overflow-hidden">
+                  <div className="animate-ability-beam absolute -inset-y-6 w-4 bg-gradient-to-b from-transparent via-gold/90 to-transparent blur-[1px]" />
                 </div>
-                {/* Floating damage numbers */}
-                <div className="relative">
-                  {floatingDamage.map(fd => (
-                    <div key={fd.id} className="animate-float-up absolute -top-4 right-0 font-bold text-lg" style={{ color: fd.color }}>
-                      {fd.text}
-                    </div>
-                  ))}
+              )}
+              {/* Floating damage numbers */}
+              <div className="absolute top-2 right-2">
+                {floatingDamage.map(fd => (
+                  <div key={fd.id} className="animate-float-up absolute -top-4 right-0 font-bold text-lg" style={{ color: fd.color }}>
+                    {fd.text}
+                  </div>
+                ))}
+              </div>
+              {/* Имя/статы поверх портрета с тёмным градиентом-скримом для читаемости */}
+              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent px-3 pt-10 pb-2">
+                <h3 className="font-bold text-sm" style={{ color: enemy.isBoss ? '#f59e0b' : '#ef4444' }}>
+                  {enemy.nameRu}
+                  {enemy.isBoss && <Badge className="ml-1 text-[10px] h-4 bg-gold/20 text-gold">БОСС</Badge>}
+                </h3>
+                <div className="text-[10px] text-white/80">
+                  {/* "Класс Брони" переименован в "Защита" (аудит 2.3) — поле снижает урон
+                      напрямую (mitigateDamage), броска на попадание нет, а ярлык "AC" обещал
+                      игроку D&D-механику шанса промаха, которой в бою не существует. */}
+                  Защита {enemy.ac} • АТК +{enemy.attack} • Урон {enemy.damage}
                 </div>
               </div>
+            </div>
+            <CardContent className="p-4">
               {/* Enemy HP bar */}
               <div className="flex items-center gap-2">
                 <span className="text-xs text-hp font-bold w-6">HP</span>

@@ -454,7 +454,7 @@ export function OverviewTab({
           {playerInventory.filter(i => i.equipped).length === 0 ? (
             <p className="text-xs text-muted-foreground text-center">Ничего не экипировано</p>
           ) : (
-            <div className="grid grid-cols-5 gap-2">
+            <div className="grid grid-cols-4 gap-2">
               {playerInventory.filter(i => i.equipped).map(item => (
                 <ItemIconTile key={item.id} item={item} equipped />
               ))}

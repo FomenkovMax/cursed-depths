@@ -85,7 +85,7 @@ export function AuctionTab({ player, state, loading, onListItem, onBid, onCancel
           ) : (
             <>
               <div className="max-h-40 overflow-y-auto pr-1">
-                <div className="grid grid-cols-6 gap-2">
+                <div className="grid grid-cols-4 gap-2">
                   {sellableItems.map(item => (
                     <ItemIconTile
                       key={item.id}

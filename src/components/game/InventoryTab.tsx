@@ -195,7 +195,7 @@ export function InventoryTab({
                       {vaultLoading ? 'Загрузка...' : 'Сейф пуст — уберите сюда предметы из инвентаря, чтобы поделиться ими со вторым персонажем'}
                     </p>
                   ) : (
-                    <div className="grid grid-cols-5 gap-2">
+                    <div className="grid grid-cols-4 gap-2">
                       {vaultItems.map(item => (
                         <ItemIconTile key={item.id} item={item} onClick={() => setDetail({ item, source: 'vault' })} />
                       ))}
@@ -217,7 +217,7 @@ export function InventoryTab({
                 {stashLoading ? 'Загрузка...' : 'Хранилище пусто — уберите сюда предметы из инвентаря, чтобы сохранить их'}
               </p>
             ) : (
-              <div className="grid grid-cols-5 gap-2">
+              <div className="grid grid-cols-4 gap-2">
                 {stashItems.map(item => (
                   <ItemIconTile key={item.id} item={item} onClick={() => setDetail({ item, source: 'stash' })} />
                 ))}
@@ -227,24 +227,16 @@ export function InventoryTab({
         </Card>
       ) : (
         <>
-          {/* Портрет — 2D-силуэт персонажа с иконками надетых предметов, разложенными
-              анатомически (см. src/components/game/character-viewer/PaperDoll), визуально
-              меняется по надетым предметам как и раньше. Своих иллюстрированных 2D-арт-ассетов
-              персонажа/экипировки в проекте нет — силуэт держит компоновку, каждый предмет
-              представлен той же иконкой, что и везде в инвентаре, ничего не заглушено. */}
+          {/* Портрет в полный рост — full-body арт текущей эволюции класса (lib/character-portrait.ts,
+              меняется сам по мере роста уровня) как фон, поверх которого разложены иконки надетых
+              предметов (см. PaperDoll) на анатомических позициях — голова/амулет/тело прямо на
+              портрете, а не отдельным силуэтом под мелкой картинкой, как было раньше. */}
           <Card className="border-border">
             <CardHeader className="pb-2 pt-3 px-4">
               <CardTitle className="text-sm">Портрет</CardTitle>
             </CardHeader>
-            <CardContent className="px-4 pb-3 space-y-2">
-              {/* Портрет текущей открытой эволюции класса (см. lib/character-portrait.ts) —
-                  меняется сам по мере роста уровня, отдельно от силуэта с экипировкой ниже. */}
-              {classPortrait && (
-                <div className="rounded-lg overflow-hidden border border-border/60 aspect-[3/2] bg-secondary/20">
-                  <img src={classPortrait} alt="" className="w-full h-full object-cover object-top" />
-                </div>
-              )}
-              <PaperDoll equipped={equipped} onSelect={item => setDetail({ item, source: 'inventory' })} />
+            <CardContent className="px-4 pb-3">
+              <PaperDoll equipped={equipped} onSelect={item => setDetail({ item, source: 'inventory' })} portraitSrc={classPortrait} />
             </CardContent>
           </Card>
 
@@ -259,7 +251,7 @@ export function InventoryTab({
               {unequipped.length === 0 ? (
                 <p className="text-xs text-muted-foreground text-center py-2">Инвентарь пуст</p>
               ) : (
-                <div className="grid grid-cols-5 gap-2">
+                <div className="grid grid-cols-4 gap-2">
                   {unequipped.map(item => (
                     <ItemIconTile key={item.id} item={item} onClick={() => setDetail({ item, source: 'inventory' })} />
                   ))}

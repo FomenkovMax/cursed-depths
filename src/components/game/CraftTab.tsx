@@ -62,7 +62,7 @@ export function CraftTab({ player, loading, canCraftRecipe, learnedRecipeIds, on
           {playerInventory.filter(i => i.type === 'material').length === 0 ? (
             <p className="text-xs text-muted-foreground text-center">Нет материалов</p>
           ) : (
-            <div className="grid grid-cols-6 gap-2">
+            <div className="grid grid-cols-4 gap-2">
               {playerInventory.filter(i => i.type === 'material').map(item => (
                 <ItemIconTile key={item.id} item={item} />
               ))}
@@ -84,7 +84,7 @@ export function CraftTab({ player, loading, canCraftRecipe, learnedRecipeIds, on
             <>
               <p className="text-xs text-muted-foreground">Выберите предмет:</p>
               <div className="max-h-40 overflow-y-auto pr-1">
-                <div className="grid grid-cols-6 gap-2">
+                <div className="grid grid-cols-4 gap-2">
                   {gearItems.map(item => (
                     <ItemIconTile
                       key={item.id}

@@ -94,25 +94,28 @@ export function PartyTab({
         </Card>
       ) : party.status === 'in_combat' && combatState?.combat && combatState.enemy ? (
         <>
-          {/* Враг */}
-          <Card className="border-destructive/50">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3 mb-2">
-                {combatState.enemy.isBoss && BOSS_PORTRAIT_IMAGES[combatState.enemy.id] ? (
-                  <img src={BOSS_PORTRAIT_IMAGES[combatState.enemy.id]} alt="" className="w-10 h-10 object-cover object-top rounded shrink-0" />
-                ) : ENEMY_ICON_IMAGES[combatState.enemy.id] ? (
-                  <img src={ENEMY_ICON_IMAGES[combatState.enemy.id]} alt="" className="w-10 h-10 object-cover object-top rounded shrink-0" />
-                ) : (
-                  <span className="text-3xl">{combatState.enemy.icon}</span>
-                )}
-                <div>
-                  <h3 className="font-bold text-sm" style={{ color: combatState.enemy.isBoss ? '#f59e0b' : '#ef4444' }}>
-                    {combatState.enemy.nameRu}
-                    {combatState.enemy.isBoss && <Badge className="ml-1 text-[10px] h-4 bg-gold/20 text-gold">БОСС</Badge>}
-                  </h3>
-                  <div className="text-[10px] text-muted-foreground">Раунд {combatState.state?.round ?? 1}</div>
-                </div>
+          {/* Враг — тот же full-body баннер, что и в соло-бою (CombatTab.tsx), а не мелкая
+              40×40 иконка, которая была раньше независимо от неё. */}
+          <Card className="border-destructive/50 overflow-hidden">
+            <div
+              className={`relative w-full overflow-hidden bg-secondary/20 ${combatState.enemy.isBoss && BOSS_PORTRAIT_IMAGES[combatState.enemy.id] ? 'aspect-[3/4] max-h-[420px]' : 'aspect-square max-h-72'}`}
+            >
+              {combatState.enemy.isBoss && BOSS_PORTRAIT_IMAGES[combatState.enemy.id] ? (
+                <img src={BOSS_PORTRAIT_IMAGES[combatState.enemy.id]} alt="" className="w-full h-full object-cover object-top" />
+              ) : ENEMY_ICON_IMAGES[combatState.enemy.id] ? (
+                <img src={ENEMY_ICON_IMAGES[combatState.enemy.id]} alt="" className="w-full h-full object-cover object-top" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-7xl">{combatState.enemy.icon}</div>
+              )}
+              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent px-3 pt-10 pb-2">
+                <h3 className="font-bold text-sm" style={{ color: combatState.enemy.isBoss ? '#f59e0b' : '#ef4444' }}>
+                  {combatState.enemy.nameRu}
+                  {combatState.enemy.isBoss && <Badge className="ml-1 text-[10px] h-4 bg-gold/20 text-gold">БОСС</Badge>}
+                </h3>
+                <div className="text-[10px] text-white/80">Раунд {combatState.state?.round ?? 1}</div>
               </div>
+            </div>
+            <CardContent className="p-4">
               <div className="flex items-center gap-2">
                 <span className="text-xs text-hp font-bold w-6">HP</span>
                 <div className="flex-1 h-3 bg-secondary rounded-full overflow-hidden">

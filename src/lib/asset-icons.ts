@@ -24,7 +24,7 @@ export const TAB_ICON_IMAGES: Partial<Record<GameTab, string>> = {
   leaderboard: '/images/nav/leaderboard.webp',
   premium: '/images/nav/premium.webp',
   characters: '/images/nav/characters.webp',
-  // 'weekly-challenge' — для этой вкладки иконка не генерировалась, остаётся эмодзи 🕯️.
+  'weekly-challenge': '/images/nav/weekly-challenge.webp',
 };
 
 export const CURRENCY_ICON_IMAGES: Record<string, string> = {
@@ -73,11 +73,9 @@ export const PET_ICON_IMAGES: Record<string, string> = {
   cursed_shade_cub: '/images/pets/cursed_shade_cub.webp',
 };
 
-// Ключи — Item.id (src/lib/game-data.ts ITEMS), 88 из 94 предметов покрыты. Валютные Item-записи
+// Ключи — Item.id (src/lib/game-data.ts ITEMS), 94/94 предметов покрыты. Валютные Item-записи
 // (ash_shard/aylet_tear/tornak_seal/kessara_whisper/tempering_scroll) сюда не входят — у них уже
 // есть иконки в монетном стиле в CURRENCY_ICON_IMAGES, дублировать другим стилем не стали.
-// Без иконки остаётся first_dragon_scale (для него отдельная генерация не производилась) — там
-// AssetIcon откатывается на emoji, как и для любого непокрытого id.
 export const ITEM_ICON_IMAGES: Record<string, string> = {
   ailet_pulsing_heart: '/images/items/ailet_pulsing_heart.webp',
   ailet_tear: '/images/items/ailet_tear.webp',
@@ -115,6 +113,7 @@ export const ITEM_ICON_IMAGES: Record<string, string> = {
   elixir_power: '/images/items/elixir_power.webp',
   elven_bow: '/images/items/elven_bow.webp',
   eternal_ember: '/images/items/eternal_ember.webp',
+  first_dragon_scale: '/images/items/first_dragon_scale.webp',
   first_fall_dust: '/images/items/first_fall_dust.webp',
   first_risen_crown: '/images/items/first_risen_crown.webp',
   flame_blade: '/images/items/flame_blade.webp',

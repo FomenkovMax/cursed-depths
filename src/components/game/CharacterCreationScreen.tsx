@@ -74,8 +74,7 @@ export function CharacterCreationScreen({
   return (
     <div className="min-h-screen bg-background p-4 flex flex-col">
       <div className="text-center mb-6 pt-4">
-        <div className="text-5xl mb-2">👑</div>
-        <h1 className="text-2xl font-bold text-primary">Cursed Depths</h1>
+        <h1 className="font-display text-2xl font-bold text-primary">Cursed Depths</h1>
         <p className="text-muted-foreground text-sm mt-1">Проклятые Глубины</p>
       </div>
 
@@ -137,7 +136,7 @@ export function CharacterCreationScreen({
               {/* Портрет выбранной расы — крупный painterly-арт (см. src/lib/asset-icons.ts),
                   обновляется по клику на карточку ниже, список карточек остаётся компактным. */}
               {charRace && RACE_PORTRAIT_IMAGES[charRace] && (
-                <div className="mb-3 rounded-lg overflow-hidden border border-primary/40 aspect-[3/2] bg-secondary/20">
+                <div className="mb-3 rounded-lg overflow-hidden border border-primary/40 aspect-[3/4] max-h-[420px] bg-secondary/20">
                   <img src={RACE_PORTRAIT_IMAGES[charRace]} alt="" className="w-full h-full object-cover object-top" />
                 </div>
               )}
@@ -191,7 +190,7 @@ export function CharacterCreationScreen({
             <div className="animate-fade-in">
               <h2 className="text-lg font-bold mb-3 text-center">Выберите класс</h2>
               {charClass && CLASS_PORTRAIT_IMAGES[charClass] && (
-                <div className="mb-3 rounded-lg overflow-hidden border border-primary/40 aspect-[3/2] bg-secondary/20">
+                <div className="mb-3 rounded-lg overflow-hidden border border-primary/40 aspect-[3/4] max-h-[420px] bg-secondary/20">
                   <img src={CLASS_PORTRAIT_IMAGES[charClass]} alt="" className="w-full h-full object-cover object-top" />
                 </div>
               )}

@@ -4,25 +4,30 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --color-background: #0f0a1a;
-  --color-foreground: #e8e0f0;
-  --color-card: #1a1025;
-  --color-card-foreground: #e8e0f0;
-  --color-popover: #1a1025;
-  --color-popover-foreground: #e8e0f0;
-  --color-primary: #8b5cf6;
-  --color-primary-foreground: #ffffff;
-  --color-secondary: #2d1f3d;
-  --color-secondary-foreground: #e8e0f0;
-  --color-muted: #2d1f3d;
-  --color-muted-foreground: #9885b0;
-  --color-accent: #6d28d9;
-  --color-accent-foreground: #ffffff;
+  /* Тёмный кожано-пергаментный фэнтези-тон вместо фиолетового (по фидбеку "дизайн отсутствует
+     как таковой... не на фиолетовом цвете") — бронза/охра как акцент вместо фиолетового primary,
+     тёплый почти-чёрный фон вместо холодного тёмно-фиолетового. Все компоненты используют эти
+     семантические токены (bg-secondary/text-primary/border-border и т.п.), а не хардкодят hex —
+     переход не требует правок по файлам за пределами двух точечных мест с purple-500. */
+  --color-background: #140f0a;
+  --color-foreground: #ece1cd;
+  --color-card: #1e160f;
+  --color-card-foreground: #ece1cd;
+  --color-popover: #1a130d;
+  --color-popover-foreground: #ece1cd;
+  --color-primary: #b9803f;
+  --color-primary-foreground: #1c1108;
+  --color-secondary: #2a2016;
+  --color-secondary-foreground: #ece1cd;
+  --color-muted: #2a2016;
+  --color-muted-foreground: #a8967d;
+  --color-accent: #6b3626;
+  --color-accent-foreground: #f3e6d2;
   --color-destructive: #ef4444;
   --color-destructive-foreground: #ffffff;
-  --color-border: #3d2a52;
-  --color-input: #3d2a52;
-  --color-ring: #8b5cf6;
+  --color-border: #3d2f1f;
+  --color-input: #3d2f1f;
+  --color-ring: #b9803f;
   --radius-sm: 0.25rem;
   --radius-md: 0.375rem;
   --radius-lg: 0.5rem;
@@ -48,13 +53,22 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* Двухъярусная типографика (по референсу "Зов Теней"): декоративный serif на заголовках
+   экранов, обычный sans остаётся везде для тела/цифр. Шрифт подключён в layout.tsx как
+   CSS-переменная --font-display; если по какой-то причине не догрузился, откатывается на
+   системный serif — тоже читается как "заголовок", а не как основной текст. */
+.font-display {
+  font-family: var(--font-display), Georgia, serif;
+  letter-spacing: 0.02em;
+}
+
 /* Telegram MiniApp specific */
 :root {
-  --tg-theme-bg-color: #0f0a1a;
-  --tg-theme-text-color: #e8e0f0;
-  --tg-theme-hint-color: #9885b0;
-  --tg-theme-button-color: #8b5cf6;
-  --tg-theme-button-text-color: #ffffff;
+  --tg-theme-bg-color: #140f0a;
+  --tg-theme-text-color: #ece1cd;
+  --tg-theme-hint-color: #a8967d;
+  --tg-theme-button-color: #b9803f;
+  --tg-theme-button-text-color: #1c1108;
 }
 
 /* Custom scrollbar */
@@ -62,10 +76,10 @@ body {
   width: 4px;
 }
 ::-webkit-scrollbar-track {
-  background: #1a1025;
+  background: #1a130d;
 }
 ::-webkit-scrollbar-thumb {
-  background: #3d2a52;
+  background: #3d2f1f;
   border-radius: 2px;
 }
 
@@ -82,8 +96,8 @@ body {
 
 /* Glow effect */
 @keyframes glow {
-  0%, 100% { box-shadow: 0 0 5px rgba(139, 92, 246, 0.5); }
-  50% { box-shadow: 0 0 20px rgba(139, 92, 246, 0.8); }
+  0%, 100% { box-shadow: 0 0 5px rgba(185, 128, 63, 0.5); }
+  50% { box-shadow: 0 0 20px rgba(185, 128, 63, 0.8); }
 }
 
 .animate-glow {
@@ -113,8 +127,8 @@ body {
 
 /* Pulse border for equipped items */
 @keyframes pulse-border {
-  0%, 100% { border-color: rgba(139, 92, 246, 0.5); }
-  50% { border-color: rgba(139, 92, 246, 1); }
+  0%, 100% { border-color: rgba(185, 128, 63, 0.5); }
+  50% { border-color: rgba(185, 128, 63, 1); }
 }
 
 .animate-pulse-border {
@@ -144,6 +158,20 @@ body {
 
 .animate-ability-beam {
   animation: abilityBeamSweep 0.7s ease-in-out;
+}
+
+/* Craft success pulse — иконка результата коротко "вспыхивает" золотым и увеличивается, затем
+   возвращается к обычному виду (в отличие от animate-level-up, которая гаснет в opacity:0 —
+   тут иконка должна остаться на виду). Раньше крафт не имел вообще никакого визуального
+   отклика на успех, кроме обновления счётчика материалов. */
+@keyframes craftPulse {
+  0% { transform: scale(1); filter: brightness(1); }
+  35% { transform: scale(1.25); filter: brightness(1.5) drop-shadow(0 0 8px rgba(251, 191, 36, 0.9)); }
+  100% { transform: scale(1); filter: brightness(1); }
+}
+
+.animate-craft-pulse {
+  animation: craftPulse 0.6s ease-out;
 }
 
 /* Fade in */

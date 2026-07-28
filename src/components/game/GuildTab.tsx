@@ -221,7 +221,7 @@ export function GuildTab({
               Видна всем членам гильдии, но атаковать может только премиум — полноценный лок доступа,
               не просто бонус к попыткам. */}
           {guildRaidBoss?.boss && (
-            <Card className="border-purple-500/50 bg-purple-500/5">
+            <Card className="border-accent/50 bg-accent/10">
               <CardHeader className="pb-2 pt-3 px-4">
                 <CardTitle className="text-sm">🕳️ {guildRaidBoss.boss.name} <span className="text-[10px] text-muted-foreground font-normal">(неделя {guildRaidBoss.boss.cycleId})</span></CardTitle>
                 <p className="text-[10px] text-muted-foreground leading-relaxed italic pt-0.5">{guildRaidBoss.boss.lore}</p>

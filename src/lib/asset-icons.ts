@@ -24,7 +24,7 @@ export const TAB_ICON_IMAGES: Partial<Record<GameTab, string>> = {
   leaderboard: '/images/nav/leaderboard.webp',
   premium: '/images/nav/premium.webp',
   characters: '/images/nav/characters.webp',
-  // 'weekly-challenge' — для этой вкладки иконка не генерировалась, остаётся эмодзи 🕯️.
+  'weekly-challenge': '/images/nav/weekly-challenge.webp',
 };
 
 export const CURRENCY_ICON_IMAGES: Record<string, string> = {
@@ -73,11 +73,9 @@ export const PET_ICON_IMAGES: Record<string, string> = {
   cursed_shade_cub: '/images/pets/cursed_shade_cub.webp',
 };
 
-// Ключи — Item.id (src/lib/game-data.ts ITEMS), 88 из 94 предметов покрыты. Валютные Item-записи
+// Ключи — Item.id (src/lib/game-data.ts ITEMS), 94/94 предметов покрыты. Валютные Item-записи
 // (ash_shard/aylet_tear/tornak_seal/kessara_whisper/tempering_scroll) сюда не входят — у них уже
 // есть иконки в монетном стиле в CURRENCY_ICON_IMAGES, дублировать другим стилем не стали.
-// Без иконки остаётся first_dragon_scale (для него отдельная генерация не производилась) — там
-// AssetIcon откатывается на emoji, как и для любого непокрытого id.
 export const ITEM_ICON_IMAGES: Record<string, string> = {
   ailet_pulsing_heart: '/images/items/ailet_pulsing_heart.webp',
   ailet_tear: '/images/items/ailet_tear.webp',
@@ -115,6 +113,7 @@ export const ITEM_ICON_IMAGES: Record<string, string> = {
   elixir_power: '/images/items/elixir_power.webp',
   elven_bow: '/images/items/elven_bow.webp',
   eternal_ember: '/images/items/eternal_ember.webp',
+  first_dragon_scale: '/images/items/first_dragon_scale.webp',
   first_fall_dust: '/images/items/first_fall_dust.webp',
   first_risen_crown: '/images/items/first_risen_crown.webp',
   flame_blade: '/images/items/flame_blade.webp',
@@ -418,4 +417,80 @@ export const ENEMY_ICON_IMAGES: Record<string, string> = {
   weak_blight_spawn: '/images/enemies/weak_blight_spawn.webp',
   whispering_fear: '/images/enemies/whispering_fear.webp',
   withering_dryad: '/images/enemies/withering_dryad.webp',
+};
+
+// Иконки способностей (Ability.slug, stage 1 активные — базовые способности класса до
+// эволюций) — 71/71. Стадии 2-3 и пассивки пока не покрыты — отдельный заход при необходимости.
+export const ABILITY_ICON_IMAGES: Record<string, string> = {
+  'accurate-shot': '/images/abilities/accurate-shot.webp',
+  'ailet-seed': '/images/abilities/ailet-seed.webp',
+  'ash-blade': '/images/abilities/ash-blade.webp',
+  'basalt-hide': '/images/abilities/basalt-hide.webp',
+  'battle-formation': '/images/abilities/battle-formation.webp',
+  'battle-roar': '/images/abilities/battle-roar.webp',
+  'battle-tempo': '/images/abilities/battle-tempo.webp',
+  'black-sting': '/images/abilities/black-sting.webp',
+  'blood-oath': '/images/abilities/blood-oath.webp',
+  bloodlust: '/images/abilities/bloodlust.webp',
+  'bone-shield': '/images/abilities/bone-shield.webp',
+  'burned-rune': '/images/abilities/burned-rune.webp',
+  'call-of-prey': '/images/abilities/call-of-prey.webp',
+  camouflage: '/images/abilities/camouflage.webp',
+  'cave-in': '/images/abilities/cave-in.webp',
+  'cold-fingers': '/images/abilities/cold-fingers.webp',
+  'counter-blow': '/images/abilities/counter-blow.webp',
+  crack: '/images/abilities/crack.webp',
+  curse: '/images/abilities/curse.webp',
+  'dead-vein': '/images/abilities/dead-vein.webp',
+  'decayed-flesh': '/images/abilities/decayed-flesh.webp',
+  desolation: '/images/abilities/desolation.webp',
+  disarm: '/images/abilities/disarm.webp',
+  'double-plague': '/images/abilities/double-plague.webp',
+  escape: '/images/abilities/escape.webp',
+  fading: '/images/abilities/fading.webp',
+  'final-will': '/images/abilities/final-will.webp',
+  'fire-breath-prep': '/images/abilities/fire-breath-prep.webp',
+  'forge-chill': '/images/abilities/forge-chill.webp',
+  'frost-bite': '/images/abilities/frost-bite.webp',
+  'furious-roar': '/images/abilities/furious-roar.webp',
+  'grumgar-resilience': '/images/abilities/grumgar-resilience.webp',
+  'hand-of-morvena': '/images/abilities/hand-of-morvena.webp',
+  interweaving: '/images/abilities/interweaving.webp',
+  intimidation: '/images/abilities/intimidation.webp',
+  'last-line': '/images/abilities/last-line.webp',
+  'living-thread': '/images/abilities/living-thread.webp',
+  'meteor-strike': '/images/abilities/meteor-strike.webp',
+  'moon-cycle': '/images/abilities/moon-cycle.webp',
+  'mute-bond': '/images/abilities/mute-bond.webp',
+  'obsidian-plating': '/images/abilities/obsidian-plating.webp',
+  'precise-strike': '/images/abilities/precise-strike.webp',
+  'purifying-aura': '/images/abilities/purifying-aura.webp',
+  'ray-of-decay': '/images/abilities/ray-of-decay.webp',
+  'reckless-swing': '/images/abilities/reckless-swing.webp',
+  'rending-heat': '/images/abilities/rending-heat.webp',
+  'rise-of-the-dead': '/images/abilities/rise-of-the-dead.webp',
+  'rot-bomb': '/images/abilities/rot-bomb.webp',
+  'rotting-mark': '/images/abilities/rotting-mark.webp',
+  'rotting-wound': '/images/abilities/rotting-wound.webp',
+  'runic-strike': '/images/abilities/runic-strike.webp',
+  rupture: '/images/abilities/rupture.webp',
+  'scent-of-blood': '/images/abilities/scent-of-blood.webp',
+  'seal-of-limit': '/images/abilities/seal-of-limit.webp',
+  'seal-of-silence': '/images/abilities/seal-of-silence.webp',
+  'second-wind': '/images/abilities/second-wind.webp',
+  'shadow-flank': '/images/abilities/shadow-flank.webp',
+  'shield-of-faith': '/images/abilities/shield-of-faith.webp',
+  'silver-arrow': '/images/abilities/silver-arrow.webp',
+  'stone-stance': '/images/abilities/stone-stance.webp',
+  'strike-from-shadow': '/images/abilities/strike-from-shadow.webp',
+  'strike-of-light': '/images/abilities/strike-of-light.webp',
+  'strike-within': '/images/abilities/strike-within.webp',
+  'tail-swipe': '/images/abilities/tail-swipe.webp',
+  'the-fang': '/images/abilities/the-fang.webp',
+  'the-pact': '/images/abilities/the-pact.webp',
+  'the-prayer': '/images/abilities/the-prayer.webp',
+  'the-trap': '/images/abilities/the-trap.webp',
+  'thread-severance': '/images/abilities/thread-severance.webp',
+  volley: '/images/abilities/volley.webp',
+  'weapon-blessing': '/images/abilities/weapon-blessing.webp',
 };

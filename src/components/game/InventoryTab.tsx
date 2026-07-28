@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { ItemIconTile } from '@/components/game/ItemIconTile';
 import { PaperDoll } from '@/components/game/character-viewer/PaperDoll';
 import { AssetIcon } from '@/components/game/AssetIcon';
@@ -91,7 +91,7 @@ function CurrencyTransferRow({ icon, image, label, playerAmount, vaultAmount, di
 }
 
 function statLabel(k: string): string {
-  return k === 'attack' ? 'АТК' : k === 'defense' ? 'ЗАЩ' : k === 'healHp' ? 'ЛечHP' : k === 'healMp' ? 'ЛечMP' : k === 'damage' ? 'Урон' : k;
+  return k === 'attack' ? 'Атака' : k === 'defense' ? 'Защита' : k === 'healHp' ? 'Лечение HP' : k === 'healMp' ? 'Лечение MP' : k === 'damage' ? 'Урон' : k;
 }
 
 export function InventoryTab({
@@ -263,112 +263,150 @@ export function InventoryTab({
       )}
 
       <Dialog open={!!detail} onOpenChange={open => !open && setDetail(null)}>
-        <DialogContent className="max-w-xs">
-          {detail && (
-            <>
-              <DialogHeader>
-                <DialogTitle className="flex items-center gap-2 text-sm" style={{ color: RARITY_COLORS[detail.item.rarity] }}>
-                  <AssetIcon src={ITEM_ICON_IMAGES[detail.item.itemId]} emoji={detail.item.icon ?? ''} size={32} className="text-2xl" />
-                  <span>
-                    {detail.item.name}
-                    {detail.item.enhancementLevel > 0 && <span className="ml-1 text-gold">+{detail.item.enhancementLevel}</span>}
-                  </span>
-                </DialogTitle>
-              </DialogHeader>
-              <div className="space-y-2">
-                <div className="text-xs text-muted-foreground">
-                  {('slot' in detail.item && detail.item.slot && SLOT_RU[detail.item.slot]) || ITEM_TYPE_RU[detail.item.type]} • {RARITY_NAMES_RU[detail.item.rarity]}
-                  {detail.item.quantity > 1 && ` • x${detail.item.quantity}`}
-                </div>
-                {detail.item.affixTier && AFFIX_TIER_RU[detail.item.affixTier] && (
-                  <Badge className="text-[10px]" style={{ backgroundColor: AFFIX_TIER_COLORS[detail.item.affixTier] + '20', color: AFFIX_TIER_COLORS[detail.item.affixTier] }}>
-                    {AFFIX_TIER_RU[detail.item.affixTier]}
-                  </Badge>
-                )}
-                {Object.keys(detailStats).length > 0 && (
-                  <div className="flex gap-1 flex-wrap">
-                    {Object.entries(detailStats).map(([k, v]) => (
-                      <Badge key={k} variant="outline" className="text-[10px] h-5 px-1.5">{statLabel(k)} +{v}</Badge>
-                    ))}
-                  </div>
-                )}
-                {detailAffixes.length > 0 && (
-                  <div className="text-[11px] text-muted-foreground space-y-0.5">
-                    {detailAffixes.map((a, i) => <div key={i}>• {a.labelRu} +{a.value}</div>)}
-                  </div>
-                )}
-                {/* Флейвор-текст базового предмета (ITEMS[].descriptionRu, game-data.ts) — ни
-                    инвентарь, ни хранилище раньше его вообще не показывали, хотя часть предметов
-                    (легендарки/мифики) уже написана в духе Dark Souls. Общий для всех экземпляров
-                    itemId, ищется по статичным данным, а не хранится в самой Inventory-строке. */}
-                {(() => {
-                  const baseItem = ITEMS.find(i => i.id === detail.item.itemId);
-                  return baseItem?.descriptionRu ? (
-                    <p className="text-[11px] text-muted-foreground leading-relaxed italic pt-1.5 border-t border-border/60">
-                      {baseItem.descriptionRu}
-                    </p>
-                  ) : null;
-                })()}
-              </div>
-              <div className="flex flex-col gap-1.5 pt-1">
-                {detail.source === 'stash' ? (
-                  <Button size="sm" onClick={() => { onRetrieveItem(detail.item.id); setDetail(null); }} disabled={loading}>
-                    Достать в инвентарь
-                  </Button>
-                ) : detail.source === 'vault' ? (
-                  <Button size="sm" onClick={() => { onRetrieveFromVault(detail.item.id); setDetail(null); }} disabled={vaultTransferring}>
-                    Достать в инвентарь
-                  </Button>
-                ) : (
-                  <>
-                    {(detail.item as InventoryItem).equipped ? (
-                      <Button size="sm" variant="outline" className="border-border" onClick={() => { onEquip(detail.item.id); setDetail(null); }} disabled={loading}>
-                        Снять
-                      </Button>
+        <DialogContent className="max-w-xs p-0 gap-0 overflow-hidden border-2" style={detail ? { borderColor: RARITY_COLORS[detail.item.rarity] + '80' } : undefined}>
+          {detail && (() => {
+            const rarityColor = RARITY_COLORS[detail.item.rarity];
+            const baseItem = ITEMS.find(i => i.id === detail.item.itemId);
+            const imageSrc = ITEM_ICON_IMAGES[detail.item.itemId];
+            return (
+              <>
+                {/* Крупная иконка в орнаментной рамке (цвет — редкость предмета) + характеристики
+                    рядом — по референсу "Зов Теней": там иконка предмета видна и крупная, а не
+                    32px значок в заголовке общего диалога, как было раньше. */}
+                <div className="flex items-start gap-3 px-4 pt-4 pb-3 bg-gradient-to-b from-secondary/50 to-transparent">
+                  <div
+                    className="relative w-20 h-20 shrink-0 rounded-lg border-2 bg-black/40 overflow-hidden"
+                    style={{ borderColor: rarityColor, boxShadow: `0 0 14px ${rarityColor}66, inset 0 0 10px ${rarityColor}22` }}
+                  >
+                    {imageSrc ? (
+                      <img src={imageSrc} alt="" className="absolute inset-0 w-full h-full object-cover" />
                     ) : (
-                      <>
-                        {canEquip && (
-                          <Button size="sm" onClick={() => { onEquip(detail.item.id); setDetail(null); }} disabled={loading}>
-                            Надеть
-                          </Button>
-                        )}
-                        {canUse && (
-                          <Button size="sm" variant="outline" className="border-border" onClick={() => { onUseItem(detail.item.id); setDetail(null); }} disabled={loading}>
-                            Использовать
-                          </Button>
-                        )}
-                        {canLearn && (
-                          <Button size="sm" variant="outline" className="border-gold/50 text-gold" onClick={() => { onLearnBlueprint(detail.item.id); setDetail(null); }} disabled={loading}>
-                            📜 Изучить
-                          </Button>
-                        )}
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="border-border"
-                          onClick={() => { onStoreItem(detail.item.id); setDetail(null); }}
-                          disabled={loading || stashItems.length >= stashCapacity}
-                        >
-                          🗄️ В хранилище
+                      <span className="absolute inset-0 flex items-center justify-center text-4xl">{detail.item.icon ?? ''}</span>
+                    )}
+                    <span className="absolute top-1 left-1 w-2.5 h-2.5 border-t border-l" style={{ borderColor: rarityColor }} />
+                    <span className="absolute top-1 right-1 w-2.5 h-2.5 border-t border-r" style={{ borderColor: rarityColor }} />
+                    <span className="absolute bottom-1 left-1 w-2.5 h-2.5 border-b border-l" style={{ borderColor: rarityColor }} />
+                    <span className="absolute bottom-1 right-1 w-2.5 h-2.5 border-b border-r" style={{ borderColor: rarityColor }} />
+                    {detail.item.enhancementLevel > 0 && (
+                      <span className="absolute bottom-0 inset-x-0 text-center bg-black/80 text-gold text-[11px] font-bold py-0.5 leading-none">
+                        +{detail.item.enhancementLevel}
+                      </span>
+                    )}
+                  </div>
+                  <div className="min-w-0 pt-1">
+                    <DialogTitle className="text-sm font-display leading-tight" style={{ color: rarityColor }}>
+                      {detail.item.name}
+                    </DialogTitle>
+                    <div className="text-[11px] text-muted-foreground mt-1">
+                      {('slot' in detail.item && detail.item.slot && SLOT_RU[detail.item.slot]) || ITEM_TYPE_RU[detail.item.type]} • {RARITY_NAMES_RU[detail.item.rarity]}
+                      {detail.item.quantity > 1 && ` • x${detail.item.quantity}`}
+                    </div>
+                    {detail.item.affixTier && AFFIX_TIER_RU[detail.item.affixTier] && (
+                      <Badge className="mt-1.5 text-[10px]" style={{ backgroundColor: AFFIX_TIER_COLORS[detail.item.affixTier] + '20', color: AFFIX_TIER_COLORS[detail.item.affixTier] }}>
+                        {AFFIX_TIER_RU[detail.item.affixTier]}
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+
+                <div className="px-4 space-y-3 pb-4 max-h-[50vh] overflow-y-auto">
+                  {Object.keys(detailStats).length > 0 && (
+                    <div>
+                      <div className="text-[10px] uppercase tracking-wide text-muted-foreground/70 font-semibold mb-1">Характеристики</div>
+                      <div className="rounded-lg border border-border/60 divide-y divide-border/40 overflow-hidden">
+                        {Object.entries(detailStats).map(([k, v]) => (
+                          <div key={k} className="flex items-center justify-between px-2.5 py-1.5 text-xs bg-secondary/10">
+                            <span className="text-muted-foreground">{statLabel(k)}</span>
+                            <span className="font-semibold text-gold">+{v}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {detailAffixes.length > 0 && (
+                    <div>
+                      <div className="text-[10px] uppercase tracking-wide text-muted-foreground/70 font-semibold mb-1">Аффиксы</div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {detailAffixes.map((a, i) => (
+                          <span key={i} className="text-[11px] px-2 py-1 rounded-md bg-secondary/30 border border-border/60">
+                            {a.labelRu} <span className="text-primary font-semibold">+{a.value}</span>
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Флейвор-текст базового предмета (ITEMS[].descriptionRu, game-data.ts) — часть
+                      предметов (легендарки/мифики) уже написана в духе Dark Souls, теперь в
+                      отдельной оформленной панели вместо мелкого курсива под чертой. */}
+                  {baseItem?.descriptionRu && (
+                    <div className="rounded-lg border border-border/50 bg-secondary/10 px-3 py-2">
+                      <p className="text-[11px] text-muted-foreground leading-relaxed italic">{baseItem.descriptionRu}</p>
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex flex-col gap-1.5 px-4 pb-4">
+                  {detail.source === 'stash' ? (
+                    <Button onClick={() => { onRetrieveItem(detail.item.id); setDetail(null); }} disabled={loading}>
+                      Достать в инвентарь
+                    </Button>
+                  ) : detail.source === 'vault' ? (
+                    <Button onClick={() => { onRetrieveFromVault(detail.item.id); setDetail(null); }} disabled={vaultTransferring}>
+                      Достать в инвентарь
+                    </Button>
+                  ) : (
+                    <>
+                      {(detail.item as InventoryItem).equipped ? (
+                        <Button variant="outline" className="border-border" onClick={() => { onEquip(detail.item.id); setDetail(null); }} disabled={loading}>
+                          Снять
                         </Button>
-                        {vaultAvailable && (
+                      ) : (
+                        <>
+                          {canEquip && (
+                            <Button onClick={() => { onEquip(detail.item.id); setDetail(null); }} disabled={loading}>
+                              Надеть
+                            </Button>
+                          )}
+                          {canUse && (
+                            <Button variant="outline" className="border-border" onClick={() => { onUseItem(detail.item.id); setDetail(null); }} disabled={loading}>
+                              Использовать
+                            </Button>
+                          )}
+                          {canLearn && (
+                            <Button variant="outline" className="border-gold/50 text-gold" onClick={() => { onLearnBlueprint(detail.item.id); setDetail(null); }} disabled={loading}>
+                              📜 Изучить
+                            </Button>
+                          )}
                           <Button
                             size="sm"
                             variant="outline"
                             className="border-border"
-                            onClick={() => { onStoreToVault(detail.item.id); setDetail(null); }}
-                            disabled={vaultTransferring || vaultItems.length >= vaultCapacity}
+                            onClick={() => { onStoreItem(detail.item.id); setDetail(null); }}
+                            disabled={loading || stashItems.length >= stashCapacity}
                           >
-                            📦 В общий сейф
+                            🗄️ В хранилище
                           </Button>
-                        )}
-                      </>
-                    )}
-                  </>
-                )}
-              </div>
-            </>
-          )}
+                          {vaultAvailable && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="border-border"
+                              onClick={() => { onStoreToVault(detail.item.id); setDetail(null); }}
+                              disabled={vaultTransferring || vaultItems.length >= vaultCapacity}
+                            >
+                              📦 В общий сейф
+                            </Button>
+                          )}
+                        </>
+                      )}
+                    </>
+                  )}
+                </div>
+              </>
+            );
+          })()}
         </DialogContent>
       </Dialog>
     </TabsContent>

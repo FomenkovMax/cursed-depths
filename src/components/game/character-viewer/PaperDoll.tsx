@@ -88,11 +88,11 @@ const SILHOUETTE_SHAPES: { className: string; style: CSSProperties }[] = [
   { className: 'absolute rounded-full bg-secondary/40 border border-border/50', style: { width: '13%', height: '28%', top: '58%', left: '62%', transform: 'translateX(-50%)' } },
 ];
 
-/** Портрет персонажа в полный рост: реальный full-body арт класса (portraitSrc) как фон, поверх
- * которого разложены иконки надетых предметов — голова/амулет/тело/оружие/руки/кольца/ноги на
- * тех же анатомических позициях, что и раньше, просто теперь поверх настоящей иллюстрации, а не
- * плоского силуэта. Без portraitSrc (не должно случаться — 26/26 классов покрыты) откатывается на
- * прежний CSS-силуэт, чтобы ничего не заглушить. Обновляется вслед за player.inventory. */
+/** Портрет персонажа в полный рост: реальный full-body арт класса (portraitSrc) как фон, полностью
+ * открытый в центре кадра — иконки надетых предметов расставлены по левому/правому краю
+ * (paperDollSlots.ts), а не поверх фигуры, чтобы не перекрывать портрет. Без portraitSrc (не
+ * должно случаться — 26/26 классов покрыты) откатывается на прежний CSS-силуэт, чтобы ничего не
+ * заглушить. Обновляется вслед за player.inventory. */
 export function PaperDoll({ equipped, onSelect, portraitSrc }: PaperDollProps) {
   const bySlot = new Map<PaperDollSlotKey, InventoryItem>();
   for (const item of equipped) {
@@ -113,13 +113,13 @@ export function PaperDoll({ equipped, onSelect, portraitSrc }: PaperDollProps) {
         ))
       )}
 
-      {PAPER_DOLL_SLOTS.map(({ slot, top, left }) => {
+      {PAPER_DOLL_SLOTS.map(({ slot, top, side }) => {
         const item = bySlot.get(slot);
         return (
           <div
             key={slot}
-            className="absolute flex flex-col items-center gap-0.5 w-14"
-            style={{ top, left, transform: 'translate(-50%, -50%)' }}
+            className="absolute flex flex-col items-center gap-0.5 w-12"
+            style={{ top, [side]: '3%', transform: 'translateY(-50%)' }}
           >
             {item ? (
               <ItemIconTile item={item} equipped onClick={() => onSelect(item)} />

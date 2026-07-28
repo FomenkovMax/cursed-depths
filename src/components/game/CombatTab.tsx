@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { ItemIconTile } from '@/components/game/ItemIconTile';
+import { AssetIcon } from '@/components/game/AssetIcon';
 import { ENEMIES } from '@/lib/game-data';
 import { manaCostForStage } from '@/lib/combat/combat-engine';
 import type { BossFightState } from '@/lib/combat/boss-mechanics';
@@ -11,7 +12,7 @@ import { PlayerData, AbilityData, CombatLogEntry } from '@/lib/game-types';
 import { findDungeon } from '@/lib/combat/dungeons';
 import { findDungeonModifier, heatLevelLabel } from '@/lib/combat/dungeon-modifiers';
 import { isEliteDepth } from '@/lib/combat/abyss';
-import { BOSS_PORTRAIT_IMAGES, ENEMY_ICON_IMAGES } from '@/lib/asset-icons';
+import { BOSS_PORTRAIT_IMAGES, ENEMY_ICON_IMAGES, ABILITY_ICON_IMAGES } from '@/lib/asset-icons';
 
 const ACTIVE_EFFECT_LABELS: Record<string, string> = {
   player_damage_buff: 'Урон усилен',
@@ -302,10 +303,13 @@ export function CombatTab({
                             onClick={() => onCombatAction('ability', undefined, ability.id)}
                             title={ability.description}
                           >
-                            <div className="text-left">
-                              <div className="font-medium">{ability.icon} {ability.name}</div>
-                              <div className="text-[10px] text-muted-foreground">
-                                {cooldown > 0 ? `КД: ${cooldown} х.` : `${manaCost} маны`}
+                            <div className="text-left flex items-center gap-1.5">
+                              <AssetIcon src={ABILITY_ICON_IMAGES[ability.slug]} emoji={ability.icon} size={20} className="text-base shrink-0" />
+                              <div>
+                                <div className="font-medium">{ability.name}</div>
+                                <div className="text-[10px] text-muted-foreground">
+                                  {cooldown > 0 ? `КД: ${cooldown} х.` : `${manaCost} маны`}
+                                </div>
                               </div>
                             </div>
                           </Button>

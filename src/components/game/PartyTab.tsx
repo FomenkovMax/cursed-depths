@@ -6,7 +6,8 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { manaCostForStage } from '@/lib/combat/combat-engine';
 import { PartyData, PartyCombatStateResponse, AbilityData } from '@/lib/game-types';
-import { BOSS_PORTRAIT_IMAGES, ENEMY_ICON_IMAGES } from '@/lib/asset-icons';
+import { BOSS_PORTRAIT_IMAGES, ENEMY_ICON_IMAGES, ABILITY_ICON_IMAGES } from '@/lib/asset-icons';
+import { AssetIcon } from '@/components/game/AssetIcon';
 
 // Личные баффы/активированные стойки участника (см. PartyMemberEffectKind в
 // lib/combat/party-combat-engine.ts) — те же ярлыки, что и в CombatTab.tsx для одиночного боя, плюс
@@ -257,10 +258,13 @@ export function PartyTab({
                               onClick={() => onCombatAction('ability', ability.id)}
                               title={ability.description}
                             >
-                              <div className="text-left">
-                                <div className="font-medium">{ability.icon} {ability.name}</div>
-                                <div className="text-[10px] text-muted-foreground">
-                                  {cooldown > 0 ? `КД: ${cooldown} х.` : `${manaCost} маны`}
+                              <div className="text-left flex items-center gap-1.5">
+                                <AssetIcon src={ABILITY_ICON_IMAGES[ability.slug]} emoji={ability.icon} size={20} className="text-base shrink-0" />
+                                <div>
+                                  <div className="font-medium">{ability.name}</div>
+                                  <div className="text-[10px] text-muted-foreground">
+                                    {cooldown > 0 ? `КД: ${cooldown} х.` : `${manaCost} маны`}
+                                  </div>
                                 </div>
                               </div>
                             </Button>

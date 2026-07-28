@@ -1,6 +1,7 @@
 import { TabsContent } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
 import { WeeklyChallengeStateView, WeeklyChallengeAttemptResultView } from '@/lib/game-types';
+import { BOSS_PORTRAIT_IMAGES } from '@/lib/asset-icons';
 
 interface WeeklyChallengeTabProps {
   state: WeeklyChallengeStateView | null;
@@ -35,7 +36,11 @@ export function WeeklyChallengeTab({ state, loading, attempting, lastResult, onA
 
       <Card className="border-border">
         <CardContent className="p-4 text-center space-y-2">
-          <div className="text-3xl">{state.target.icon}</div>
+          {BOSS_PORTRAIT_IMAGES[state.target.enemyId] ? (
+            <img src={BOSS_PORTRAIT_IMAGES[state.target.enemyId]} alt="" className="w-16 h-16 mx-auto rounded object-cover object-top" />
+          ) : (
+            <div className="text-3xl">{state.target.icon}</div>
+          )}
           <div className="text-sm font-medium">{state.target.nameRu}</div>
           <div className="text-[10px] text-muted-foreground">Неделя {state.weekId}</div>
 

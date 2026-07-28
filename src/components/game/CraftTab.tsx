@@ -32,6 +32,16 @@ const TEMPER_SCROLL_ITEM_ID = 'tempering_scroll';
 export function CraftTab({ player, loading, canCraftRecipe, learnedRecipeIds, onCraft, onApplyCurrency, onTemper, crownShards, onEnchantAffix, enchanting }: CraftTabProps) {
   const playerInventory = player?.inventory || [];
   const [selectedTargetId, setSelectedTargetId] = useState<string | null>(null);
+  // Локальный UI-стейт крафт-фидбека (какая иконка результата сейчас "вспыхивает") — раньше
+  // у крафта не было вообще никакой визуальной реакции на успех, только счётчик материалов.
+  // Живёт в компоненте, не в page.tsx: чисто презентационный таймер, не игровое состояние.
+  const [justCraftedId, setJustCraftedId] = useState<string | null>(null);
+
+  const handleCraft = (recipeId: string) => {
+    onCraft(recipeId);
+    setJustCraftedId(recipeId);
+    setTimeout(() => setJustCraftedId(id => (id === recipeId ? null : id)), 600);
+  };
   const gearItems = playerInventory.filter(i => !i.equipped && ['weapon', 'armor', 'accessory'].includes(i.type));
   const currencyItems = playerInventory.filter(i => i.type === 'currency');
   const selectedTarget = gearItems.find(i => i.id === selectedTargetId) ?? null;
@@ -282,7 +292,9 @@ export function CraftTab({ player, loading, canCraftRecipe, learnedRecipeIds, on
                         <span className="text-[10px] text-muted-foreground">Результат:</span>
                         {resultItem && (
                           <span className="text-xs font-medium inline-flex items-center gap-1" style={{ color: RARITY_COLORS[resultItem.rarity] }}>
-                            <AssetIcon src={ITEM_ICON_IMAGES[resultItem.id]} emoji={resultItem.icon} size={14} />
+                            <span className={justCraftedId === recipe.id ? 'animate-craft-pulse inline-flex' : 'inline-flex'}>
+                              <AssetIcon src={ITEM_ICON_IMAGES[resultItem.id]} emoji={resultItem.icon} size={14} />
+                            </span>
                             {resultItem.nameRu}
                             {recipe.result.quantity > 1 ? ` x${recipe.result.quantity}` : ''}
                           </span>
@@ -297,7 +309,7 @@ export function CraftTab({ player, loading, canCraftRecipe, learnedRecipeIds, on
                         size="sm"
                         className="mt-2 h-7 text-xs"
                         disabled={!canCraft || loading}
-                        onClick={() => onCraft(recipe.id)}
+                        onClick={() => handleCraft(recipe.id)}
                       >
                         ⚒️ Создать
                       </Button>

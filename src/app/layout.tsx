@@ -1,7 +1,19 @@
 import type { Metadata, Viewport } from "next";
+import { Yeseva_One } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
+
+// Декоративный шрифт заголовков экранов (по референсу "Зов Теней" — двухъярусная типографика:
+// serif-заголовок vs sans-тело). Подключается один раз здесь и применяется точечно через класс
+// .font-display (globals.css) на CardTitle/DialogTitle (src/components/ui/*), а не по всему
+// проекту — так каскадом получают эффект все существующие заголовки экранов без правки page.tsx.
+const displayFont = Yeseva_One({
+  subsets: ["latin", "cyrillic"],
+  weight: "400",
+  variable: "--font-display",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "Cursed Depths — Dungeon Crawler RPG",
@@ -32,7 +44,7 @@ export default function RootLayout({
           strategy="beforeInteractive"
         />
       </head>
-      <body className="antialiased bg-background text-foreground">
+      <body className={`${displayFont.variable} antialiased bg-background text-foreground`}>
         {children}
         <Toaster />
       </body>

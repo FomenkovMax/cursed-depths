@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { BountyStateView, BountyHuntResultView } from '@/lib/game-types';
+import { BOSS_PORTRAIT_IMAGES } from '@/lib/asset-icons';
 
 interface BountyBoardPanelProps {
   state: BountyStateView | null;
@@ -39,7 +40,11 @@ export function BountyBoardPanel({ state, loading, hunting, onHunt }: BountyBoar
   return (
     <div className="space-y-2">
       <div className="p-3 rounded-lg border border-border/60 bg-secondary/10 text-center space-y-1">
-        <div className="text-2xl">{state.target.icon}</div>
+        {BOSS_PORTRAIT_IMAGES[state.target.enemyId] ? (
+          <img src={BOSS_PORTRAIT_IMAGES[state.target.enemyId]} alt="" className="w-16 h-16 mx-auto rounded object-cover object-top" />
+        ) : (
+          <div className="text-2xl">{state.target.icon}</div>
+        )}
         <div className="text-sm font-medium">{state.target.nameRu}</div>
         <div className="text-[10px] text-muted-foreground">
           Проверка: {STAT_LABEL_RU[state.stat] ?? state.stat} против Сложности {state.dc} (d20 + модификатор)

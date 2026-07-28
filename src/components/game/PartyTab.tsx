@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { manaCostForStage } from '@/lib/combat/combat-engine';
 import { PartyData, PartyCombatStateResponse, AbilityData } from '@/lib/game-types';
+import { BOSS_PORTRAIT_IMAGES, ENEMY_ICON_IMAGES } from '@/lib/asset-icons';
 
 // Личные баффы/активированные стойки участника (см. PartyMemberEffectKind в
 // lib/combat/party-combat-engine.ts) — те же ярлыки, что и в CombatTab.tsx для одиночного боя, плюс
@@ -96,7 +97,13 @@ export function PartyTab({
           <Card className="border-destructive/50">
             <CardContent className="p-4">
               <div className="flex items-center gap-3 mb-2">
-                <span className="text-3xl">{combatState.enemy.icon}</span>
+                {combatState.enemy.isBoss && BOSS_PORTRAIT_IMAGES[combatState.enemy.id] ? (
+                  <img src={BOSS_PORTRAIT_IMAGES[combatState.enemy.id]} alt="" className="w-10 h-10 object-cover object-top rounded shrink-0" />
+                ) : ENEMY_ICON_IMAGES[combatState.enemy.id] ? (
+                  <img src={ENEMY_ICON_IMAGES[combatState.enemy.id]} alt="" className="w-10 h-10 object-cover object-top rounded shrink-0" />
+                ) : (
+                  <span className="text-3xl">{combatState.enemy.icon}</span>
+                )}
                 <div>
                   <h3 className="font-bold text-sm" style={{ color: combatState.enemy.isBoss ? '#f59e0b' : '#ef4444' }}>
                     {combatState.enemy.nameRu}

@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Yeseva_One } from "next/font/google";
+import { PT_Serif } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
@@ -8,9 +8,9 @@ import { Toaster } from "@/components/ui/toaster";
 // serif-заголовок vs sans-тело). Подключается один раз здесь и применяется точечно через класс
 // .font-display (globals.css) на CardTitle/DialogTitle (src/components/ui/*), а не по всему
 // проекту — так каскадом получают эффект все существующие заголовки экранов без правки page.tsx.
-const displayFont = Yeseva_One({
+const displayFont = PT_Serif({
   subsets: ["latin", "cyrillic"],
-  weight: "400",
+  weight: ["700"],
   variable: "--font-display",
   display: "swap",
 });

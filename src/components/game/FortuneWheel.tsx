@@ -8,7 +8,7 @@ const SPIN_DURATION_MS = 3200;
 const EXTRA_SPINS = 5; // сколько полных оборотов "для эффекта" поверх довода до нужного сектора
 
 function segmentColor(kind: FortuneWheelSegmentView['kind'], rarity: string | null): string {
-  if (kind === 'item' && rarity) return RARITY_COLORS[rarity] ?? '#8b5cf6';
+  if (kind === 'item' && rarity) return RARITY_COLORS[rarity] ?? '#6c54b6';
   if (kind === 'premium_days') return '#f59e0b';
   if (kind === 'shards') return '#fbbf24';
   if (kind === 'gold') return '#eab308';

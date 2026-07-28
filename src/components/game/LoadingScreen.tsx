@@ -14,7 +14,6 @@ export function LoadingScreen() {
         className="absolute inset-0 w-full h-full object-cover"
       />
       <div className="absolute inset-0 bg-gradient-to-b from-background/60 via-background/70 to-background" />
-      <div className="relative text-6xl mb-4 animate-pulse">👑</div>
       <h1 className="relative font-display text-3xl font-bold text-primary mb-2 drop-shadow-lg">Cursed Depths</h1>
       <p className="relative text-muted-foreground text-sm">Загрузка проклятых глубин...</p>
       <div className="relative mt-4 w-48">

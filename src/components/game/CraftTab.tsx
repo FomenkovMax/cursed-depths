@@ -6,7 +6,8 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { ItemIconTile } from '@/components/game/ItemIconTile';
 import { AssetIcon } from '@/components/game/AssetIcon';
-import { CURRENCY_ICON_IMAGES, ITEM_ICON_IMAGES } from '@/lib/asset-icons';
+import { CURRENCY_ICON_IMAGES, ITEM_ICON_IMAGES, TAB_BANNER_IMAGES } from '@/lib/asset-icons';
+import { TabBanner } from '@/components/game/TabBanner';
 import { CRAFTING_RECIPES, ITEMS, RARITY_COLORS } from '@/lib/game-data';
 import { PlayerData, AFFIX_TIER_RU, AFFIX_TIER_COLORS, parseStats, parseAffixes } from '@/lib/game-types';
 import { CURRENCY_IDS, enchantCostForReroll, type AffixTierName } from '@/lib/economy/item-affixes';
@@ -48,10 +49,7 @@ export function CraftTab({ player, loading, canCraftRecipe, learnedRecipeIds, on
 
   return (
     <TabsContent value="craft" className="flex-1 overflow-y-auto p-4 space-y-3 m-0">
-      <div className="text-center mb-2">
-        <h3 className="font-bold text-sm">⚒️ Кузница</h3>
-        <p className="text-xs text-muted-foreground">Создавайте предметы из материалов</p>
-      </div>
+      <TabBanner src={TAB_BANNER_IMAGES.craft} title="Кузница" subtitle="Создавайте предметы из материалов" />
 
       {/* Current materials */}
       <Card className="border-border">

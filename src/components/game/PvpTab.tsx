@@ -5,6 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { PvpOpponentView, PvpFightResultView, PvpLeagueView, PvpSeasonRewardView, SeasonStandingView } from '@/lib/game-types';
+import { TabBanner } from '@/components/game/TabBanner';
+import { TAB_BANNER_IMAGES } from '@/lib/asset-icons';
 
 interface PvpTabProps {
   opponents: PvpOpponentView[];
@@ -40,10 +42,11 @@ export function PvpTab({
 
   return (
     <TabsContent value="pvp" className="flex-1 overflow-y-auto p-4 space-y-3 m-0">
-      <div className="text-center mb-2">
-        <h3 className="font-bold text-sm">⚔️ Арена</h3>
-        <p className="text-xs text-muted-foreground">Асинхронные бои — мгновенный симулированный поединок, ваши реальные ХП не тратятся</p>
-      </div>
+      <TabBanner
+        src={TAB_BANNER_IMAGES.pvp}
+        title="Арена"
+        subtitle="Асинхронные бои — мгновенный симулированный поединок, ваши реальные ХП не тратятся"
+      />
 
       <Card className="border-gold/40 bg-gold/5">
         <CardContent className="p-3 space-y-1.5">

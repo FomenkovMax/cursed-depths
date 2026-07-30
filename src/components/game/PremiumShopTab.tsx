@@ -10,6 +10,8 @@ import { ExpeditionPanel } from '@/components/game/ExpeditionPanel';
 import { BountyBoardPanel } from '@/components/game/BountyBoardPanel';
 import { TitlesPanel } from '@/components/game/TitlesPanel';
 import { BattlePassPanel } from '@/components/game/BattlePassPanel';
+import { TabBanner } from '@/components/game/TabBanner';
+import { TAB_BANNER_IMAGES } from '@/lib/asset-icons';
 
 interface PremiumShopTabProps {
   state: PremiumShopStateView | null;
@@ -68,12 +70,11 @@ export function PremiumShopTab({
 
   return (
     <TabsContent value="premium" className="flex-1 overflow-y-auto p-4 space-y-4 m-0">
-      <div className="text-center mb-2">
-        <h3 className="font-bold text-sm">👑 Осколки Короны</h3>
-        <p className="text-xs text-muted-foreground">
-          Осколки доспеха короля, отказавшегося умирать по правилам Столпов
-        </p>
-      </div>
+      <TabBanner
+        src={TAB_BANNER_IMAGES.premium}
+        title="Осколки Короны"
+        subtitle="Осколки доспеха короля, отказавшегося умирать по правилам Столпов"
+      />
 
       <Card className="border-gold/50 bg-gold/5">
         <CardContent className="p-4 flex items-center justify-between">

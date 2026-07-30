@@ -494,3 +494,24 @@ export const ABILITY_ICON_IMAGES: Record<string, string> = {
   volley: '/images/abilities/volley.webp',
   'weapon-blessing': '/images/abilities/weapon-blessing.webp',
 };
+
+// Декоративные баннеры-заставки экранов (GameTab, game-types.ts) — по фидбогу "хочется арт
+// разный, но в одной стилистике, как карта": та же painterly dark-fantasy серия, что и
+// LOCATION_IMAGES/BOSS_PORTRAIT_IMAGES выше, но сюжет каждой сцены завязан на конкретный экран
+// (кузница для крафта, аукционный зал для аукциона и т.п.), а не на игровую локацию. 16:9,
+// 640px webp — тот же формат, что и у LOCATION_IMAGES.
+export const TAB_BANNER_IMAGES: Record<string, string> = {
+  guild: '/images/banners/guild.webp',
+  market: '/images/banners/market.webp',
+  auction: '/images/banners/auction.webp',
+  craft: '/images/banners/craft.webp',
+  premium: '/images/banners/premium.webp',
+  trophies: '/images/banners/trophies.webp',
+  pvp: '/images/banners/pvp.webp',
+  leaderboard: '/images/banners/leaderboard.webp',
+  codex: '/images/banners/codex.webp',
+  quests: '/images/banners/quests.webp',
+  achievements: '/images/banners/achievements.webp',
+  characters: '/images/banners/characters.webp',
+  'weekly-challenge': '/images/banners/weekly-challenge.webp',
+};

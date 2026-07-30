@@ -4,6 +4,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { PlayerData, parseStats } from '@/lib/game-types';
+import { TabBanner } from '@/components/game/TabBanner';
+import { TAB_BANNER_IMAGES } from '@/lib/asset-icons';
 
 interface QuestsTabProps {
   player: PlayerData | null;
@@ -16,10 +18,7 @@ export function QuestsTab({ player, loading, onClaimQuest }: QuestsTabProps) {
 
   return (
     <TabsContent value="quests" className="flex-1 overflow-y-auto p-4 space-y-3 m-0">
-      <div className="text-center mb-2">
-        <h3 className="font-bold text-sm">Квесты</h3>
-        <p className="text-xs text-muted-foreground">Выполняйте задания для наград</p>
-      </div>
+      <TabBanner src={TAB_BANNER_IMAGES.quests} title="Квесты" subtitle="Выполняйте задания для наград" />
 
       {playerQuests.length === 0 ? (
         <Card className="border-border">

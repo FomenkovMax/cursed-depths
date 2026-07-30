@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { LOCATIONS } from '@/lib/game-data';
 import { PlayerData, WaypointsStateView } from '@/lib/game-types';
 import { LOCATION_IMAGES } from '@/lib/asset-icons';
+import { TabBanner } from '@/components/game/TabBanner';
 
 interface MapTabProps {
   player: PlayerData | null;
@@ -20,10 +21,14 @@ interface MapTabProps {
 export function MapTab({ player, location, loading, onTravel, waypointsState, waypointsLoading, fastTravellingTo, onFastTravel }: MapTabProps) {
   return (
     <TabsContent value="map" className="flex-1 overflow-y-auto p-4 space-y-3 m-0">
-      <div className="text-center mb-2">
-        <h3 className="font-bold text-sm">Карта Проклятых Глубин</h3>
-        <p className="text-xs text-muted-foreground">Выберите локацию для путешествия</p>
-      </div>
+      {/* Баннер — арт текущей локации игрока (LOCATION_IMAGES уже покрывают 37/37), а не новая
+          генерация: сама вкладка "Карта" не привязана к одной сцене, зато "вы здесь" — это то,
+          что реально знает игрок в этот момент. */}
+      <TabBanner
+        src={location && LOCATION_IMAGES[location.id] ? LOCATION_IMAGES[location.id] : LOCATION_IMAGES.town}
+        title="Карта Проклятых Глубин"
+        subtitle={location ? `Вы здесь: ${location.nameRu} — выберите локацию для путешествия` : 'Выберите локацию для путешествия'}
+      />
 
       {/* Быстрое перемещение — премиум-эксклюзив (lib/economy/fast-travel.ts): телепорт напрямую в любую
           УЖЕ посещённую локацию, минуя граф связей ниже (тот остаётся бесплатным и мгновенным,
@@ -79,7 +84,7 @@ export function MapTab({ player, location, loading, onTravel, waypointsState, wa
             <CardContent className="p-3">
               <div className="flex items-center gap-3">
                 {LOCATION_IMAGES[loc.id] ? (
-                  <img src={LOCATION_IMAGES[loc.id]} alt="" className="w-12 h-12 rounded-md object-cover shrink-0" />
+                  <img src={LOCATION_IMAGES[loc.id]} alt="" className="w-20 h-14 rounded-md object-cover shrink-0" />
                 ) : (
                   <span className="text-2xl">{loc.icon}</span>
                 )}

@@ -39,17 +39,29 @@ export function BountyBoardPanel({ state, loading, hunting, onHunt }: BountyBoar
 
   return (
     <div className="space-y-2">
-      <div className="p-3 rounded-lg border border-border/60 bg-secondary/10 text-center space-y-1">
+      {/* Full-body портрет цели вместо обрезанной иконки 64×64 (тот же баг и тот же фикс, что и
+          в WeeklyChallengeTab.tsx — портрет боссов хранится full-body 480×643, крохотный квадрат
+          с object-top срезал всё, кроме макушки). */}
+      <div className="rounded-lg border border-border/60 bg-secondary/10 overflow-hidden">
         {BOSS_PORTRAIT_IMAGES[state.target.enemyId] ? (
-          <img src={BOSS_PORTRAIT_IMAGES[state.target.enemyId]} alt="" className="w-16 h-16 mx-auto rounded object-cover object-top" />
+          <div className="relative w-full aspect-[3/4] max-h-64 overflow-hidden bg-secondary/20">
+            <img src={BOSS_PORTRAIT_IMAGES[state.target.enemyId]} alt="" className="w-full h-full object-cover object-top" />
+            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/35 to-transparent px-3 pt-8 pb-2">
+              <div className="text-sm font-medium text-white">{state.target.nameRu}</div>
+            </div>
+          </div>
         ) : (
-          <div className="text-2xl">{state.target.icon}</div>
+          <div className="pt-3 text-center">
+            <div className="text-2xl">{state.target.icon}</div>
+            <div className="text-sm font-medium">{state.target.nameRu}</div>
+          </div>
         )}
-        <div className="text-sm font-medium">{state.target.nameRu}</div>
-        <div className="text-[10px] text-muted-foreground">
-          Проверка: {STAT_LABEL_RU[state.stat] ?? state.stat} против Сложности {state.dc} (d20 + модификатор)
+        <div className="p-3 text-center space-y-1">
+          <div className="text-[10px] text-muted-foreground">
+            Проверка: {STAT_LABEL_RU[state.stat] ?? state.stat} против Сложности {state.dc} (d20 + модификатор)
+          </div>
+          <div className="text-[10px] text-gold">Награда: гарантированный трофей + 👑 {state.bonusGold} золота (× премиум-бонус)</div>
         </div>
-        <div className="text-[10px] text-gold">Награда: гарантированный трофей + 👑 {state.bonusGold} золота (× премиум-бонус)</div>
       </div>
 
       {result && (

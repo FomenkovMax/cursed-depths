@@ -5,6 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { CharacterSlotsStateView, RaceData } from '@/lib/game-types';
+import { TabBanner } from '@/components/game/TabBanner';
+import { TAB_BANNER_IMAGES } from '@/lib/asset-icons';
 
 interface CharacterSlotsTabProps {
   state: CharacterSlotsStateView | null;
@@ -36,6 +38,7 @@ export function CharacterSlotsTab({ state, loading, creating, switchingId, onCre
 
   return (
     <TabsContent value="characters" className="flex-1 overflow-y-auto p-4 space-y-4 m-0">
+      <TabBanner src={TAB_BANNER_IMAGES.characters} title="Персонажи аккаунта" />
       <Card className="border-border">
         <CardHeader className="pb-2 pt-3 px-4">
           <CardTitle className="text-sm">🎭 Персонажи аккаунта</CardTitle>

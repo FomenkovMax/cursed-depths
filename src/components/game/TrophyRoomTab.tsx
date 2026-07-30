@@ -2,6 +2,8 @@ import { TabsContent } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { TrophyRoomStateView, TrophyEntryView } from '@/lib/game-types';
+import { TabBanner } from '@/components/game/TabBanner';
+import { TAB_BANNER_IMAGES } from '@/lib/asset-icons';
 
 interface TrophyRoomTabProps {
   state: TrophyRoomStateView | null;
@@ -60,12 +62,11 @@ function TrophyCard({ t }: { t: TrophyEntryView }) {
 export function TrophyRoomTab({ state, loading }: TrophyRoomTabProps) {
   return (
     <TabsContent value="trophies" className="flex-1 overflow-y-auto p-4 space-y-3 m-0">
-      <div className="text-center mb-2">
-        <h3 className="font-bold text-sm">🎖️ Комната трофеев</h3>
-        {state?.premiumActive && (
-          <p className="text-xs text-muted-foreground">Собрано {state.collectedCount} из {state.totalCount}</p>
-        )}
-      </div>
+      <TabBanner
+        src={TAB_BANNER_IMAGES.trophies}
+        title="Комната трофеев"
+        subtitle={state?.premiumActive ? `Собрано ${state.collectedCount} из ${state.totalCount}` : undefined}
+      />
 
       {!state?.premiumActive ? (
         <Card className="border-border">

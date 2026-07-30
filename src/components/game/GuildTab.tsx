@@ -8,8 +8,9 @@ import { Progress } from '@/components/ui/progress';
 import { GuildData, WorldBossStateView, WorldBossAttackResultView, FortressStateView, FortressAssaultResultView, GuildRaidBossStateView, GuildRaidAttackResultView } from '@/lib/game-types';
 import { findTitle } from '@/lib/social/titles';
 import { GUILD_UPGRADES, canUnlockGuildUpgrade, type GuildBuildingId } from '@/lib/social/guild-upgrades';
-import { TITLE_ICON_IMAGES } from '@/lib/asset-icons';
+import { TITLE_ICON_IMAGES, TAB_BANNER_IMAGES } from '@/lib/asset-icons';
 import { AssetIcon } from '@/components/game/AssetIcon';
+import { TabBanner } from '@/components/game/TabBanner';
 
 interface GuildTabProps {
   playerId: string | null;
@@ -99,6 +100,7 @@ export function GuildTab({
 
   return (
     <TabsContent value="guild" className="flex-1 overflow-y-auto p-4 space-y-4 m-0">
+      <TabBanner src={TAB_BANNER_IMAGES.guild} title="Гильдия" />
       {/* Мировой босс — общая цель ВСЕХ игроков разом, не привязана к гильдии (lib/social/world-boss.ts).
           Живёт здесь, а не отдельной вкладкой, чтобы не раздувать и без того тесную панель вкладок. */}
       {worldBoss && (

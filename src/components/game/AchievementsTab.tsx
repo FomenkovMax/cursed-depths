@@ -3,6 +3,8 @@ import { TabsContent } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Progress } from '@/components/ui/progress';
+import { TabBanner } from '@/components/game/TabBanner';
+import { TAB_BANNER_IMAGES } from '@/lib/asset-icons';
 import { AchievementEntry } from '@/lib/game-types';
 
 interface AchievementsTabProps {
@@ -32,12 +34,11 @@ export function AchievementsTab({ achievements, loading }: AchievementsTabProps)
 
   return (
     <TabsContent value="achievements" className="flex-1 overflow-y-auto p-4 space-y-3 m-0">
-      <div className="text-center mb-2">
-        <h3 className="font-bold text-sm">Достижения</h3>
-        <p className="text-xs text-muted-foreground">
-          Разблокировано {unlockedCount} из {achievements.length}
-        </p>
-      </div>
+      <TabBanner
+        src={TAB_BANNER_IMAGES.achievements}
+        title="Достижения"
+        subtitle={`Разблокировано ${unlockedCount} из ${achievements.length}`}
+      />
 
       {loading && achievements.length === 0 ? (
         <Card className="border-border">

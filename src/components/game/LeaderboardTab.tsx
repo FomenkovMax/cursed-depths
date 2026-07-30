@@ -3,8 +3,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { PlayerData } from '@/lib/game-types';
 import { findTitle } from '@/lib/social/titles';
-import { TITLE_ICON_IMAGES } from '@/lib/asset-icons';
+import { TITLE_ICON_IMAGES, TAB_BANNER_IMAGES } from '@/lib/asset-icons';
 import { AssetIcon } from '@/components/game/AssetIcon';
+import { TabBanner } from '@/components/game/TabBanner';
 
 export interface LeaderboardEntry {
   id: string;
@@ -40,12 +41,11 @@ const RANK_MEDALS = ['🥇', '🥈', '🥉'];
 export function LeaderboardTab({ player, leaderboard, loading, currentSeason, previousSeason, previousSeasonWinners }: LeaderboardTabProps) {
   return (
     <TabsContent value="leaderboard" className="flex-1 overflow-y-auto p-4 space-y-3 m-0">
-      <div className="text-center mb-2">
-        <h3 className="font-bold text-sm">Таблица лидеров</h3>
-        <p className="text-xs text-muted-foreground">
-          Топ-10 искателей приключений по уровню{currentSeason ? ` • сезон ${currentSeason}` : ''}
-        </p>
-      </div>
+      <TabBanner
+        src={TAB_BANNER_IMAGES.leaderboard}
+        title="Таблица лидеров"
+        subtitle={`Топ-10 искателей приключений по уровню${currentSeason ? ` • сезон ${currentSeason}` : ''}`}
+      />
 
       {/* Награды за прошлый сезон — топ-3 получают золото и опыт в начале каждого месяца
           (см. GET /api/leaderboard, lib/social/seasons.ts). Прогресс игроков при этом НЕ сбрасывается. */}

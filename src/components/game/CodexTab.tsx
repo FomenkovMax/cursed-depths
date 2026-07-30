@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { TabsContent } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { TabBanner } from '@/components/game/TabBanner';
+import { TAB_BANNER_IMAGES } from '@/lib/asset-icons';
 import { CodexEntryView } from '@/lib/game-types';
 
 interface CodexTabProps {
@@ -38,12 +40,11 @@ export function CodexTab({ entries, loading }: CodexTabProps) {
 
   return (
     <TabsContent value="codex" className="flex-1 overflow-y-auto p-4 space-y-3 m-0">
-      <div className="text-center mb-2">
-        <h3 className="font-bold text-sm">📖 Лор-кодекс</h3>
-        <p className="text-xs text-muted-foreground">
-          Открыто {unlockedCount} из {entries.length} записей — играйте, чтобы узнать больше о мире
-        </p>
-      </div>
+      <TabBanner
+        src={TAB_BANNER_IMAGES.codex}
+        title="Лор-кодекс"
+        subtitle={`Открыто ${unlockedCount} из ${entries.length} записей — играйте, чтобы узнать больше о мире`}
+      />
 
       {loading && entries.length === 0 ? (
         <Card className="border-border">

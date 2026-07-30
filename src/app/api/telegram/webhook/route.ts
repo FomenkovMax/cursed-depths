@@ -116,7 +116,7 @@ export async function POST(req: NextRequest) {
         : guildMatch
           ? `🏰 Вас позвали в гильдию! Нажмите кнопку ниже, чтобы открыть игру и присоединиться.`
           : text === '/start'
-            ? `⚔️ Добро пожаловать в **Cursed Depths**!\n\n Dungeon crawler по правилам D&D 5e.\n\n🗡️ 6 рас • ⚔️ 26 классов • 🏰 37 локаций\n🐲 97 монстров • 📦 54 предмета\n\nНажмите кнопку ниже, чтобы начать!`
+            ? `⚔️ Добро пожаловать в *Cursed Depths*!\n\n Dungeon crawler по правилам D&D 5e.\n\n🗡️ 6 рас • ⚔️ 26 классов • 🏰 37 локаций\n🐲 97 монстров • 📦 54 предмета\n\nНажмите кнопку ниже, чтобы начать!`
             : `🎮 Откройте Cursed Depths для игры!`;
 
       await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
@@ -135,7 +135,7 @@ export async function POST(req: NextRequest) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           chat_id: chatId,
-          text: '📖 **Cursed Depths — Помощь**\n\n/start — Начать игру\n/play — Открыть игру\n/help — Эта справка\n\n🎮 Создайте персонажа, исследуйте подземелья, сражайтесь с монстрами и становитесь сильнее!',
+          text: '📖 *Cursed Depths — Помощь*\n\n/start — Начать игру\n/play — Открыть игру\n/help — Эта справка\n\n🎮 Создайте персонажа, исследуйте подземелья, сражайтесь с монстрами и становитесь сильнее!',
           parse_mode: 'Markdown',
         }),
       });

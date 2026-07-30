@@ -8,8 +8,9 @@ import { ItemIconTile } from '@/components/game/ItemIconTile';
 import { AssetIcon } from '@/components/game/AssetIcon';
 import { CURRENCY_ICON_IMAGES, ITEM_ICON_IMAGES, TAB_BANNER_IMAGES } from '@/lib/asset-icons';
 import { TabBanner } from '@/components/game/TabBanner';
+import { ItemDetailCard } from '@/components/game/ItemDetailCard';
 import { CRAFTING_RECIPES, ITEMS, RARITY_COLORS } from '@/lib/game-data';
-import { PlayerData, AFFIX_TIER_RU, AFFIX_TIER_COLORS, parseStats, parseAffixes } from '@/lib/game-types';
+import { PlayerData, parseAffixes } from '@/lib/game-types';
 import { CURRENCY_IDS, enchantCostForReroll, type AffixTierName } from '@/lib/economy/item-affixes';
 import { MAX_ENHANCEMENT_LEVEL, temperSuccessChance } from '@/lib/economy/item-enhancement';
 
@@ -95,21 +96,8 @@ export function CraftTab({ player, loading, canCraftRecipe, learnedRecipeIds, on
               </div>
 
               {selectedTarget && (
-                <div className="rounded-md border border-border/60 p-2 bg-secondary/20">
-                  <div className="text-xs font-medium" style={{ color: RARITY_COLORS[selectedTarget.rarity] }}>
-                    {selectedTarget.name}
-                    {selectedTarget.enhancementLevel > 0 && <span className="ml-1 text-gold">+{selectedTarget.enhancementLevel}</span>}
-                    {selectedTarget.affixTier && AFFIX_TIER_RU[selectedTarget.affixTier] && (
-                      <span className="ml-1 text-[9px]" style={{ color: AFFIX_TIER_COLORS[selectedTarget.affixTier] }}>
-                        [{AFFIX_TIER_RU[selectedTarget.affixTier]}]
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex gap-1 mt-1 flex-wrap">
-                    {Object.entries(parseStats(selectedTarget.stats)).map(([k, v]) => (
-                      <Badge key={k} variant="outline" className="text-[9px] h-4 px-1">{k} +{v}</Badge>
-                    ))}
-                  </div>
+                <div className="space-y-2">
+                  <ItemDetailCard item={selectedTarget} />
                   {parseAffixes(selectedTarget.affixes).length > 0 && (() => {
                     const tier = selectedTarget.affixTier as AffixTierName | null;
                     const enchantCost = tier ? enchantCostForReroll(tier, selectedTarget.enchantRerolls) : null;

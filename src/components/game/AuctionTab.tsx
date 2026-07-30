@@ -10,6 +10,7 @@ import { PlayerData, AuctionStateView, AFFIX_TIER_RU, AFFIX_TIER_COLORS, parseSt
 import { ITEM_ICON_IMAGES, CURRENCY_ICON_IMAGES, TAB_BANNER_IMAGES } from '@/lib/asset-icons';
 import { AssetIcon } from '@/components/game/AssetIcon';
 import { TabBanner } from '@/components/game/TabBanner';
+import { ItemDetailCard } from '@/components/game/ItemDetailCard';
 
 interface AuctionTabProps {
   player: PlayerData | null;
@@ -94,11 +95,10 @@ export function AuctionTab({ player, state, loading, onListItem, onBid, onCancel
                   ))}
                 </div>
               </div>
-              {selectedItemId && (
-                <p className="text-[10px] text-muted-foreground">
-                  {sellableItems.find(i => i.id === selectedItemId)?.name}
-                </p>
-              )}
+              {selectedItemId && (() => {
+                const item = sellableItems.find(i => i.id === selectedItemId);
+                return item ? <ItemDetailCard item={item} /> : null;
+              })()}
               <div className="flex gap-1.5">
                 {state.durations.map(d => (
                   <Button

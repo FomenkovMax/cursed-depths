@@ -10,6 +10,7 @@ import { PlayerData, MarketListingView, AFFIX_TIER_RU, AFFIX_TIER_COLORS, parseS
 import { ITEM_ICON_IMAGES, CURRENCY_ICON_IMAGES, TAB_BANNER_IMAGES } from '@/lib/asset-icons';
 import { AssetIcon } from '@/components/game/AssetIcon';
 import { TabBanner } from '@/components/game/TabBanner';
+import { ItemDetailCard } from '@/components/game/ItemDetailCard';
 
 interface MarketTabProps {
   player: PlayerData | null;
@@ -60,11 +61,10 @@ export function MarketTab({ player, listings, loading, onListItem, onBuyItem, on
                   ))}
                 </div>
               </div>
-              {selectedItemId && (
-                <p className="text-[10px] text-muted-foreground">
-                  {sellableItems.find(i => i.id === selectedItemId)?.name}
-                </p>
-              )}
+              {selectedItemId && (() => {
+                const item = sellableItems.find(i => i.id === selectedItemId);
+                return item ? <ItemDetailCard item={item} /> : null;
+              })()}
               <div className="flex items-center gap-2">
                 <Input
                   type="number"

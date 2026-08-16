@@ -58,6 +58,9 @@ DATA = {
     "clients": [129.4, 209.6, 98.3, 175.1, 186.9, 214.5, 283.2, 261.8, 236.8, 101.8, 263.5],
     "credits": [157.7, 254.9, 121.7, 199.6, 226.5, 258.6, 341.0, 309.9, 281.2, 129.4, 322.1],
     "sums":    [14.5, 21.6, 13.2, 39.8, 20.2, 28.2, 28.7, 31.8, 27.9, 11.8, 35.5],
+    # Территориальные банки, слева направо — тот же порядок, что и в HTML.
+    "labels": ["ББ", "ВВБ", "ДВБ", "МБ", "ПВБ", "СЗБ",
+               "СИБ", "СРБ", "УБ", "ЦЧБ", "ЮЗБ"],
 }
 
 
@@ -255,19 +258,26 @@ def add_appeals_chart(slide, box: dict) -> None:
 
 
 def add_balance_chart(slide, box: dict) -> None:
-    """«Внебаланс свыше 5 лет» — три серии в группе на одной шкале."""
+    """«Внебаланс свыше 5 лет» — три серии в группе на одной шкале.
+
+    Категории — территориальные банки. Подписи идут через нативную ось
+    PowerPoint (а не отдельными надписями, как в HTML): если данные потом
+    поправят прямо в графике, подписи останутся на месте автоматически.
+    """
     data = CategoryChartData()
-    # Подписи периодов в исходном макете отсутствуют. Категории заводим
-    # номерами, чтобы данные читались в Excel, но ось категорий прячем —
-    # на слайде всё выглядит как в оригинале.
-    data.categories = [str(i) for i in range(1, len(DATA["clients"]) + 1)]
+    data.categories = DATA["labels"]
     data.add_series("Кол-во клиентов(тыс)", DATA["clients"])
     data.add_series("Кол-во кредитов(тыс.)", DATA["credits"])
     data.add_series("Сумма(млрд. руб.)", DATA["sums"])
 
+    # HTML резервирует место под подписи ниже рамки .gchart (margin-bottom);
+    # для нативной оси PowerPoint это место нужно отдать самой рамке графика,
+    # иначе подписи банков сожмут область со столбцами.
+    label_space = 34
+
     frame = slide.shapes.add_chart(
         XL_CHART_TYPE.COLUMN_CLUSTERED,
-        emu(box["x"]), emu(box["y"]), emu(box["w"]), emu(box["h"]), data,
+        emu(box["x"]), emu(box["y"]), emu(box["w"]), emu(box["h"] + label_space), data,
     )
     chart = frame.chart
     chart.has_title = False
@@ -289,7 +299,9 @@ def add_balance_chart(slide, box: dict) -> None:
         labels.font.color.rgb = C_INK
         labels.font.name = "Onest"
 
-    _style_axis(chart.category_axis, visible=False)
+    _style_axis(chart.category_axis, visible=True)
+    chart.category_axis.format.line.fill.background()
+    chart.category_axis.tick_labels.font.size = Pt(8)
     _style_axis(chart.value_axis, visible=False)
     _transparent(chart)
 

@@ -385,31 +385,21 @@ h2 .g{background:linear-gradient(96deg,var(--cyan),var(--lime));-webkit-backgrou
 .hrow .share{font-family:var(--font-d);font-weight:500;font-size:22px;color:var(--c-sum);text-align:right}
 
 /* — Внебаланс: сгруппированные столбцы — */
-.gchart{position:relative;height:236px;display:flex;align-items:flex-end;justify-content:space-between;
+.gchart{position:relative;height:360px;display:flex;align-items:flex-end;justify-content:space-between;
   border-bottom:1px solid rgba(255,255,255,.14)}
 /* height:100% обязателен — иначе процентная высота столбцов считается
    от auto-контейнера и столбцы схлопываются в ноль */
 .ggroup{height:100%;display:flex;align-items:flex-end;gap:5px}
-.gbar{position:relative;width:32px;height:0;border-radius:5px 5px 0 0;
+.gbar{position:relative;width:26px;height:0;border-radius:5px 5px 0 0;
   transition:height 1.15s var(--ease)}
 .slide.visible .gbar{height:var(--h)}
 .gbar.cli{background:linear-gradient(180deg,#2ec0e8,var(--c-cli));box-shadow:0 0 18px rgba(21,156,194,.45)}
 .gbar.cred{background:linear-gradient(180deg,#3ccb5c,var(--c-cred));box-shadow:0 0 18px rgba(33,160,56,.45)}
+.gbar.sum{background:linear-gradient(180deg,#63efc0,var(--c-sum));box-shadow:0 0 18px rgba(53,214,160,.45);
+  transition-delay:.18s}
 .gbar span{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(100% + 6px);
-  font-size:13.5px;color:var(--ink-2);white-space:nowrap;opacity:0;transition:opacity .5s ease .85s}
+  font-size:12.5px;color:var(--ink-2);white-space:nowrap;opacity:0;transition:opacity .5s ease .85s}
 .slide.visible .gbar span{opacity:1}
-
-/* — Сумма: отдельная дорожка со своей шкалой — */
-.sumtrack{position:relative;height:88px;display:flex;align-items:flex-end;justify-content:space-between;
-  margin-top:26px;padding-top:22px;border-top:1px dashed rgba(255,255,255,.13)}
-.sumbar{position:relative;width:32px;height:0;border-radius:5px 5px 0 0;
-  background:linear-gradient(180deg,#63efc0,var(--c-sum));box-shadow:0 0 18px rgba(53,214,160,.45);
-  transition:height 1.15s var(--ease) .25s}
-.slide.visible .sumbar{height:var(--h)}
-.sumbar span{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(100% + 5px);
-  font-size:13.5px;color:var(--ink-2);opacity:0;transition:opacity .5s ease 1.05s}
-.slide.visible .sumbar span{opacity:1}
-.sumlabel{position:absolute;left:0;top:0;font-size:15px;color:var(--ink-3);font-weight:300}
 
 /* — Легенда — */
 .legend{display:flex;gap:30px;margin-top:18px;flex-wrap:wrap}
@@ -627,10 +617,8 @@ body.editing [contenteditable]:focus{outline:2px solid var(--mint);background:rg
     <!-- Внебаланс свыше 5 лет -->
     <div class="reveal d5" style="position:absolute;left:88px;top:566px;width:1148px">
       <div class="chart-title">Внебаланс свыше 5 лет</div>
+      <div class="chart-sub">Клиенты и кредиты — тыс., сумма — млрд. руб.</div>
       <div class="gchart" id="gchart"></div>
-      <div class="sumtrack" id="sumtrack">
-        <div class="sumlabel">Сумма, млрд. руб. — отдельная шкала</div>
-      </div>
       <div class="legend">
         <i><b style="background:var(--c-cli)"></b>Кол-во клиентов(тыс)</i>
         <i><b style="background:var(--c-cred)"></b>Кол-во кредитов(тыс.)</i>
@@ -759,22 +747,20 @@ function renderAppeals(){
     </div>`).join('');
 }
 
-/* --- Внебаланс: клиенты и кредиты в одних единицах (тыс.) на общей шкале,
-       сумма в млрд руб. вынесена на собственную дорожку --- */
+/* --- Внебаланс: три столбца в группе на одной общей шкале.
+       Сумма в млрд руб. заведомо меньше количеств в тыс., поэтому её столбцы
+       низкие — это честное следствие общей оси, а не ошибка вёрстки.
+       Высота диаграммы увеличена, чтобы они всё равно читались. --- */
 function renderBalance(){
   const g = document.getElementById('gchart');
-  const maxQty = Math.max(...DATA.credits, ...DATA.clients) * 1.16;
+  const max = Math.max(...DATA.credits, ...DATA.clients, ...DATA.sums) * 1.16;
+  const h = v => (v / max * 100).toFixed(1);
   g.innerHTML = DATA.clients.map((cli, i) => `
     <div class="ggroup">
-      <div class="gbar cli"  style="--h:${(cli / maxQty * 100).toFixed(1)}%"><span>${nf(cli)}</span></div>
-      <div class="gbar cred" style="--h:${(DATA.credits[i] / maxQty * 100).toFixed(1)}%"><span>${nf(DATA.credits[i])}</span></div>
+      <div class="gbar cli"  style="--h:${h(cli)}%"><span>${nf(cli)}</span></div>
+      <div class="gbar cred" style="--h:${h(DATA.credits[i])}%"><span>${nf(DATA.credits[i])}</span></div>
+      <div class="gbar sum"  style="--h:${h(DATA.sums[i])}%"><span>${nf(DATA.sums[i])}</span></div>
     </div>`).join('');
-
-  const s = document.getElementById('sumtrack');
-  const maxSum = Math.max(...DATA.sums) * 1.42;
-  s.insertAdjacentHTML('beforeend', DATA.sums.map(v =>
-    `<div class="sumbar" style="--h:${(v / maxSum * 100).toFixed(1)}%"><span>${nf(v)}</span></div>`
-  ).join(''));
 }
 
 /* ============================================================

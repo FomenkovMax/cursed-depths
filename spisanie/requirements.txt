@@ -3,3 +3,7 @@ python-dateutil>=2.8
 python-docx>=1.1
 pymupdf>=1.24
 pytest>=8.0
+
+# только для make_demo_video.py — необязательны для самих скриптов списания
+pillow>=10.0
+imageio-ffmpeg>=0.5

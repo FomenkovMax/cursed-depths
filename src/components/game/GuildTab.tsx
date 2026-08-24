@@ -124,6 +124,19 @@ export function GuildTab({
                 Лидеры урона: {worldBoss.topContributors.slice(0, 3).map(c => `${c.name} (${c.damage})`).join(', ')}
               </div>
             )}
+            {/* Мини-рейтинг внутри своей гильдии — глобальный топ-3 выше почти никогда не содержит
+                сокомандников не-топовой гильдии, так что "кто из наших бьёт босса" не было видно. */}
+            {worldBoss.guildContributors && worldBoss.guildContributors.length > 0 && (
+              <div className="rounded-md border border-border/60 bg-secondary/10 px-2 py-1.5 space-y-0.5">
+                <div className="text-[10px] font-medium text-foreground">🏰 Вклад гильдии в этого босса</div>
+                {worldBoss.guildContributors.map((c, i) => (
+                  <div key={c.playerId} className="flex items-center justify-between text-[10px] text-muted-foreground">
+                    <span>#{i + 1} {c.name}</span>
+                    <span>{c.damage} урона</span>
+                  </div>
+                ))}
+              </div>
+            )}
             {lastAttack && (
               <div className={`text-xs rounded p-2 ${lastAttack.killed ? 'bg-gold/10 text-gold' : 'bg-secondary/30 text-muted-foreground'}`}>
                 Урон: {lastAttack.damageDealt}

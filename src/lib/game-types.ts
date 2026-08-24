@@ -389,6 +389,10 @@ export interface WorldBossContributorView {
 export interface WorldBossStateView {
   boss: { incarnation: number; name: string; hp: number; maxHp: number; lore: string };
   topContributors: WorldBossContributorView[];
+  /** Вклад только сокомандников по гильдии (та же сумма урона, что и в topContributors, но
+   * отфильтрованная по составу гильдии) — null, если игрок не состоит в гильдии. Глобальный
+   * топ-10 выше почти никогда не показывает сокомандников не-топовой гильдии. */
+  guildContributors: WorldBossContributorView[] | null;
   /** Эфемерная "валюта" текущего воплощения босса — сумма урона игрока за incarnation, сгорает
    * при убийстве вместе со всей записью вкладов (аудит 3, roguelite-референс). */
   myContribution: number;

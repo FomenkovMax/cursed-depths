@@ -4,6 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Progress } from '@/components/ui/progress';
 import { TabBanner } from '@/components/game/TabBanner';
+import { ListSkeleton } from '@/components/game/ListSkeleton';
 import { TAB_BANNER_IMAGES } from '@/lib/asset-icons';
 import { AchievementEntry } from '@/lib/game-types';
 
@@ -41,11 +42,7 @@ export function AchievementsTab({ achievements, loading }: AchievementsTabProps)
       />
 
       {loading && achievements.length === 0 ? (
-        <Card className="border-border">
-          <CardContent className="p-6 text-center">
-            <p className="text-sm text-muted-foreground">Загрузка...</p>
-          </CardContent>
-        </Card>
+        <ListSkeleton variant="grid" count={10} />
       ) : (
         <Card className="border-border">
           <CardContent className="p-4">

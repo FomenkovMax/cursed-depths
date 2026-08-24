@@ -6,7 +6,7 @@ import { validateTelegramRequest } from '@/lib/auth';
 import { addItemToInventory } from '@/lib/economy/inventory-utils';
 import { issueDailyQuests } from '@/lib/economy/quests';
 import { isDeathDebuffActive, DEATH_DEBUFF_XP_MULT } from '@/lib/premium/premium-shop';
-import { computeNextStreak, streakDayInCycle, STREAK_MULTIPLIERS, STREAK_CYCLE_LENGTH } from '@/lib/economy/daily-streak';
+import { computeNextStreak, streakDayInCycle, STREAK_MULTIPLIERS, STREAK_CYCLE_LENGTH, shouldConsumeStreakFreeze, MAX_STREAK_FREEZES } from '@/lib/economy/daily-streak';
 
 /** Брошено внутри транзакции, если ежедневная награда уже забрана СЕГОДНЯ В МОМЕНТ фактической
  * записи (см. комментарий у updateMany ниже) — напр. параллельный дубликат того же запроса. */
@@ -33,9 +33,21 @@ export async function POST(req: NextRequest) {
     // Стрик за подряд идущие дни (аудит #2, топ-10 #2) — считается от снимка ДО транзакции, как
     // и lastDailyReward ниже: при гонке двух параллельных запросов обе ветки посчитают одно и то
     // же значение, но только одна реально запишется благодаря updateMany-guard в транзакции.
-    const nextStreak = computeNextStreak(player.lastDailyReward, player.dailyStreak, today);
+    // Заморозка (Wave 2A, п.46) — если пропущен ровно один день и есть запас, стрик растёт как
+    // при обычном клейме "вчера", а не обнуляется.
+    const freezeConsumed = shouldConsumeStreakFreeze(player.lastDailyReward, today, player.streakFreezeCount);
+    const nextStreak = freezeConsumed
+      ? player.dailyStreak + 1
+      : computeNextStreak(player.lastDailyReward, player.dailyStreak, today);
     const streakDay = streakDayInCycle(nextStreak);
     const streakMult = STREAK_MULTIPLIERS[streakDay];
+    // Одна новая заморозка за каждый завершённый 7-дневный цикл — не покупка, чистая награда за
+    // лояльность, капается, чтобы не превращать механику в неограниченный иммунитет к пропускам.
+    const earnsFreeze = streakDay === STREAK_CYCLE_LENGTH;
+    const nextFreezeCount = Math.max(0, Math.min(
+      MAX_STREAK_FREEZES,
+      player.streakFreezeCount - (freezeConsumed ? 1 : 0) + (earnsFreeze ? 1 : 0),
+    ));
 
     const goldReward = Math.round(rollDice('2d6') * player.level * streakMult);
     const xpDebuffMult = isDeathDebuffActive(player.deathDebuffUntil, player.premiumUntil) ? DEATH_DEBUFF_XP_MULT : 1;
@@ -69,6 +81,7 @@ export async function POST(req: NextRequest) {
       xp: newXp,
       lastDailyReward: today,
       dailyStreak: nextStreak,
+      streakFreezeCount: nextFreezeCount,
     };
     if (leveledUp) {
       updateData.level = newLevel;
@@ -111,9 +124,11 @@ export async function POST(req: NextRequest) {
       });
     });
 
-    const streakSuffix = streakDay === STREAK_CYCLE_LENGTH
+    let streakSuffix = streakDay === STREAK_CYCLE_LENGTH
       ? ` 🔥 День ${streakDay}/${STREAK_CYCLE_LENGTH} стрика — тройная награда зельями!`
       : ` 🔥 Стрик: день ${streakDay}/${STREAK_CYCLE_LENGTH}.`;
+    if (freezeConsumed) streakSuffix += ' 🧊 Пропущенный день закрыт заморозкой стрика!';
+    if (earnsFreeze) streakSuffix += ' 🧊 Заработана заморозка стрика на будущее!';
 
     return NextResponse.json({
       message: `Ежедневная награда! +${goldReward} золота, +${xpReward} XP, Зелье здоровья x${potionQuantity}!${streakSuffix}`,
@@ -122,6 +137,8 @@ export async function POST(req: NextRequest) {
       leveledUp,
       streak: nextStreak,
       streakDay,
+      freezeConsumed,
+      earnsFreeze,
       player: updated,
     });
   } catch (error) {

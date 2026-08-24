@@ -3,6 +3,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { TrophyRoomStateView, TrophyEntryView } from '@/lib/game-types';
 import { TabBanner } from '@/components/game/TabBanner';
+import { ListSkeleton } from '@/components/game/ListSkeleton';
 import { TAB_BANNER_IMAGES } from '@/lib/asset-icons';
 
 interface TrophyRoomTabProps {
@@ -81,11 +82,7 @@ export function TrophyRoomTab({ state, loading }: TrophyRoomTabProps) {
           </CardContent>
         </Card>
       ) : loading && state.trophies.length === 0 ? (
-        <Card className="border-border">
-          <CardContent className="p-6 text-center">
-            <p className="text-sm text-muted-foreground">Загрузка...</p>
-          </CardContent>
-        </Card>
+        <ListSkeleton />
       ) : (
         <div className="space-y-2">
           {state.trophies.map(t => (

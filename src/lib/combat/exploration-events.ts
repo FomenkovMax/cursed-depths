@@ -271,7 +271,22 @@ function noEffect(message: string): EventResolution {
   return { message, goldDelta: 0, hpDeltaPercent: 0, mpDeltaPercent: 0, xpDelta: 0, itemRarity: null, startCombat: false };
 }
 
+/** Натуральная 1 на проверке характеристики — не просто провал, а критический провал (тот же
+ * принцип, что и в D&D/BG3): исход внезапно ухудшается сверх обычного штрафа события. Единая
+ * эскалация "из-за шума набегают враги" применяется ко ВСЕМ проверкам сразу постфактум, а не
+ * точечно к 1-2 событиям — иначе натуральная 1 значила бы что-то только в части случаев, что
+ * ощущалось бы как баг, а не как читаемое правило. Событие, которое и так уводит в бой при
+ * провале (sleeping_guardian:sneak), не трогаем — эскалировать уже нечего.
+ */
 export function resolveEventChoice(eventId: string, choiceId: string, playerLevel: number, stats: CheckStats): EventResolution | null {
+  const result = resolveEventChoiceRaw(eventId, choiceId, playerLevel, stats);
+  if (result?.checkResult && result.checkResult.roll === 1 && !result.checkResult.success && !result.startCombat) {
+    return { ...result, startCombat: true, message: `${result.message} А на шум из темноты выходит кое-кто ещё...` };
+  }
+  return result;
+}
+
+function resolveEventChoiceRaw(eventId: string, choiceId: string, playerLevel: number, stats: CheckStats): EventResolution | null {
   switch (`${eventId}:${choiceId}`) {
     case 'old_chest:open': {
       const check = rollStatCheck('dexterity', stats, 12);

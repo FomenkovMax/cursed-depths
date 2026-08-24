@@ -29,3 +29,19 @@ export function computeNextStreak(lastClaimDate: string | null, currentStreak: n
     .toISOString().slice(0, 10);
   return lastClaimDate === yesterday ? currentStreak + 1 : 1;
 }
+
+/** Заморозка стрика — не покупается, зарабатывается автоматически по одной за каждый завершённый
+ * 7-дневный цикл (см. daily/route.ts: streakDay === STREAK_CYCLE_LENGTH), копится максимум до
+ * MAX_STREAK_FREEZES. Без нового ценового SKU — у самых лояльных игроков (длинный стрик) один
+ * случайный пропущенный день не должен обнулять весь прогресс. */
+export const MAX_STREAK_FREEZES = 3;
+
+/** true, только если пропущен РОВНО один день (клейм был позавчера, не вчера и не раньше) и есть
+ * хотя бы одна заморозка в запасе — заморозка защищает от одного сбоя, а не от произвольно
+ * долгого отсутствия: пропуск двух и более дней всё равно обнуляет стрик. */
+export function shouldConsumeStreakFreeze(lastClaimDate: string | null, today: string, freezesAvailable: number): boolean {
+  if (!lastClaimDate || freezesAvailable <= 0) return false;
+  const twoDaysAgo = new Date(new Date(`${today}T00:00:00Z`).getTime() - 2 * 24 * 60 * 60 * 1000)
+    .toISOString().slice(0, 10);
+  return lastClaimDate === twoDaysAgo;
+}

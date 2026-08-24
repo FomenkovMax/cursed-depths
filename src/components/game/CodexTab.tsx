@@ -3,6 +3,7 @@ import { TabsContent } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { TabBanner } from '@/components/game/TabBanner';
+import { ListSkeleton } from '@/components/game/ListSkeleton';
 import { TAB_BANNER_IMAGES } from '@/lib/asset-icons';
 import { CodexEntryView } from '@/lib/game-types';
 
@@ -47,11 +48,7 @@ export function CodexTab({ entries, loading }: CodexTabProps) {
       />
 
       {loading && entries.length === 0 ? (
-        <Card className="border-border">
-          <CardContent className="p-6 text-center">
-            <p className="text-sm text-muted-foreground">Загрузка...</p>
-          </CardContent>
-        </Card>
+        <ListSkeleton variant="grid" count={10} />
       ) : (
         categories.map(category => (
           <Card key={category} className="border-border">

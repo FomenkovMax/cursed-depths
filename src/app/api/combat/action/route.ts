@@ -74,7 +74,7 @@ import { dungeonModifierEffect, heatLevelEffect, multiplyEffects } from '@/lib/c
 import { abyssScaling, abyssEnemyIdForDepth, isEliteDepth } from '@/lib/combat/abyss';
 import { FORTRESS_ID, CONTROL_GOLD_BONUS } from '@/lib/social/fortress';
 import { bossIntroLine, deathMessage } from '@/lib/combat/exploration-flavor';
-import { isPremiumActive, PREMIUM_GOLD_XP_MULT, isDeathDebuffActive, DEATH_DEBUFF_XP_MULT, DEATH_DEBUFF_HOURS } from '@/lib/premium/premium-shop';
+import { isPremiumActive, PREMIUM_GOLD_XP_MULT, isDeathDebuffActive, DEATH_DEBUFF_XP_MULT, DEATH_DEBUFF_HOURS, DEATH_DEBUFF_GRACE_LEVEL } from '@/lib/premium/premium-shop';
 import { findPet } from '@/lib/economy/pets';
 import { battlePassXpForKill, effectiveBattlePassXp } from '@/lib/premium/battle-pass';
 import { currentSeasonId } from '@/lib/social/seasons';
@@ -1021,9 +1021,16 @@ export async function POST(req: NextRequest) {
         }
         // Дебафф -15% опыта на 24 часа (lib/premium/premium-shop.ts) — премиум полностью иммунен, ставить
         // дебафф ему бессмысленно (isDeathDebuffActive всё равно проигнорирует поле из-за премиума).
+        // Грейс-период новичка (DEATH_DEBUFF_GRACE_LEVEL) — единственная точка, где дебафф вообще
+        // СТАВИТСЯ, поэтому проверка здесь одна закрывает все места, где он читается (isDeathDebuffActive
+        // просто увидит null и ничего не найдёт — переписывать 10+ мест чтения не нужно).
         if (!isPremiumActive(player.premiumUntil)) {
-          updateData.deathDebuffUntil = new Date(Date.now() + DEATH_DEBUFF_HOURS * 60 * 60 * 1000);
-          combatLog.push({ text: `Опыт снижен на 15% на ${DEATH_DEBUFF_HOURS} часов.`, turn: currentTurn + 2 });
+          if (player.level > DEATH_DEBUFF_GRACE_LEVEL) {
+            updateData.deathDebuffUntil = new Date(Date.now() + DEATH_DEBUFF_HOURS * 60 * 60 * 1000);
+            combatLog.push({ text: `Опыт снижен на 15% на ${DEATH_DEBUFF_HOURS} часов.`, turn: currentTurn + 2 });
+          } else {
+            combatLog.push({ text: `Начинающих Скверна щадит — штрафа за смерть нет (до уровня ${DEATH_DEBUFF_GRACE_LEVEL}).`, turn: currentTurn + 2 });
+          }
         }
         updateData.combatLog = JSON.stringify(combatLog);
         // Player died - teleport to town with 1 HP

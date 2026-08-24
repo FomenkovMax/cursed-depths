@@ -97,6 +97,13 @@ export const PREMIUM_GOLD_XP_MULT = 1.15;
 export const DEATH_DEBUFF_XP_MULT = 0.85;
 export const DEATH_DEBUFF_HOURS = 24;
 
+/** Грейс-период новичка (аудит 2, волна 2B, п.10) — до этого уровня штраф не ставится вовсе,
+ * премиум тут ни при чём. Раньше игрок, который чаще умирает ПОКА УЧИТСЯ, получал и штраф,
+ * и давление заплатить в первую же сессию — ровно та аудитория, для которой D1-D7 удержание
+ * важнее всего. Совпадает с открытием стадии 2 способностей класса (stageUnlockLevel в
+ * combat-engine.ts) — до этого момента билд ещё не устоялся, наказывать преждевременно. */
+export const DEATH_DEBUFF_GRACE_LEVEL = 5;
+
 export function isDeathDebuffActive(deathDebuffUntil: Date | null, premiumUntil: Date | null): boolean {
   if (isPremiumActive(premiumUntil)) return false;
   return !!deathDebuffUntil && deathDebuffUntil.getTime() > Date.now();

@@ -566,7 +566,7 @@ export async function POST(req: NextRequest) {
       playerWon = true;
       xpGained = Math.round(enemyTemplate.xp * dungeonEffect.xpMult * abyssEffect.xpMult * xpMultTotal * uniqueItemGoldXpMult * guildXpMult);
       goldGained = Math.round((enemyTemplate.gold + rollDice('1d4') * Math.ceil(player.level / 2)) * dungeonEffect.goldMult * abyssEffect.goldMult * fortressGoldMult * premiumMult * uniqueItemGoldXpMult * guildGoldMult);
-      droppedItems.push(...rollLoot(enemyTemplate.lootTable));
+      droppedItems.push(...rollLoot(enemyTemplate.lootTable, player.enemyIsElite ? 3 : 1));
       const currencyDrop = rollCurrencyDrop(enemyTemplate.isBoss);
       if (currencyDrop) droppedItems.push(currencyDrop);
       const scrollDrop = rollTemperScrollDrop(enemyTemplate.isBoss);
@@ -957,6 +957,7 @@ export async function POST(req: NextRequest) {
       updateData.enemyId = dungeonNextEnemy.id;
       updateData.enemyHp = dungeonNextEnemyHp;
       updateData.enemyMaxHp = dungeonNextEnemyHp;
+      updateData.enemyIsElite = false; // элитный ролл — только вне данжей, см. api/explore
       updateData.bossState = JSON.stringify(initBossState(dungeonNextEnemy.mechanics));
       updateData.dungeonRoom = player.dungeonRoom + 1;
     } else if (abyssNextEnemy) {
@@ -965,6 +966,7 @@ export async function POST(req: NextRequest) {
       updateData.enemyId = abyssNextEnemy.id;
       updateData.enemyHp = abyssNextEnemyHp;
       updateData.enemyMaxHp = abyssNextEnemyHp;
+      updateData.enemyIsElite = false; // у Разлома своя элита — isEliteDepth, не эта
       updateData.bossState = JSON.stringify(initBossState(abyssNextEnemy.mechanics));
       updateData.abyssDepth = abyssNextDepth;
       if (abyssNextDepth > player.bestAbyssDepth) updateData.bestAbyssDepth = abyssNextDepth;
@@ -974,6 +976,7 @@ export async function POST(req: NextRequest) {
       updateData.enemyId = trialBossEnemy.id;
       updateData.enemyHp = trialBossEnemyHp;
       updateData.enemyMaxHp = trialBossEnemyHp;
+      updateData.enemyIsElite = false;
       updateData.bossState = JSON.stringify(initBossState(trialBossEnemy.mechanics));
       updateData.dungeonRoom = player.dungeonRoom + 1;
     } else if (trialNextJunctionIndex !== null) {
@@ -983,12 +986,14 @@ export async function POST(req: NextRequest) {
       updateData.enemyId = null;
       updateData.enemyHp = null;
       updateData.enemyMaxHp = null;
+      updateData.enemyIsElite = false;
       updateData.dungeonRoom = trialNextJunctionIndex;
     } else if (combatOver) {
       updateData.inCombat = false;
       updateData.enemyId = null;
       updateData.enemyHp = null;
       updateData.enemyMaxHp = null;
+      updateData.enemyIsElite = false;
 
       if (player.dungeonId) {
         // Забег окончен (пройден полностью, провален побегом или смертью) — сбрасываем.

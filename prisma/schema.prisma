@@ -77,6 +77,12 @@ model Player {
   dungeonHeatLevel Int      @default(0) // heat-уровень 0-5, ВЫБРАННЫЙ игроком перед входом в данж
                             // (lib/dungeon-modifiers.ts) — в отличие от dungeonModifierId выше,
                             // не случайный, действует поверх него
+  enemyIsElite    Boolean   @default(false) // текущий враг — элитный ролл (5% шанс, только для
+                            // обычных врагов вне данжей, см. api/explore/route.ts): x2 HP уже
+                            // заложен в enemyHp при спавне, x3 loot читается отсюда при резолве
+                            // боя (api/combat/action/route.ts). Сбрасывается на false при спавне
+                            // любого другого врага (данж/испытание/Разлом), тот же паттерн, что и
+                            // dungeonModifierId — состояние одного боевого раунда, не отдельная фича.
   abyssDepth      Int       @default(0) // текущая глубина активного забега по Бездонному Разлому
                             // (lib/abyss.ts) — 0, если не в Разломе
   bestAbyssDepth  Int       @default(0) // рекорд глубины — никогда не уменьшается, даже после

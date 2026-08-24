@@ -131,7 +131,13 @@ export async function POST(req: NextRequest) {
         : (bossPool.length > 0 && Math.random() < 0.15 ? bossPool : regularPool);
 
       const enemy = pool[Math.floor(Math.random() * pool.length)];
-      const enemyHp = enemy.hp + Math.floor(Math.random() * 5);
+      // Элитный ролл — только для обычных врагов (не боссов, у них и так своя редкость 15%
+      // и собственный баланс), 5% шанс на удвоенное HP и утроенный шанс дропа лута при победе
+      // (см. enemyIsElite в schema.prisma и /api/combat/action). Идея та же, что у элитных
+      // мобов в Bездонном Разломе (isEliteDepth в lib/combat/abyss.ts), но здесь она случайная,
+      // а не привязана к глубине — единственный источник "элиты" вне данжей/испытаний/Разлома.
+      const isElite = !enemy.isBoss && Math.random() < 0.05;
+      const enemyHp = Math.round((enemy.hp + Math.floor(Math.random() * 5)) * (isElite ? 2 : 1));
 
       const updated = await db.$transaction(async (tx) => {
         await incrementQuestProgress(tx, player.id, 'explore');
@@ -142,7 +148,8 @@ export async function POST(req: NextRequest) {
             enemyId: enemy.id,
             enemyHp,
             enemyMaxHp: enemyHp,
-            combatLog: JSON.stringify([{ text: `${enemy.nameRu} появляется!`, turn: 0 }]),
+            enemyIsElite: isElite,
+            combatLog: JSON.stringify([{ text: isElite ? `⚠️ Элитный ${enemy.nameRu} появляется!` : `${enemy.nameRu} появляется!`, turn: 0 }]),
             bossState: JSON.stringify(initBossState(enemy.mechanics)),
             totalExplores: { increment: 1 },
           },
@@ -152,7 +159,7 @@ export async function POST(req: NextRequest) {
 
       return NextResponse.json({
         type: 'combat',
-        message: encounterMessage(player.locationId, enemy.id, enemy.nameRu),
+        message: isElite ? `⚠️ Элитный противник: ${encounterMessage(player.locationId, enemy.id, enemy.nameRu)}` : encounterMessage(player.locationId, enemy.id, enemy.nameRu),
         enemy: { ...enemy, hp: enemyHp, maxHp: enemyHp },
         player: updated,
       });

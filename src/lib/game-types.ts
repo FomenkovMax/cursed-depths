@@ -70,6 +70,7 @@ export interface PlayerData {
   enemyId: string | null;
   enemyHp: number | null;
   enemyMaxHp: number | null;
+  enemyIsElite: boolean;
   combatLog: string | null;
   bossState: string | null;
   lastDailyReward: string | null;

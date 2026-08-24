@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
 
     const updated = await db.player.update({
       where: { telegramId: auth.telegramId },
-      data: { dungeonId: trial.id, dungeonRoom: 0 },
+      data: { dungeonId: trial.id, dungeonRoom: 0, enemyIsElite: false },
       include: { inventory: true, quests: true, race: true, class: { include: { abilities: true } } },
     });
 

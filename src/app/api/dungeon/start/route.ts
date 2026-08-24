@@ -57,6 +57,7 @@ export async function POST(req: NextRequest) {
         enemyId: enemy.id,
         enemyHp,
         enemyMaxHp: enemyHp,
+        enemyIsElite: false, // элитный ролл — только вне данжей, см. api/explore
         combatLog: JSON.stringify(introLog),
         bossState: JSON.stringify(initBossState(enemy.mechanics)),
         dungeonId: dungeon.id,

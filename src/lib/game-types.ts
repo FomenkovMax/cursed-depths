@@ -75,6 +75,7 @@ export interface PlayerData {
   bossState: string | null;
   lastDailyReward: string | null;
   dailyStreak: number;
+  streakFreezeCount: number;
   consumableAttackBonus: number;
   consumableFightsLeft: number;
   totalKills: number;

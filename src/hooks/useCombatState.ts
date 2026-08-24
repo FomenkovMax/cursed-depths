@@ -1,5 +1,6 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { ENEMIES } from '@/lib/game-data';
+import { findTrial } from '@/lib/combat/trials';
 import { ApiCallFn, CombatLogEntry, CheckRollResultView, ExplorationEvent, GameMessage, GameTab, PlayerData, TrialJunctionView } from '@/lib/game-types';
 
 interface UseCombatStateArgs {
@@ -26,8 +27,22 @@ export function useCombatState({ apiCall, player, setLoading, onPlayerUpdate, on
   const [diceRoll, setDiceRoll] = useState<CheckRollResultView | null>(null);
   const [floatingDamage, setFloatingDamage] = useState<{ id: number; text: string; color: string }[]>([]);
   const [explorationEvent, setExplorationEvent] = useState<ExplorationEvent | null>(null);
-  const [trialJunction, setTrialJunction] = useState<TrialJunctionView | null>(null);
+  const [explicitTrialJunction, setTrialJunction] = useState<TrialJunctionView | null>(null);
   const floatIdRef = useRef(0);
+
+  // explicitTrialJunction обычно приходит только в ответе /api/combat/action или
+  // /api/trial/choose — если игрок закрыл приложение ровно на развилке (dungeonId указывает на
+  // испытание, inCombat уже false, см. комментарий в lib/combat/trials.ts), при следующей
+  // загрузке этот стейт пуст и модалка выбора направления никогда не появится, хотя сервер
+  // по-прежнему ждёт выбор. Довосстанавливаем её из уже загруженного player как запасной вариант.
+  const trialJunction = useMemo<TrialJunctionView | null>(() => {
+    if (explicitTrialJunction) return explicitTrialJunction;
+    if (!player || player.inCombat || !player.dungeonId) return null;
+    const trial = findTrial(player.dungeonId);
+    const junction = trial?.junctions[player.dungeonRoom];
+    if (!junction) return null;
+    return { options: junction.options.map(o => ({ direction: o.direction, type: o.type, label: o.label })) };
+  }, [player, explicitTrialJunction]);
 
   const addFloatingDamage = useCallback((text: string, color: string) => {
     const id = ++floatIdRef.current;

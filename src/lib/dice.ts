@@ -46,10 +46,10 @@ export function getModifier(score: number): number {
   return Math.floor((score - 10) / 2);
 }
 
-export function rollLoot(lootTable: { itemId: string; chance: number }[]): string[] {
+export function rollLoot(lootTable: { itemId: string; chance: number }[], chanceMult = 1): string[] {
   const dropped: string[] = [];
   for (const loot of lootTable) {
-    if (Math.random() < loot.chance) {
+    if (Math.random() < Math.min(1, loot.chance * chanceMult)) {
       dropped.push(loot.itemId);
     }
   }

@@ -37,7 +37,7 @@ export const FORTUNE_WHEEL: FortuneReward[] = [
   { id: 'item_epic', nameRu: 'Эпическая находка', icon: '💎', weight: 0.3, reward: { kind: 'item', rarity: 'epic' } },
 ];
 
-const TOTAL_WEIGHT = FORTUNE_WHEEL.reduce((sum, r) => sum + r.weight, 0);
+export const TOTAL_WEIGHT = FORTUNE_WHEEL.reduce((sum, r) => sum + r.weight, 0);
 
 export function rollFortuneWheel(): FortuneReward {
   let roll = Math.random() * TOTAL_WEIGHT;

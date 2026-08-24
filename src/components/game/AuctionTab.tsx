@@ -41,7 +41,7 @@ export function AuctionTab({ player, state, loading, onListItem, onBid, onCancel
 
   if (!state?.premiumActive) {
     return (
-      <TabsContent value="auction" className="flex-1 overflow-y-auto p-4 space-y-3 m-0">
+      <TabsContent value="auction" className="flex-1 overflow-y-auto p-4 space-y-3 m-0 animate-fade-in">
         <TabBanner src={TAB_BANNER_IMAGES.auction} title="Аукционный дом" />
         <Card className="border-border">
           <CardContent className="p-6 text-center space-y-2">
@@ -66,7 +66,7 @@ export function AuctionTab({ player, state, loading, onListItem, onBid, onCancel
   };
 
   return (
-    <TabsContent value="auction" className="flex-1 overflow-y-auto p-4 space-y-3 m-0">
+    <TabsContent value="auction" className="flex-1 overflow-y-auto p-4 space-y-3 m-0 animate-fade-in">
       <TabBanner
         src={TAB_BANNER_IMAGES.auction}
         title="Аукционный дом"

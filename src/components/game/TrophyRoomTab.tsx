@@ -61,7 +61,7 @@ function TrophyCard({ t }: { t: TrophyEntryView }) {
 
 export function TrophyRoomTab({ state, loading }: TrophyRoomTabProps) {
   return (
-    <TabsContent value="trophies" className="flex-1 overflow-y-auto p-4 space-y-3 m-0">
+    <TabsContent value="trophies" className="flex-1 overflow-y-auto p-4 space-y-3 m-0 animate-fade-in">
       <TabBanner
         src={TAB_BANNER_IMAGES.trophies}
         title="Комната трофеев"

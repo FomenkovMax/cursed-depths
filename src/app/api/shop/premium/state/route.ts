@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { validateTelegramRequest } from '@/lib/auth';
 import { SHARD_PACKS, PREMIUM_CATALOG, isPremiumActive, RACE_CHANGE_COST_SHARDS } from '@/lib/premium/premium-shop';
-import { freeSpinsPerDayFor, PAID_SPIN_COST_SHARDS, FORTUNE_WHEEL } from '@/lib/economy/fortune-wheel';
+import { freeSpinsPerDayFor, PAID_SPIN_COST_SHARDS, FORTUNE_WHEEL, TOTAL_WEIGHT } from '@/lib/economy/fortune-wheel';
 
 export async function GET(req: NextRequest) {
   const auth = validateTelegramRequest(req);
@@ -38,6 +38,7 @@ export async function GET(req: NextRequest) {
           icon: s.icon,
           kind: s.reward.kind,
           rarity: s.reward.kind === 'item' ? s.reward.rarity : null,
+          chancePercent: Math.round((s.weight / TOTAL_WEIGHT) * 1000) / 10,
         })),
       },
       raceChange: {

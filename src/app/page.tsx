@@ -72,6 +72,7 @@ export default function CursedDepths() {
   const adventureLogIdRef = useRef(0);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [leaderboardLoading, setLeaderboardLoading] = useState(false);
+  const [leaderboardSort, setLeaderboardSort] = useState<'level' | 'abyss'>('level');
   const [currentSeason, setCurrentSeason] = useState<string | null>(null);
   const [previousSeason, setPreviousSeason] = useState<string | null>(null);
   const [previousSeasonWinners, setPreviousSeasonWinners] = useState<SeasonWinnerEntry[]>([]);
@@ -308,7 +309,7 @@ export default function CursedDepths() {
   useEffect(() => {
     if (tab !== 'leaderboard') return;
     setLeaderboardLoading(true);
-    fetch('/api/leaderboard')
+    fetch(`/api/leaderboard?sort=${leaderboardSort}`)
       .then(res => res.json())
       .then(data => {
         setLeaderboard(data.leaderboard || []);
@@ -318,7 +319,7 @@ export default function CursedDepths() {
       })
       .catch(() => setMessage({ text: 'Не удалось загрузить таблицу лидеров', type: 'error' }))
       .finally(() => setLeaderboardLoading(false));
-  }, [tab]);
+  }, [tab, leaderboardSort]);
 
   // ===== ACHIEVEMENTS =====
   useEffect(() => {
@@ -1231,7 +1232,12 @@ export default function CursedDepths() {
       {/* Main content */}
       <main className="flex-1 overflow-hidden">
         <Tabs value={tab} onValueChange={v => setTab(v as GameTab)} className="h-full flex flex-col">
-          <NavBar tab={tab} onChangeTab={setTab} inCombat={!!player?.inCombat} />
+          <NavBar
+            tab={tab}
+            onChangeTab={setTab}
+            inCombat={!!player?.inCombat}
+            worldHasNotice={!!weeklyChallenge.state?.target && !weeklyChallenge.state?.attempted}
+          />
 
           <OverviewTab
             player={player}
@@ -1329,6 +1335,7 @@ export default function CursedDepths() {
             crownShards={premium.premiumState?.crownShards ?? 0}
             onEnchantAffix={handleEnchantAffix}
             enchanting={enchanting}
+            onNavigateTab={setTab}
           />
 
           <LeaderboardTab
@@ -1338,6 +1345,8 @@ export default function CursedDepths() {
             currentSeason={currentSeason}
             previousSeason={previousSeason}
             previousSeasonWinners={previousSeasonWinners}
+            sortBy={leaderboardSort}
+            onSortChange={setLeaderboardSort}
           />
 
           <PartyTab

@@ -118,7 +118,7 @@ export function PaperDoll({ equipped, onSelect, portraitSrc }: PaperDollProps) {
         return (
           <div
             key={slot}
-            className="absolute flex flex-col items-center gap-0.5 w-12"
+            className="absolute flex flex-col items-center gap-0.5 w-14"
             style={{ top, [side]: '3%', transform: 'translateY(-50%)' }}
           >
             {item ? (
@@ -128,7 +128,7 @@ export function PaperDoll({ equipped, onSelect, portraitSrc }: PaperDollProps) {
                 <SlotSilhouette slot={slot} />
               </div>
             )}
-            <span className="text-[8px] text-white/80 text-center leading-none drop-shadow">{SLOT_RU[slot] ?? slot}</span>
+            <span className="text-[10px] text-white/90 text-center leading-none drop-shadow">{SLOT_RU[slot] ?? slot}</span>
           </div>
         );
       })}

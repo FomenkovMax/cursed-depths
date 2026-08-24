@@ -69,7 +69,7 @@ export function PremiumShopTab({
   const races = state?.raceChange.races ?? [];
 
   return (
-    <TabsContent value="premium" className="flex-1 overflow-y-auto p-4 space-y-4 m-0">
+    <TabsContent value="premium" className="flex-1 overflow-y-auto p-4 space-y-4 m-0 animate-fade-in">
       <TabBanner
         src={TAB_BANNER_IMAGES.premium}
         title="Осколки Короны"

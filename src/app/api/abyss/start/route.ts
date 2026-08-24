@@ -43,6 +43,7 @@ export async function POST(req: NextRequest) {
         enemyId: enemy.id,
         enemyHp,
         enemyMaxHp: enemyHp,
+        enemyIsElite: false, // у Разлома своя элита — isEliteDepth, не эта
         combatLog: JSON.stringify([{ text: `Вы спускаетесь в Бездонный Разлом. Глубина ${depth}: ${enemy.nameRu}!`, turn: 0 }]),
         bossState: JSON.stringify(initBossState(enemy.mechanics)),
         abyssDepth: depth,

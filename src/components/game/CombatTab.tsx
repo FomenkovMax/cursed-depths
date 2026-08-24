@@ -71,7 +71,7 @@ export function CombatTab({
   const dungeonModifier = player?.dungeonId ? findDungeonModifier(player.dungeonModifierId) : null;
 
   return (
-    <TabsContent value="combat" className="flex-1 overflow-y-auto p-4 space-y-4 m-0">
+    <TabsContent value="combat" className="flex-1 overflow-y-auto p-4 space-y-4 m-0 animate-fade-in">
       {player?.inCombat && enemy ? (
         <>
           {/* Индикатор забега по данжу — см. lib/combat/dungeons.ts — и его модификатора, если выпал
@@ -139,6 +139,9 @@ export function CombatTab({
                 <h3 className="font-bold text-sm" style={{ color: enemy.isBoss ? '#f59e0b' : '#ef4444' }}>
                   {enemy.nameRu}
                   {enemy.isBoss && <Badge className="ml-1 text-[10px] h-4 bg-gold/20 text-gold">БОСС</Badge>}
+                  {/* Элитный ролл (5% шанс, только вне данжей — см. api/explore) — x2 HP уже
+                      отражено полосой здоровья ниже, x3 шанс лута виден только по факту победы. */}
+                  {player.enemyIsElite && <Badge className="ml-1 text-[10px] h-4 bg-uncommon/20 text-uncommon">⚠️ ЭЛИТА</Badge>}
                 </h3>
                 <div className="text-[10px] text-white/80">
                   {/* "Класс Брони" переименован в "Защита" (аудит 2.3) — поле снижает урон

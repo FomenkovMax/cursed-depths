@@ -70,6 +70,7 @@ export interface PlayerData {
   enemyId: string | null;
   enemyHp: number | null;
   enemyMaxHp: number | null;
+  enemyIsElite: boolean;
   combatLog: string | null;
   bossState: string | null;
   lastDailyReward: string | null;
@@ -388,6 +389,10 @@ export interface WorldBossContributorView {
 export interface WorldBossStateView {
   boss: { incarnation: number; name: string; hp: number; maxHp: number; lore: string };
   topContributors: WorldBossContributorView[];
+  /** Вклад только сокомандников по гильдии (та же сумма урона, что и в topContributors, но
+   * отфильтрованная по составу гильдии) — null, если игрок не состоит в гильдии. Глобальный
+   * топ-10 выше почти никогда не показывает сокомандников не-топовой гильдии. */
+  guildContributors: WorldBossContributorView[] | null;
   /** Эфемерная "валюта" текущего воплощения босса — сумма урона игрока за incarnation, сгорает
    * при убийстве вместе со всей записью вкладов (аудит 3, roguelite-референс). */
   myContribution: number;
@@ -553,6 +558,9 @@ export interface FortuneWheelSegmentView {
   icon: string;
   kind: 'gold' | 'shards' | 'premium_days' | 'stash_slots' | 'item' | 'nothing';
   rarity: string | null;
+  /** Реальный шанс выпадения, % (см. FORTUNE_WHEEL.weight) — визуальный сектор колеса
+   * одинакового размера для всех призов, поэтому шанс раскрывается отдельно, а не размером сектора. */
+  chancePercent: number;
 }
 
 export interface FortuneWheelStateView {

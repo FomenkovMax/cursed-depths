@@ -126,6 +126,30 @@ export function FortuneWheelVisual({ segments, disabled, onSpin }: FortuneWheelV
       >
         {animating ? 'Крутится...' : '🎡 Крутить колесо'}
       </button>
+
+      <FortuneWheelOdds segments={segments} />
+    </div>
+  );
+}
+
+/** Сектора на колесе выше все одного размера, а не пропорциональны шансу — реальные проценты
+ * раскрываются здесь списком, отсортированным от самого частого приза к самому редкому. */
+function FortuneWheelOdds({ segments }: { segments: FortuneWheelSegmentView[] }) {
+  const sorted = [...segments].sort((a, b) => b.chancePercent - a.chancePercent);
+  return (
+    <div className="w-full max-w-xs rounded-lg border border-border bg-card/50 p-2 text-[11px]">
+      <div className="text-muted-foreground mb-1">Шансы выпадения</div>
+      <div className="space-y-0.5">
+        {sorted.map(seg => (
+          <div key={seg.id} className="flex items-center justify-between gap-2">
+            <span className="flex items-center gap-1 truncate">
+              <span>{seg.icon}</span>
+              <span className="truncate">{seg.nameRu}</span>
+            </span>
+            <span className="text-muted-foreground shrink-0">{seg.chancePercent}%</span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

@@ -23,7 +23,10 @@
   --color-muted-foreground: #a8967d;
   --color-accent: #6b3626;
   --color-accent-foreground: #f3e6d2;
-  --color-destructive: #ef4444;
+  /* #dc2626 вместо #ef4444 — у исходного было 3.76:1 контраста под белым текстом
+     (WCAG AA требует 4.5:1 для обычного текста), заметно на мелких бейджах вроде
+     "ЭКИП" на ItemIconTile (8px). #dc2626 даёт 4.83:1, тот же оттенок "опасности". */
+  --color-destructive: #dc2626;
   --color-destructive-foreground: #ffffff;
   --color-border: #3d2f1f;
   --color-input: #3d2f1f;

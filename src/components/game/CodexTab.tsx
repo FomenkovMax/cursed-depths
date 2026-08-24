@@ -39,7 +39,7 @@ export function CodexTab({ entries, loading }: CodexTabProps) {
   const categories = Array.from(new Set(entries.map(e => e.category)));
 
   return (
-    <TabsContent value="codex" className="flex-1 overflow-y-auto p-4 space-y-3 m-0">
+    <TabsContent value="codex" className="flex-1 overflow-y-auto p-4 space-y-3 m-0 animate-fade-in">
       <TabBanner
         src={TAB_BANNER_IMAGES.codex}
         title="Лор-кодекс"

@@ -116,7 +116,7 @@ export function InventoryTab({
   const canLearn = detail?.item.type === 'blueprint';
 
   return (
-    <TabsContent value="inventory" className="flex-1 overflow-y-auto p-4 space-y-3 m-0">
+    <TabsContent value="inventory" className="flex-1 overflow-y-auto p-4 space-y-3 m-0 animate-fade-in">
       {/* Переключатель "Инвентарь"/"Хранилище" — сундук отдельный от боевого инвентаря (см.
           schema.prisma StashItem), для коллекционирования без расхода боевых слотов. */}
       <div className="flex gap-1 p-1 bg-secondary/30 rounded-lg">

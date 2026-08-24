@@ -33,7 +33,7 @@ export function AchievementsTab({ achievements, loading }: AchievementsTabProps)
   const unlockedCount = achievements.filter(a => a.unlocked).length;
 
   return (
-    <TabsContent value="achievements" className="flex-1 overflow-y-auto p-4 space-y-3 m-0">
+    <TabsContent value="achievements" className="flex-1 overflow-y-auto p-4 space-y-3 m-0 animate-fade-in">
       <TabBanner
         src={TAB_BANNER_IMAGES.achievements}
         title="Достижения"

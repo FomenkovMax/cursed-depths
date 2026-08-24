@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { SEASON_REWARDS, currentSeasonId, previousSeasonId } from '@/lib/social/seasons';
 
@@ -60,12 +60,19 @@ async function distributePreviousSeasonRewardIfNeeded() {
   }
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
     await distributePreviousSeasonRewardIfNeeded();
 
+    // По умолчанию — рейтинг по уровню, как и раньше. sort=abyss переключает на рекорд глубины
+    // Бездонного Разлома (bestAbyssDepth, lib/combat/abyss.ts) — отдельный endgame-контент со
+    // своей метрикой прогресса, которая раньше нигде не сравнивалась между игроками.
+    const sortBy = req.nextUrl.searchParams.get('sort') === 'abyss' ? 'abyss' : 'level';
+
     const players = await db.player.findMany({
-      orderBy: [{ level: 'desc' }, { xp: 'desc' }],
+      orderBy: sortBy === 'abyss'
+        ? [{ bestAbyssDepth: 'desc' }, { level: 'desc' }]
+        : [{ level: 'desc' }, { xp: 'desc' }],
       take: 10,
       select: {
         id: true,
@@ -76,6 +83,7 @@ export async function GET() {
         xp: true,
         gold: true,
         activeTitleId: true,
+        bestAbyssDepth: true,
       },
     });
 

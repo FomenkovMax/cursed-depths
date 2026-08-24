@@ -70,6 +70,7 @@ export async function POST(req: NextRequest) {
           enemyId: enemy.id,
           enemyHp,
           enemyMaxHp: enemyHp,
+          enemyIsElite: false, // элитный ролл живёт только в api/explore, не в его событиях
           combatLog: JSON.stringify([{ text: `${resolution.message} ${enemy.nameRu} появляется!`, turn: 0 }]),
           bossState: JSON.stringify(initBossState(enemy.mechanics)),
         },

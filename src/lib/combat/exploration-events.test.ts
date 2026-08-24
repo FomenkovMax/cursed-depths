@@ -99,3 +99,31 @@ describe('resolveEventChoice — new branching check events (audit 3, C3)', () =
     expect(resolveEventChoice('not_a_real_event', 'nope', 5, STATS)).toBeNull();
   });
 });
+
+describe('resolveEventChoice — natural 1 escalates to an ambush (Wave 2A, п.19)', () => {
+  it('a failed check on a natural 1 (roll=1) sets startCombat, on top of the normal failure penalty', () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0); // roll = 1, guaranteed failure at DC 12
+    const resolution = resolveEventChoice('old_chest', 'open', 5, STATS)!;
+    expect(resolution.checkResult?.roll).toBe(1);
+    expect(resolution.checkResult?.success).toBe(false);
+    expect(resolution.startCombat).toBe(true);
+    expect(resolution.hpDeltaPercent).toBeLessThan(0); // the original penalty still applies too
+  });
+
+  it('a failed check on a roll above 1 does NOT escalate to combat', () => {
+    // roll = 2: Math.random() = 1/20 = 0.05 gives Math.floor(0.05*20) = 1, so roll = 1+1 = 2
+    vi.spyOn(Math, 'random').mockReturnValue(0.05);
+    const resolution = resolveEventChoice('old_chest', 'open', 5, STATS)!;
+    expect(resolution.checkResult?.roll).toBe(2);
+    expect(resolution.checkResult?.success).toBe(false);
+    expect(resolution.startCombat).toBe(false);
+  });
+
+  it('an event that already starts combat on failure (sleeping_guardian:sneak) is not double-escalated or re-labeled', () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0); // roll = 1
+    const resolution = resolveEventChoice('sleeping_guardian', 'sneak', 5, STATS)!;
+    expect(resolution.checkResult?.roll).toBe(1);
+    expect(resolution.startCombat).toBe(true);
+    expect(resolution.message).not.toContain('А на шум из темноты выходит кое-кто ещё');
+  });
+});

@@ -7,6 +7,17 @@ import { PlayerData, WaypointsStateView } from '@/lib/game-types';
 import { LOCATION_IMAGES } from '@/lib/asset-icons';
 import { TabBanner } from '@/components/game/TabBanner';
 
+/** Эвристика риска локации — та же дельта уровня, что уже решает доступность травела ниже
+ * (loc.level <= player.level + 2), просто разбитая на три бакета вместо одного порога. Не новый
+ * расчёт опасности, а видимое объяснение уже существующей логики: почему локация выглядит
+ * пограничной ("+2 ур." уже опасно, хоть и доступно), а не просто "доступна/нет". */
+function riskLevel(locLevel: number, playerLevel: number): { label: string; className: string } {
+  const delta = locLevel - playerLevel;
+  if (delta <= -3) return { label: '🟢 Низкий риск', className: 'text-uncommon border-uncommon/30' };
+  if (delta <= 0) return { label: '🟡 Средний риск', className: 'text-gold border-gold/30' };
+  return { label: '🔴 Высокий риск', className: 'text-destructive border-destructive/30' };
+}
+
 interface MapTabProps {
   player: PlayerData | null;
   location: typeof LOCATIONS[0] | null;
@@ -100,6 +111,14 @@ export function MapTab({ player, location, loading, onTravel, waypointsState, wa
                     <Badge variant="outline" className="text-[10px] h-4 px-1">
                       Ур. {loc.level}+
                     </Badge>
+                    {!levelLocked && (() => {
+                      const risk = riskLevel(loc.level, player?.level ?? 0);
+                      return (
+                        <Badge variant="outline" className={`text-[10px] h-4 px-1 ${risk.className}`}>
+                          {risk.label}
+                        </Badge>
+                      );
+                    })()}
                     {levelLocked && (
                       <Badge variant="outline" className="text-[10px] h-4 px-1 text-destructive border-destructive/30">
                         🔒 Ур. {loc.level - 2}+

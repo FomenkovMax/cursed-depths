@@ -553,6 +553,9 @@ export interface FortuneWheelSegmentView {
   icon: string;
   kind: 'gold' | 'shards' | 'premium_days' | 'stash_slots' | 'item' | 'nothing';
   rarity: string | null;
+  /** Реальный шанс выпадения, % (см. FORTUNE_WHEEL.weight) — визуальный сектор колеса
+   * одинакового размера для всех призов, поэтому шанс раскрывается отдельно, а не размером сектора. */
+  chancePercent: number;
 }
 
 export interface FortuneWheelStateView {

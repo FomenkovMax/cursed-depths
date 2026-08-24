@@ -49,6 +49,10 @@ interface NavBarProps {
   tab: GameTab;
   onChangeTab: (tab: GameTab) => void;
   inCombat: boolean;
+  /** Есть доступное, но не забранное действие внутри группы "Мир" (сейчас — испытание недели
+   * ещё не пройдено) — точка на самом выпадающем триггере "Мир", а не только на вложенной
+   * вкладке, чтобы игрок не открывал дропдаун наугад в поисках, где что-то ждёт. */
+  worldHasNotice?: boolean;
 }
 
 interface NavButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -92,7 +96,7 @@ const NavButton = forwardRef<HTMLButtonElement, NavButtonProps>(function NavButt
   );
 });
 
-export function NavBar({ tab, onChangeTab, inCombat }: NavBarProps) {
+export function NavBar({ tab, onChangeTab, inCombat, worldHasNotice }: NavBarProps) {
   const heroActive = HERO_GROUP.includes(tab);
   const worldActive = WORLD_GROUP.includes(tab);
 
@@ -135,12 +139,16 @@ export function NavBar({ tab, onChangeTab, inCombat }: NavBarProps) {
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <NavButton active={worldActive} icon="🏰" label="Мир ▾" />
+          <NavButton active={worldActive} icon="🏰" label="Мир ▾" dot={worldHasNotice} />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="min-w-40">
           {WORLD_GROUP.map(t => (
             <DropdownMenuItem key={t} onClick={() => onChangeTab(t)} className={tab === t ? 'bg-primary/10 text-primary' : ''}>
-              <AssetIcon src={TAB_ICON_IMAGES[t]} emoji={TAB_META[t].icon} size={16} className="mr-1.5" /> {TAB_META[t].label}
+              <AssetIcon src={TAB_ICON_IMAGES[t]} emoji={TAB_META[t].icon} size={16} className="mr-1.5" />
+              {TAB_META[t].label}
+              {t === 'weekly-challenge' && worldHasNotice && (
+                <span className="ml-auto w-1.5 h-1.5 rounded-full bg-destructive" />
+              )}
             </DropdownMenuItem>
           ))}
         </DropdownMenuContent>

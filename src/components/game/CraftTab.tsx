@@ -10,7 +10,7 @@ import { CURRENCY_ICON_IMAGES, ITEM_ICON_IMAGES, TAB_BANNER_IMAGES } from '@/lib
 import { TabBanner } from '@/components/game/TabBanner';
 import { ItemDetailCard } from '@/components/game/ItemDetailCard';
 import { CRAFTING_RECIPES, ITEMS, RARITY_COLORS } from '@/lib/game-data';
-import { PlayerData, parseAffixes } from '@/lib/game-types';
+import { PlayerData, GameTab, parseAffixes } from '@/lib/game-types';
 import { CURRENCY_IDS, enchantCostForReroll, type AffixTierName } from '@/lib/economy/item-affixes';
 import { MAX_ENHANCEMENT_LEVEL, temperSuccessChance } from '@/lib/economy/item-enhancement';
 
@@ -25,13 +25,14 @@ interface CraftTabProps {
   crownShards: number;
   onEnchantAffix: (inventoryId: string, affixIndex: number) => void;
   enchanting: boolean;
+  onNavigateTab: (tab: GameTab) => void;
 }
 
 const TIER_LABELS: Record<number, string> = { 1: 'Тир I', 2: 'Тир II', 3: 'Тир III' };
 const TIER_COLORS: Record<number, string> = { 1: '#9ca3af', 2: '#3b82f6', 3: '#f59e0b' };
 const TEMPER_SCROLL_ITEM_ID = 'tempering_scroll';
 
-export function CraftTab({ player, loading, canCraftRecipe, learnedRecipeIds, onCraft, onApplyCurrency, onTemper, crownShards, onEnchantAffix, enchanting }: CraftTabProps) {
+export function CraftTab({ player, loading, canCraftRecipe, learnedRecipeIds, onCraft, onApplyCurrency, onTemper, crownShards, onEnchantAffix, enchanting, onNavigateTab }: CraftTabProps) {
   const playerInventory = player?.inventory || [];
   const [selectedTargetId, setSelectedTargetId] = useState<string | null>(null);
   // Локальный UI-стейт крафт-фидбека (какая иконка результата сейчас "вспыхивает") — раньше
@@ -59,7 +60,12 @@ export function CraftTab({ player, loading, canCraftRecipe, learnedRecipeIds, on
         </CardHeader>
         <CardContent className="px-4 pb-3">
           {playerInventory.filter(i => i.type === 'material').length === 0 ? (
-            <p className="text-xs text-muted-foreground text-center">Нет материалов</p>
+            <div className="text-center space-y-2 py-1">
+              <p className="text-xs text-muted-foreground">Нет материалов — их роняют враги и приносят исследования</p>
+              <Button size="sm" className="h-8 text-xs" onClick={() => onNavigateTab('overview')}>
+                🔍 Исследовать
+              </Button>
+            </div>
           ) : (
             <div className="grid grid-cols-4 gap-2">
               {playerInventory.filter(i => i.type === 'material').map(item => (

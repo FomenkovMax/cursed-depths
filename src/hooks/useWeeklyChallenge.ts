@@ -28,7 +28,9 @@ export function useWeeklyChallenge({ apiCall, telegramIdRef, tab, onMessage, ref
   }, [apiCall, telegramIdRef, onMessage]);
 
   useEffect(() => {
-    if (tab !== 'weekly-challenge') return;
+    // 'overview' тоже триггерит загрузку — NavBar показывает точку-уведомление "Мир" по этому
+    // состоянию (см. worldHasNotice в page.tsx), а Обзор обычно первая вкладка после входа.
+    if (tab !== 'weekly-challenge' && tab !== 'overview') return;
     refresh();
   }, [tab, refresh]);
 

@@ -20,7 +20,7 @@ interface MapTabProps {
 
 export function MapTab({ player, location, loading, onTravel, waypointsState, waypointsLoading, fastTravellingTo, onFastTravel }: MapTabProps) {
   return (
-    <TabsContent value="map" className="flex-1 overflow-y-auto p-4 space-y-3 m-0">
+    <TabsContent value="map" className="flex-1 overflow-y-auto p-4 space-y-3 m-0 animate-fade-in">
       {/* Баннер — арт текущей локации игрока (LOCATION_IMAGES уже покрывают 37/37), а не новая
           генерация: сама вкладка "Карта" не привязана к одной сцене, зато "вы здесь" — это то,
           что реально знает игрок в этот момент. */}

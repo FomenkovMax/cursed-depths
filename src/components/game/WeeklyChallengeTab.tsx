@@ -18,18 +18,18 @@ interface WeeklyChallengeTabProps {
 export function WeeklyChallengeTab({ state, loading, attempting, lastResult, onAttempt }: WeeklyChallengeTabProps) {
   if (loading && !state) {
     return (
-      <TabsContent value="weekly-challenge" className="flex-1 overflow-y-auto p-4 space-y-3 m-0">
+      <TabsContent value="weekly-challenge" className="flex-1 overflow-y-auto p-4 space-y-3 m-0 animate-fade-in">
         <p className="text-xs text-muted-foreground text-center py-4">Загрузка испытания недели...</p>
       </TabsContent>
     );
   }
 
   if (!state) {
-    return <TabsContent value="weekly-challenge" className="flex-1 overflow-y-auto p-4 space-y-3 m-0" />;
+    return <TabsContent value="weekly-challenge" className="flex-1 overflow-y-auto p-4 space-y-3 m-0 animate-fade-in" />;
   }
 
   return (
-    <TabsContent value="weekly-challenge" className="flex-1 overflow-y-auto p-4 space-y-3 m-0">
+    <TabsContent value="weekly-challenge" className="flex-1 overflow-y-auto p-4 space-y-3 m-0 animate-fade-in">
       <TabBanner
         src={TAB_BANNER_IMAGES['weekly-challenge']}
         title="Испытание недели"

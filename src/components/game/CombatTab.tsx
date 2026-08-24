@@ -71,7 +71,7 @@ export function CombatTab({
   const dungeonModifier = player?.dungeonId ? findDungeonModifier(player.dungeonModifierId) : null;
 
   return (
-    <TabsContent value="combat" className="flex-1 overflow-y-auto p-4 space-y-4 m-0">
+    <TabsContent value="combat" className="flex-1 overflow-y-auto p-4 space-y-4 m-0 animate-fade-in">
       {player?.inCombat && enemy ? (
         <>
           {/* Индикатор забега по данжу — см. lib/combat/dungeons.ts — и его модификатора, если выпал

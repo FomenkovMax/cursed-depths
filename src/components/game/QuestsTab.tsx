@@ -17,7 +17,7 @@ export function QuestsTab({ player, loading, onClaimQuest }: QuestsTabProps) {
   const playerQuests = player?.quests || [];
 
   return (
-    <TabsContent value="quests" className="flex-1 overflow-y-auto p-4 space-y-3 m-0">
+    <TabsContent value="quests" className="flex-1 overflow-y-auto p-4 space-y-3 m-0 animate-fade-in">
       <TabBanner src={TAB_BANNER_IMAGES.quests} title="Квесты" subtitle="Выполняйте задания для наград" />
 
       {playerQuests.length === 0 ? (

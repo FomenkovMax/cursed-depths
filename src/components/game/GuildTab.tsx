@@ -99,7 +99,7 @@ export function GuildTab({
   };
 
   return (
-    <TabsContent value="guild" className="flex-1 overflow-y-auto p-4 space-y-4 m-0">
+    <TabsContent value="guild" className="flex-1 overflow-y-auto p-4 space-y-4 m-0 animate-fade-in">
       <TabBanner src={TAB_BANNER_IMAGES.guild} title="Гильдия" />
       {/* Мировой босс — общая цель ВСЕХ игроков разом, не привязана к гильдии (lib/social/world-boss.ts).
           Живёт здесь, а не отдельной вкладкой, чтобы не раздувать и без того тесную панель вкладок. */}

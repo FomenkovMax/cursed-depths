@@ -116,7 +116,7 @@ export function OverviewTab({
   }));
 
   return (
-    <TabsContent value="overview" className="flex-1 overflow-y-auto p-4 space-y-4 m-0">
+    <TabsContent value="overview" className="flex-1 overflow-y-auto p-4 space-y-4 m-0 animate-fade-in">
       {/* Location card — описание крупнее и заметнее, ближе к нарративной сцене чат-бота
           в референсе, а не подпись мелким текстом под заголовком */}
       <Card className="border-border overflow-hidden">

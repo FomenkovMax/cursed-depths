@@ -37,7 +37,7 @@ export function CharacterSlotsTab({ state, loading, creating, switchingId, onCre
   const hasSecondSlot = (state?.characters.length ?? 0) >= (state?.maxSlots ?? 2);
 
   return (
-    <TabsContent value="characters" className="flex-1 overflow-y-auto p-4 space-y-4 m-0">
+    <TabsContent value="characters" className="flex-1 overflow-y-auto p-4 space-y-4 m-0 animate-fade-in">
       <TabBanner src={TAB_BANNER_IMAGES.characters} title="Персонажи аккаунта" />
       <Card className="border-border">
         <CardHeader className="pb-2 pt-3 px-4">

@@ -83,7 +83,7 @@ export function PartyTab({
   };
 
   return (
-    <TabsContent value="party" className="flex-1 overflow-y-auto p-4 space-y-4 m-0">
+    <TabsContent value="party" className="flex-1 overflow-y-auto p-4 space-y-4 m-0 animate-fade-in">
       {!party ? (
         <Card className="border-border">
           <CardContent className="p-6 text-center space-y-3">

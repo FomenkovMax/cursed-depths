@@ -1,6 +1,7 @@
 import { TabsContent } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { PlayerData } from '@/lib/game-types';
 import { findTitle } from '@/lib/social/titles';
 import { TITLE_ICON_IMAGES, TAB_BANNER_IMAGES } from '@/lib/asset-icons';
@@ -16,7 +17,10 @@ export interface LeaderboardEntry {
   xp: number;
   gold: number;
   activeTitleId: string | null;
+  bestAbyssDepth: number;
 }
+
+export type LeaderboardSort = 'level' | 'abyss';
 
 export interface SeasonWinnerEntry {
   id: string;
@@ -34,18 +38,46 @@ interface LeaderboardTabProps {
   currentSeason: string | null;
   previousSeason: string | null;
   previousSeasonWinners: SeasonWinnerEntry[];
+  sortBy: LeaderboardSort;
+  onSortChange: (sort: LeaderboardSort) => void;
 }
 
 const RANK_MEDALS = ['🥇', '🥈', '🥉'];
 
-export function LeaderboardTab({ player, leaderboard, loading, currentSeason, previousSeason, previousSeasonWinners }: LeaderboardTabProps) {
+export function LeaderboardTab({ player, leaderboard, loading, currentSeason, previousSeason, previousSeasonWinners, sortBy, onSortChange }: LeaderboardTabProps) {
   return (
     <TabsContent value="leaderboard" className="flex-1 overflow-y-auto p-4 space-y-3 m-0 animate-fade-in">
       <TabBanner
         src={TAB_BANNER_IMAGES.leaderboard}
         title="Таблица лидеров"
-        subtitle={`Топ-10 искателей приключений по уровню${currentSeason ? ` • сезон ${currentSeason}` : ''}`}
+        subtitle={
+          sortBy === 'abyss'
+            ? `Топ-10 по глубине Бездонного Разлома${currentSeason ? ` • сезон ${currentSeason}` : ''}`
+            : `Топ-10 искателей приключений по уровню${currentSeason ? ` • сезон ${currentSeason}` : ''}`
+        }
       />
+
+      {/* Фильтр метрики рейтинга — уровень (как раньше) или рекорд глубины Бездонного Разлома
+          (bestAbyssDepth, lib/combat/abyss.ts) — endgame-контент со своим прогрессом, который
+          раньше никак не сравнивался между игроками. */}
+      <div className="flex gap-1.5">
+        <Button
+          size="sm"
+          variant={sortBy === 'level' ? 'default' : 'outline'}
+          className="h-7 text-xs flex-1"
+          onClick={() => onSortChange('level')}
+        >
+          🏆 По уровню
+        </Button>
+        <Button
+          size="sm"
+          variant={sortBy === 'abyss' ? 'default' : 'outline'}
+          className="h-7 text-xs flex-1"
+          onClick={() => onSortChange('abyss')}
+        >
+          🕳️ Глубина Бездны
+        </Button>
+      </div>
 
       {/* Награды за прошлый сезон — топ-3 получают золото и опыт в начале каждого месяца
           (см. GET /api/leaderboard, lib/social/seasons.ts). Прогресс игроков при этом НЕ сбрасывается. */}
@@ -105,8 +137,17 @@ export function LeaderboardTab({ player, leaderboard, loading, currentSeason, pr
                     </div>
                   </div>
                   <div className="text-right shrink-0">
-                    <div className="text-xs font-bold text-uncommon">Ур. {entry.level}</div>
-                    <div className="text-[10px] text-gold">💰 {entry.gold}</div>
+                    {sortBy === 'abyss' ? (
+                      <>
+                        <div className="text-xs font-bold text-uncommon">🕳️ Глубина {entry.bestAbyssDepth}</div>
+                        <div className="text-[10px] text-muted-foreground">Ур. {entry.level}</div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="text-xs font-bold text-uncommon">Ур. {entry.level}</div>
+                        <div className="text-[10px] text-gold">💰 {entry.gold}</div>
+                      </>
+                    )}
                   </div>
                 </CardContent>
               </Card>

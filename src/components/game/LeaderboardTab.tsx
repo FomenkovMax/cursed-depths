@@ -7,6 +7,7 @@ import { findTitle } from '@/lib/social/titles';
 import { TITLE_ICON_IMAGES, TAB_BANNER_IMAGES } from '@/lib/asset-icons';
 import { AssetIcon } from '@/components/game/AssetIcon';
 import { TabBanner } from '@/components/game/TabBanner';
+import { ListSkeleton } from '@/components/game/ListSkeleton';
 
 export interface LeaderboardEntry {
   id: string;
@@ -100,11 +101,7 @@ export function LeaderboardTab({ player, leaderboard, loading, currentSeason, pr
       )}
 
       {loading ? (
-        <Card className="border-border">
-          <CardContent className="p-6 text-center">
-            <p className="text-sm text-muted-foreground">Загрузка...</p>
-          </CardContent>
-        </Card>
+        <ListSkeleton />
       ) : leaderboard.length === 0 ? (
         <Card className="border-border">
           <CardContent className="p-6 text-center">

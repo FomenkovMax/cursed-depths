@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { validateTelegramRequest } from '@/lib/auth';
-import { findExpeditionTier } from '@/lib/premium/expeditions';
+import { findExpeditionTier, F2P_EXPEDITION_TIER_ID } from '@/lib/premium/expeditions';
 import { isPremiumActive } from '@/lib/premium/premium-shop';
 
 export async function POST(req: NextRequest) {
@@ -18,10 +18,18 @@ export async function POST(req: NextRequest) {
     const player = await db.player.findUnique({ where: { telegramId: auth.telegramId } });
     if (!player) return NextResponse.json({ error: 'Персонаж не найден' }, { status: 404 });
 
-    // Реально премиум-эксклюзивная механика — без активного премиума нельзя начать экспедицию
-    // вообще, не только "получить лучшую награду".
-    if (!isPremiumActive(player.premiumUntil)) {
-      return NextResponse.json({ error: 'Экспедиции доступны только с активным премиум-статусом' }, { status: 403 });
+    // Премиум — любой тир без ограничений. F2P (волна 2B, п.24) — только самый короткий тир,
+    // раз в день (Player.expeditionFreeUsedDate, тот же lazy-reset паттерн, что у остальных
+    // дневных лимитов) — "вкус" механики вместо полной невидимости.
+    const premiumActive = isPremiumActive(player.premiumUntil);
+    const today = new Date().toISOString().split('T')[0];
+    if (!premiumActive) {
+      if (tier.id !== F2P_EXPEDITION_TIER_ID) {
+        return NextResponse.json({ error: 'Этот тир доступен только с активным премиум-статусом' }, { status: 403 });
+      }
+      if (player.expeditionFreeUsedDate === today) {
+        return NextResponse.json({ error: 'Бесплатная вылазка на сегодня уже использована — premium снимает дневной лимит' }, { status: 403 });
+      }
     }
     if (player.expeditionTierId && player.expeditionEndsAt) {
       return NextResponse.json({ error: 'Герой уже в экспедиции' }, { status: 400 });
@@ -30,7 +38,11 @@ export async function POST(req: NextRequest) {
     const endsAt = new Date(Date.now() + tier.hours * 60 * 60 * 1000);
     const updated = await db.player.update({
       where: { telegramId: auth.telegramId },
-      data: { expeditionTierId: tier.id, expeditionEndsAt: endsAt },
+      data: {
+        expeditionTierId: tier.id,
+        expeditionEndsAt: endsAt,
+        ...(premiumActive ? {} : { expeditionFreeUsedDate: today }),
+      },
       include: { inventory: true, quests: true, race: true, class: { include: { abilities: true } } },
     });
 

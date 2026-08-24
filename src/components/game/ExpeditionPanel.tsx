@@ -19,10 +19,12 @@ function formatRemaining(ms: number): string {
   return [h, m, s].map(n => String(n).padStart(2, '0')).join(':');
 }
 
-/** Экспедиции — премиум-эксклюзивная офлайн-механика (lib/premium/expeditions.ts): не блокирует
- * остальную игру, просто таймер поверх текущей сессии. Тикающий обратный отсчёт — единственная
- * причина, по которой этому компоненту вообще нужен собственный setInterval (больше нигде в
- * игре нет "живого" таймера на фронте). */
+/** Экспедиции — офлайн-механика (lib/premium/expeditions.ts): не блокирует остальную игру,
+ * просто таймер поверх текущей сессии. Тикающий обратный отсчёт — единственная причина, по
+ * которой этому компоненту вообще нужен собственный setInterval (больше нигде в игре нет
+ * "живого" таймера на фронте). Премиум — любой тир без лимита; F2P (волна 2B, п.24) — раз в
+ * день только самый короткий тир, с половинной наградой, остальные тиры видны, но заперты —
+ * "вкус" механики вместо полной невидимости, как было раньше. */
 export function ExpeditionPanel({ state, loading, starting, claiming, onStart, onClaim }: ExpeditionPanelProps) {
   const [now, setNow] = useState(() => Date.now());
 
@@ -32,13 +34,7 @@ export function ExpeditionPanel({ state, loading, starting, claiming, onStart, o
     return () => clearInterval(id);
   }, [state?.active]);
 
-  if (!state?.premiumActive) {
-    return (
-      <p className="text-[10px] text-muted-foreground text-center py-2">
-        Экспедиции доступны только с активным премиум-статусом.
-      </p>
-    );
-  }
+  if (!state) return null;
 
   if (state.active) {
     const endsAtMs = new Date(state.active.endsAt).getTime();
@@ -69,27 +65,43 @@ export function ExpeditionPanel({ state, loading, starting, claiming, onStart, o
   }
 
   return (
-    <div className="grid grid-cols-2 gap-2">
-      {state.tiers.map(tier => (
-        <div key={tier.id} className="p-2 rounded-lg border border-border/60 bg-secondary/10 flex flex-col gap-1">
-          <div className="flex items-center gap-2">
-            <span className="text-xl">{tier.icon}</span>
-            <div className="min-w-0">
-              <div className="text-xs font-medium">{tier.nameRu}</div>
-              <div className="text-[9px] text-muted-foreground">{tier.hours} ч.</div>
+    <div className="space-y-2">
+      {!state.premiumActive && (
+        <p className="text-[10px] text-muted-foreground text-center">
+          {state.f2pUsedToday
+            ? 'Бесплатная вылазка на сегодня использована — возвращайтесь завтра, или снимите дневной лимит и откройте остальные тиры премиумом.'
+            : 'Бесплатно доступна короткая вылазка раз в день (награда x0.5) — остальные тиры и полная награда только с премиумом.'}
+        </p>
+      )}
+      <div className="grid grid-cols-2 gap-2">
+        {state.tiers.map(tier => {
+          const isF2pTier = tier.id === state.f2pTierId;
+          const locked = !state.premiumActive && (!isF2pTier || state.f2pUsedToday);
+          return (
+            <div key={tier.id} className={`p-2 rounded-lg border flex flex-col gap-1 ${locked ? 'border-border/40 bg-secondary/5 opacity-60' : 'border-border/60 bg-secondary/10'}`}>
+              <div className="flex items-center gap-2">
+                <span className="text-xl">{tier.icon}</span>
+                <div className="min-w-0 flex-1">
+                  <div className="text-xs font-medium flex items-center gap-1">
+                    {tier.nameRu}
+                    {!state.premiumActive && isF2pTier && <span className="text-[8px] text-uncommon">x0.5</span>}
+                  </div>
+                  <div className="text-[9px] text-muted-foreground">{tier.hours} ч.</div>
+                </div>
+              </div>
+              <div className="text-[9px] text-muted-foreground italic leading-tight">{tier.descriptionRu}</div>
+              <button
+                type="button"
+                onClick={() => onStart(tier.id)}
+                disabled={loading || starting !== null || locked}
+                className="h-7 text-[10px] rounded-md border border-primary/60 font-medium disabled:opacity-50 hover:bg-primary/10"
+              >
+                {starting === tier.id ? '...' : locked ? '👑 Премиум' : 'Отправить'}
+              </button>
             </div>
-          </div>
-          <div className="text-[9px] text-muted-foreground italic leading-tight">{tier.descriptionRu}</div>
-          <button
-            type="button"
-            onClick={() => onStart(tier.id)}
-            disabled={loading || starting !== null}
-            className="h-7 text-[10px] rounded-md border border-primary/60 font-medium disabled:opacity-50 hover:bg-primary/10"
-          >
-            {starting === tier.id ? '...' : 'Отправить'}
-          </button>
-        </div>
-      ))}
+          );
+        })}
+      </div>
     </div>
   );
 }

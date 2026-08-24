@@ -723,6 +723,10 @@ export interface ExpeditionStateView {
   premiumActive: boolean;
   tiers: ExpeditionTierView[];
   active: ActiveExpeditionView | null;
+  /** F2P: id единственного доступного без премиума тира. */
+  f2pTierId: string;
+  /** F2P: бесплатная вылазка на сегодня уже использована. */
+  f2pUsedToday: boolean;
 }
 
 export interface ExpeditionClaimResultView {

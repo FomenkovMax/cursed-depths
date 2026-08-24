@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { validateTelegramRequest } from '@/lib/auth';
-import { findExpeditionTier, expeditionReward } from '@/lib/premium/expeditions';
+import { findExpeditionTier, expeditionReward, F2P_EXPEDITION_TIER_ID, F2P_REWARD_MULT } from '@/lib/premium/expeditions';
 import { isPremiumActive, PREMIUM_GOLD_XP_MULT, isDeathDebuffActive, DEATH_DEBUFF_XP_MULT } from '@/lib/premium/premium-shop';
 import { ITEMS } from '@/lib/game-data';
 import { addItemToInventory } from '@/lib/economy/inventory-utils';
@@ -27,10 +27,14 @@ export async function POST(req: NextRequest) {
     if (!tier) return NextResponse.json({ error: 'Ошибка данных экспедиции' }, { status: 500 });
 
     const reward = expeditionReward(tier, player.level);
-    const premiumMult = isPremiumActive(player.premiumUntil) ? PREMIUM_GOLD_XP_MULT : 1;
+    const premiumActive = isPremiumActive(player.premiumUntil);
+    const premiumMult = premiumActive ? PREMIUM_GOLD_XP_MULT : 1;
     const xpDebuffMult = isDeathDebuffActive(player.deathDebuffUntil, player.premiumUntil) ? DEATH_DEBUFF_XP_MULT : 1;
-    const goldGained = Math.round(reward.gold * premiumMult);
-    const xpGained = Math.round(reward.xp * premiumMult * xpDebuffMult);
+    // F2P могли попасть сюда только через бесплатный ежедневный F2P_EXPEDITION_TIER_ID (см.
+    // api/expedition/start) — награда урезана вдвое, это "вкус" механики, не полный доступ.
+    const f2pMult = !premiumActive && tier.id === F2P_EXPEDITION_TIER_ID ? F2P_REWARD_MULT : 1;
+    const goldGained = Math.round(reward.gold * premiumMult * f2pMult);
+    const xpGained = Math.round(reward.xp * premiumMult * xpDebuffMult * f2pMult);
 
     let newXp = player.xp + xpGained;
     let newLevel = player.level;

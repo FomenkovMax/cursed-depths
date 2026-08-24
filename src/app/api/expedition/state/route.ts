@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { validateTelegramRequest } from '@/lib/auth';
-import { EXPEDITION_TIERS, findExpeditionTier } from '@/lib/premium/expeditions';
+import { EXPEDITION_TIERS, findExpeditionTier, F2P_EXPEDITION_TIER_ID } from '@/lib/premium/expeditions';
 import { isPremiumActive } from '@/lib/premium/premium-shop';
 
 export async function GET(req: NextRequest) {
@@ -22,10 +22,15 @@ export async function GET(req: NextRequest) {
         }
       : null;
 
+    const today = new Date().toISOString().split('T')[0];
+
     return NextResponse.json({
       premiumActive: isPremiumActive(player.premiumUntil),
       tiers: EXPEDITION_TIERS,
       active,
+      // F2P: доступен только этот тир, раз в день — см. api/expedition/start.
+      f2pTierId: F2P_EXPEDITION_TIER_ID,
+      f2pUsedToday: player.expeditionFreeUsedDate === today,
     });
   } catch (error) {
     console.error('[API] Route error:', error);

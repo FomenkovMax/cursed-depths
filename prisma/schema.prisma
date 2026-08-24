@@ -141,8 +141,13 @@ model Player {
   expeditionTierId  String? // id тира из lib/expeditions.ts EXPEDITION_TIERS — null, если герой
                              // никуда не отправлен. Экспедиция не блокирует обычную игру (можно
                              // продолжать драться/исследовать параллельно) — это чисто офлайн-
-                             // таймер, премиум-эксклюзивный (см. api/expedition/start).
+                             // таймер. Раньше был чисто премиум-эксклюзивным; с волны 2B (п.24)
+                             // F2P тоже может отправить героя в самый короткий тир, см. поле ниже.
   expeditionEndsAt DateTime? // когда можно будет забрать награду — null, если экспедиции нет
+  expeditionFreeUsedDate String? // "YYYY-MM-DD" последнего дня, когда F2P-игрок (без активного
+                             // премиума) уже отправлял бесплатную короткую экспедицию — тот же
+                             // lazy-reset паттерн, что и у worldBossAttackDate/fortuneSpinDate.
+                             // Премиума не касается вовсе — у него нет дневного лимита тиров.
   bountyEnemyId   String?   // id босса-цели из ENEMIES на сегодня (lib/bounty-board.ts) — null,
                              // пока не назначен/не премиум
   bountyDate      String?   // "YYYY-MM-DD" дня, на который назначена цель — тот же lazy-reset

@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const player = await db.player.findUnique({ where: { telegramId: auth.telegramId } });
+    const player = await db.player.findUnique({ where: { telegramId: auth.telegramId }, include: { dailyLimits: true } });
     if (!player) return NextResponse.json({ error: 'Персонаж не найден' }, { status: 404 });
 
     const premiumActive = isPremiumActive(player.premiumUntil);
@@ -21,12 +21,22 @@ export async function GET(req: NextRequest) {
     }
 
     const today = new Date().toISOString().split('T')[0];
-    let enemyId = player.bountyEnemyId;
-    let attempted = player.bountyAttempted;
-    if (player.bountyDate !== today || !enemyId) {
+    let enemyId = player.dailyLimits?.bountyEnemyId ?? null;
+    let attempted = player.dailyLimits?.bountyAttempted ?? false;
+    if (player.dailyLimits?.bountyDate !== today || !enemyId) {
       enemyId = pickRandomBountyEnemyId();
       attempted = false;
-      await db.player.update({ where: { telegramId: auth.telegramId }, data: { bountyEnemyId: enemyId, bountyDate: today, bountyAttempted: false } });
+      await db.player.update({
+        where: { telegramId: auth.telegramId },
+        data: {
+          dailyLimits: {
+            upsert: {
+              create: { bountyEnemyId: enemyId, bountyDate: today, bountyAttempted: false },
+              update: { bountyEnemyId: enemyId, bountyDate: today, bountyAttempted: false },
+            },
+          },
+        },
+      });
     }
 
     const enemy = ENEMIES.find(e => e.id === enemyId);

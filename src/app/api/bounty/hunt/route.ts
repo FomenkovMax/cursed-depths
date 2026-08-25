@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const player = await db.player.findUnique({ where: { telegramId: auth.telegramId }, include: { inventory: true } });
+    const player = await db.player.findUnique({ where: { telegramId: auth.telegramId }, include: { inventory: true, dailyLimits: true } });
     if (!player) return NextResponse.json({ error: 'Персонаж не найден' }, { status: 404 });
 
     if (!isPremiumActive(player.premiumUntil)) {
@@ -25,9 +25,9 @@ export async function POST(req: NextRequest) {
     }
 
     const today = new Date().toISOString().split('T')[0];
-    let enemyId = player.bountyEnemyId;
-    let attempted = player.bountyAttempted;
-    if (player.bountyDate !== today || !enemyId) {
+    let enemyId = player.dailyLimits?.bountyEnemyId ?? null;
+    let attempted = player.dailyLimits?.bountyAttempted ?? false;
+    if (player.dailyLimits?.bountyDate !== today || !enemyId) {
       enemyId = pickRandomBountyEnemyId();
       attempted = false;
     }
@@ -48,7 +48,14 @@ export async function POST(req: NextRequest) {
     }, BOUNTY_DC);
 
     let itemWon: string | null = null;
-    const updateData: Prisma.PlayerUpdateInput = { bountyEnemyId: enemyId, bountyDate: today, bountyAttempted: true };
+    const updateData: Prisma.PlayerUpdateInput = {
+      dailyLimits: {
+        upsert: {
+          create: { bountyEnemyId: enemyId, bountyDate: today, bountyAttempted: true },
+          update: { bountyEnemyId: enemyId, bountyDate: today, bountyAttempted: true },
+        },
+      },
+    };
 
     if (check.success) {
       const premiumMult = PREMIUM_GOLD_XP_MULT; // премиум гарантирован проверкой выше по маршруту

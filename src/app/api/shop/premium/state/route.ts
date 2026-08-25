@@ -11,12 +11,12 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const player = await db.player.findUnique({ where: { telegramId: auth.telegramId } });
+    const player = await db.player.findUnique({ where: { telegramId: auth.telegramId }, include: { dailyLimits: true } });
     if (!player) return NextResponse.json({ error: 'Персонаж не найден' }, { status: 404 });
 
     const premiumActive = isPremiumActive(player.premiumUntil);
     const today = new Date().toISOString().split('T')[0];
-    const spinsToday = player.fortuneSpinDate === today ? player.fortuneSpinsToday : 0;
+    const spinsToday = player.dailyLimits?.fortuneSpinDate === today ? player.dailyLimits.fortuneSpinsToday : 0;
     const freeSpins = freeSpinsPerDayFor(premiumActive);
     const races = await db.race.findMany({ include: { classes: true }, orderBy: { name: 'asc' } });
 

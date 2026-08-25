@@ -13,7 +13,10 @@ export async function GET(req: NextRequest) {
   try {
     const player = await db.player.findUnique({
       where: { telegramId: auth.telegramId },
-      include: { guildMember: { include: { guild: { include: { members: { select: { playerId: true } } } } } } },
+      include: {
+        guildMember: { include: { guild: { include: { members: { select: { playerId: true } } } } } },
+        dailyLimits: true,
+      },
     });
     if (!player) return NextResponse.json({ error: 'Персонаж не найден' }, { status: 404 });
 
@@ -47,7 +50,7 @@ export async function GET(req: NextRequest) {
       : null;
 
     const today = new Date().toISOString().split('T')[0];
-    const attacksToday = player.worldBossAttackDate === today ? player.worldBossAttacksToday : 0;
+    const attacksToday = player.dailyLimits?.worldBossAttackDate === today ? player.dailyLimits.worldBossAttacksToday : 0;
     const attackCap = dailyAttackCapFor(isPremiumActive(player.premiumUntil));
 
     return NextResponse.json({

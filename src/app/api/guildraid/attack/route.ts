@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
   try {
     const player = await db.player.findUnique({
       where: { telegramId: auth.telegramId },
-      include: { inventory: true, class: true, guildMember: { include: { guild: { include: { members: true } } } } },
+      include: { inventory: true, class: true, guildMember: { include: { guild: { include: { members: true } } } }, dailyLimits: true },
     });
     if (!player) return NextResponse.json({ error: 'Персонаж не найден' }, { status: 404 });
     if (!isPremiumActive(player.premiumUntil)) {
@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
     }
 
     const today = new Date().toISOString().split('T')[0];
-    const attacksSoFar = player.raidBossAttackDate === today ? player.raidBossAttacksToday : 0;
+    const attacksSoFar = player.dailyLimits?.raidBossAttackDate === today ? player.dailyLimits.raidBossAttacksToday : 0;
     if (attacksSoFar >= RAID_BOSS_DAILY_ATTACK_CAP) {
       return NextResponse.json({ error: `Вы уже атаковали гильд-рейд-босса ${RAID_BOSS_DAILY_ATTACK_CAP} раз сегодня` }, { status: 400 });
     }
@@ -61,7 +61,14 @@ export async function POST(req: NextRequest) {
       });
       await tx.player.update({
         where: { id: player.id },
-        data: { raidBossAttacksToday: attacksSoFar + 1, raidBossAttackDate: today },
+        data: {
+          dailyLimits: {
+            upsert: {
+              create: { raidBossAttacksToday: attacksSoFar + 1, raidBossAttackDate: today },
+              update: { raidBossAttacksToday: attacksSoFar + 1, raidBossAttackDate: today },
+            },
+          },
+        },
       });
 
       let killed = false;

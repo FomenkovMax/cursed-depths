@@ -15,13 +15,13 @@ export async function POST(req: NextRequest) {
   try {
     const player = await db.player.findUnique({
       where: { telegramId: auth.telegramId },
-      include: { inventory: true, class: true, guildMember: true },
+      include: { inventory: true, class: true, guildMember: true, dailyLimits: true },
     });
     if (!player) return NextResponse.json({ error: 'Персонаж не найден' }, { status: 404 });
     if (!player.guildMember) return NextResponse.json({ error: 'Штурмовать Крепость может только член гильдии' }, { status: 400 });
 
     const today = new Date().toISOString().split('T')[0];
-    const assaultsSoFar = player.fortressAssaultDate === today ? player.fortressAssaultsToday : 0;
+    const assaultsSoFar = player.dailyLimits?.fortressAssaultDate === today ? player.dailyLimits.fortressAssaultsToday : 0;
     if (assaultsSoFar >= ASSAULT_DAILY_CAP) {
       return NextResponse.json({ error: `Вы уже штурмовали Крепость ${ASSAULT_DAILY_CAP} раз сегодня` }, { status: 400 });
     }
@@ -48,7 +48,14 @@ export async function POST(req: NextRequest) {
       });
       await tx.player.update({
         where: { id: player.id },
-        data: { fortressAssaultsToday: assaultsSoFar + 1, fortressAssaultDate: today },
+        data: {
+          dailyLimits: {
+            upsert: {
+              create: { fortressAssaultsToday: assaultsSoFar + 1, fortressAssaultDate: today },
+              update: { fortressAssaultsToday: assaultsSoFar + 1, fortressAssaultDate: today },
+            },
+          },
+        },
       });
     });
 

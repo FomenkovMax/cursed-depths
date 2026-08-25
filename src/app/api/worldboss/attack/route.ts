@@ -16,12 +16,12 @@ export async function POST(req: NextRequest) {
   try {
     const player = await db.player.findUnique({
       where: { telegramId: auth.telegramId },
-      include: { inventory: true, class: true },
+      include: { inventory: true, class: true, dailyLimits: true },
     });
     if (!player) return NextResponse.json({ error: 'Персонаж не найден' }, { status: 404 });
 
     const today = new Date().toISOString().split('T')[0];
-    const attacksSoFar = player.worldBossAttackDate === today ? player.worldBossAttacksToday : 0;
+    const attacksSoFar = player.dailyLimits?.worldBossAttackDate === today ? player.dailyLimits.worldBossAttacksToday : 0;
     const attackCap = dailyAttackCapFor(isPremiumActive(player.premiumUntil));
     if (attacksSoFar >= attackCap) {
       return NextResponse.json({ error: `Вы уже атаковали мирового босса ${attackCap} раз сегодня` }, { status: 400 });
@@ -55,7 +55,14 @@ export async function POST(req: NextRequest) {
       });
       await tx.player.update({
         where: { id: player.id },
-        data: { worldBossAttacksToday: attacksSoFar + 1, worldBossAttackDate: today },
+        data: {
+          dailyLimits: {
+            upsert: {
+              create: { worldBossAttacksToday: attacksSoFar + 1, worldBossAttackDate: today },
+              update: { worldBossAttacksToday: attacksSoFar + 1, worldBossAttackDate: today },
+            },
+          },
+        },
       });
 
       let killed = false;

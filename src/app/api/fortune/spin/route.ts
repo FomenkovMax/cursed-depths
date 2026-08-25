@@ -14,11 +14,11 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const player = await db.player.findUnique({ where: { telegramId: auth.telegramId } });
+    const player = await db.player.findUnique({ where: { telegramId: auth.telegramId }, include: { dailyLimits: true } });
     if (!player) return NextResponse.json({ error: 'Персонаж не найден' }, { status: 404 });
 
     const today = new Date().toISOString().split('T')[0];
-    const spinsToday = player.fortuneSpinDate === today ? player.fortuneSpinsToday : 0;
+    const spinsToday = player.dailyLimits?.fortuneSpinDate === today ? player.dailyLimits.fortuneSpinsToday : 0;
     const premium = isPremiumActive(player.premiumUntil);
     const freeSpins = freeSpinsPerDayFor(premium);
 
@@ -38,8 +38,12 @@ export async function POST(req: NextRequest) {
     if (result.reward.kind === 'shards') shardsDelta += result.reward.amount;
 
     const updateData: Prisma.PlayerUpdateInput = {
-      fortuneSpinsToday: spinsToday + 1,
-      fortuneSpinDate: today,
+      dailyLimits: {
+        upsert: {
+          create: { fortuneSpinsToday: spinsToday + 1, fortuneSpinDate: today },
+          update: { fortuneSpinsToday: spinsToday + 1, fortuneSpinDate: today },
+        },
+      },
     };
     if (shardsDelta !== 0) updateData.crownShards = { increment: shardsDelta };
 

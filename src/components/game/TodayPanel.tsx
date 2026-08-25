@@ -115,12 +115,15 @@ export function TodayPanel({
 
   if (expeditionState) {
     const active = expeditionState.active;
+    // F2P (волна 2B, п.24) видит ту же карточку, что и премиум, но с бесплатным дневным
+    // лимитом вместо "нужен премиум" — активная вылазка ведёт себя одинаково для обоих.
+    const f2pLocked = !expeditionState.premiumActive && !active && expeditionState.f2pUsedToday;
     items.push({
       id: 'expedition',
       icon: '🎒',
       label: 'Экспедиции',
-      status: !expeditionState.premiumActive ? 'locked' : active ? (active.ready ? 'available' : 'progress') : 'available',
-      statusText: !expeditionState.premiumActive ? 'Нужен премиум' : active ? (active.ready ? 'Готово забрать' : 'В пути') : 'Не отправлено',
+      status: f2pLocked ? 'locked' : active ? (active.ready ? 'available' : 'progress') : 'available',
+      statusText: f2pLocked ? 'Бесплатная на сегодня уже использована' : active ? (active.ready ? 'Готово забрать' : 'В пути') : (expeditionState.premiumActive ? 'Не отправлено' : 'Бесплатная вылазка доступна'),
       onAction: () => onNavigateTab('premium'),
     });
   }

@@ -179,6 +179,7 @@ model Player {
   visitedLocations VisitedLocation[]
   bossTrophies    PlayerBossTrophy[]
   weeklyChallengeResults WeeklyChallengeResult[]
+  dailyLimits     PlayerDailyLimits?
 
   @@index([telegramId])
   @@index([accountId])
@@ -781,6 +782,31 @@ model PlayerBossTrophy {
 
   @@unique([playerId, enemyId])
   @@index([playerId])
+}
+
+// Редко читаемые дневные лимиты пяти механик, вынесенные из Player (аудит 2, волна 2B, п.4) —
+// раньше каждый GET /api/player тянул эти поля вместе со всем остальным hot-path состоянием,
+// даже для игроков, ни разу не трогавших ни одну из этих фич. 1:1 с Player, тот же паттерн,
+// что и у PlayerBossTrophy/PlayerRecipe выше. Все пять полей "Today"/"Date" — lazy-reset: счётчик
+// имеет смысл только если Date совпадает с сегодняшним днём, иначе читается как 0/null (см.
+// каждый роут, который их использует). Не премиум-фича с собственным жизненным циклом (правило
+// "премиум = отдельная таблица" тут ни при чём) — просто редко читаемый хвост Player.
+model PlayerDailyLimits {
+  id       String @id @default(cuid())
+  playerId String @unique
+  player   Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  worldBossAttacksToday Int     @default(0)
+  worldBossAttackDate   String?
+  fortressAssaultsToday Int     @default(0)
+  fortressAssaultDate   String?
+  raidBossAttacksToday  Int     @default(0)
+  raidBossAttackDate    String?
+  fortuneSpinsToday     Int     @default(0)
+  fortuneSpinDate       String?
+  bountyEnemyId         String?
+  bountyDate            String?
+  bountyAttempted       Boolean @default(false)
 }
 
 // Боевой пропуск — премиум-эксклюзивная сезонная прогрессия (lib/battle-pass.ts), тот же

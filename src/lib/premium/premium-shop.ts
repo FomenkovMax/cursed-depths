@@ -30,6 +30,13 @@ export function findShardPack(id: string): ShardPack | null {
   return SHARD_PACKS.find(p => p.id === id) ?? null;
 }
 
+/** Бонус на самую первую покупку за Stars в жизни игрока (аудит 2, волна 2B, п.42) — первая
+ * покупка исторически самый конверсионный момент в мобильном F2P, обычно 200-300% сверхценности;
+ * здесь скромнее (+50%), без отдельного SKU/таймера — тот же пак, тот же чекаут, просто больше
+ * Осколков при зачислении. "Первая" определяется по count(StarPurchase) для игрока = 0 ДО этой
+ * покупки (см. api/telegram/webhook), а не отдельным флагом — не нужно новое состояние. */
+export const FIRST_PURCHASE_BONUS_MULT = 1.5;
+
 export type PremiumSkuEffect =
   | { kind: 'premium_days'; days: number }
   | { kind: 'guaranteed_currency'; itemId: string; quantity: number }

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { findShardPack } from '@/lib/premium/premium-shop';
+import { findShardPack, FIRST_PURCHASE_BONUS_MULT } from '@/lib/premium/premium-shop';
 
 const BOT_TOKEN = process.env.BOT_TOKEN;
 const WEBHOOK_SECRET = process.env.TELEGRAM_WEBHOOK_SECRET;
@@ -56,18 +56,38 @@ export async function POST(req: NextRequest) {
         try {
           const player = await db.player.findUnique({ where: { telegramId } });
           if (player) {
-            await db.$transaction(async (tx) => {
+            // Бонус на первую покупку за Stars в жизни игрока (аудит 2, волна 2B, п.42) — count
+            // внутри транзакции, ДО создания этой записи, чтобы гонка двух параллельных первых
+            // покупок не начислила бонус обеим.
+            const isFirstPurchase = await db.$transaction(async (tx) => {
+              const priorPurchases = await tx.starPurchase.count({ where: { playerId: player.id } });
+              const isFirst = priorPurchases === 0;
+              const shardsGranted = isFirst ? Math.round(pack.shards * FIRST_PURCHASE_BONUS_MULT) : pack.shards;
               await tx.starPurchase.create({
                 data: {
                   playerId: player.id,
                   packId: pack.id,
                   starsAmount: successfulPayment.total_amount ?? pack.stars,
-                  shardsGranted: pack.shards,
+                  shardsGranted,
                   telegramChargeId: successfulPayment.telegram_payment_charge_id,
                 },
               });
-              await tx.player.update({ where: { id: player.id }, data: { crownShards: { increment: pack.shards } } });
+              await tx.player.update({ where: { id: player.id }, data: { crownShards: { increment: shardsGranted } } });
+              return isFirst;
             });
+
+            const chatId = body?.message?.chat?.id;
+            if (isFirstPurchase && chatId) {
+              const bonusShards = Math.round(pack.shards * (FIRST_PURCHASE_BONUS_MULT - 1));
+              await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  chat_id: chatId,
+                  text: `🎉 Это ваша первая покупка Осколков — Корона щедра к новичкам: +${bonusShards} Осколков сверху, разовый бонус.`,
+                }),
+              }).catch(() => {});
+            }
           }
         } catch (e) {
           console.log('[Premium] Payment credit skipped (likely duplicate delivery):', e);

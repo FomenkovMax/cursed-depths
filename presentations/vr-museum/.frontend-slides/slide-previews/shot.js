@@ -1,3 +1,4 @@
+// eslint-disable-next-line @typescript-eslint/no-require-imports -- This CLI loads Playwright from the environment's CommonJS installation.
 const { chromium } = require('/opt/node22/lib/node_modules/playwright');
 (async () => {
   const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' });

@@ -12,9 +12,11 @@
  * Запуск:  node extract.js ../variant-a-aurora.html ./build
  */
 
+/* eslint-disable @typescript-eslint/no-require-imports -- Keep this standalone CommonJS CLI compatible with the existing Playwright installation. */
 const { chromium } = require('/opt/node22/lib/node_modules/playwright');
 const fs = require('fs');
 const path = require('path');
+/* eslint-enable @typescript-eslint/no-require-imports */
 
 // Что на каждом слайде считать отдельным текстовым блоком.
 // Списки (ul) берём целиком: один текстовый фрейм с абзацами-пунктами
